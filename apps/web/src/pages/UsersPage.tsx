@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { SkeletonList } from '../components/atoms/Skeleton';
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
 import type { Member, Role } from '../lib/api';
@@ -10,6 +11,7 @@ export default function UsersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
   // Id de la fila pendiente de confirmar; null = dialogo cerrado.
   const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
@@ -21,6 +23,7 @@ export default function UsersPage() {
     ]);
     setMembers(memberRows);
     setRoles(roleRows);
+    setCargando(false);
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
@@ -139,7 +142,9 @@ export default function UsersPage() {
           {error}
         </p>
       ) : null}
-      <table>
+      {cargando ? <SkeletonList filas={4} etiqueta="Cargando usuarios…" /> : null}
+
+      <table hidden={cargando}>
         <thead>
           <tr>
             <th>Nombre</th>

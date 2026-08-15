@@ -185,7 +185,12 @@ export default function DonacionesPage() {
         </p>
       ) : (
         <>
-          <DataTable columns={columns} data={imagenes} caption="Fotos de productos donados" />
+          <DataTable
+            columns={columns}
+            data={imagenes}
+            caption="Fotos de productos donados"
+            emptyMessage="Todavía no se ha registrado ninguna foto. Usá «Registrar producto» para tomar la primera."
+          />
           {cursor ? (
             <div className="flex justify-center">
               <Button variant="outline" disabled={cargandoMas} onClick={() => void cargarMas()}>

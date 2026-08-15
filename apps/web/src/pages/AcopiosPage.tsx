@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { SkeletonList } from '../components/atoms/Skeleton';
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
 import { ACOPIO_FLUJOS, type Acopio } from '../lib/api';
@@ -9,13 +10,20 @@ export default function AcopiosPage() {
   const request = useApi();
   const [rows, setRows] = useState<Acopio[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
   // Id de la fila pendiente de confirmar; null = dialogo cerrado.
   const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
   const [editing, setEditing] = useState<Acopio | null>(null);
 
   async function load() {
-    setRows(await request<Acopio[]>(`/api/v1/organizations/${orgId}/acopios`));
+    try {
+      setRows(await request<Acopio[]>(`/api/v1/organizations/${orgId}/acopios`));
+    } finally {
+      // En `finally` para que un fallo no deje el esqueleto girando para siempre;
+      // el error se muestra aparte.
+      setCargando(false);
+    }
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
@@ -103,6 +111,14 @@ export default function AcopiosPage() {
           {error}
         </p>
       ) : null}
+      {cargando ? <SkeletonList filas={3} etiqueta="Cargando centros de acopio…" /> : null}
+
+      {!cargando && rows.length === 0 ? (
+        <p className="muted">
+          Todavía no hay centros de acopio. Creá el primero con el formulario de abajo.
+        </p>
+      ) : null}
+
       <ul className="stack-list">
         {rows.map((row) => (
           <li key={row.id} className={row.isActive === false ? 'is-inactive' : undefined}>

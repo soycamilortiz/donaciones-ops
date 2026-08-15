@@ -191,6 +191,8 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 | Foco visible siempre | Es la única pista de ubicación para quien navega con teclado |
 | `prefers-reduced-motion` | Con excepción del spinner: es información, no decoración |
 | Etiquetas visibles o `sr-only` | El placeholder desaparece al escribir, así que no es una etiqueta |
+| Esqueleto al cargar listas | Una lista vacía no distingue «cargando» de «no hay nada», y al llegar los datos la página salta |
+| Estados vacíos con siguiente paso | Decir que no hay nada sin decir qué hacer deja al usuario parado |
 
 ## Shell (`apps/web`)
 

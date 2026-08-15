@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { SkeletonList } from '../components/atoms/Skeleton';
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
 import type { Permission, Role } from '../lib/api';
@@ -11,6 +12,7 @@ export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
   // Rol pendiente de confirmar; null = dialogo cerrado.
   const [porConfirmar, setPorConfirmar] = useState<Role | null>(null);
   const [eliminando, setEliminando] = useState(false);
@@ -23,6 +25,7 @@ export default function RolesPage() {
     ]);
     setRoles(roleRows);
     setPermissions(permissionRows);
+    setCargando(false);
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
@@ -157,7 +160,9 @@ export default function RolesPage() {
         </p>
       ) : null}
       <div className="table-wrap">
-        <table className="matrix">
+        {cargando ? <SkeletonList filas={5} etiqueta="Cargando la matriz de permisos…" /> : null}
+
+        <table className="matrix" hidden={cargando}>
           <thead>
             <tr>
               <th>Permiso</th>
