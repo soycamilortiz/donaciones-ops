@@ -8,13 +8,7 @@ import {
   ApiServiceUnavailableResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  DonacionImagenEstado,
-  MAX_IMAGEN_BYTES,
-  PermissionSlug,
-  TIPOS_IMAGEN_ACEPTADOS,
-} from '@soschoco/shared';
-import type { HandleUploadBody } from '@vercel/blob/client';
+import { DonacionImagenEstado, PermissionSlug } from '@soschoco/shared';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -38,32 +32,19 @@ export class DonacionesController {
   @Post('subidas/ruta')
   @RequirePermission(PermissionSlug.DonacionesWrite)
   @ApiOperation({
-    summary: 'Reservar la ruta para una foto nueva',
+    summary: 'Reservar clave en R2 y firmar el PUT',
     description:
-      'Devuelve el pathname que la PWA debe pasarle a upload(). El API la genera para que nadie escriba fuera del prefijo de su organización.',
+      'Devuelve pathname, URL firmada (5 min) y URL pública. La PWA hace PUT directo al bucket.',
   })
   @ApiCreatedResponse({ type: RutaSubidaDto })
+  @ApiServiceUnavailableResponse({
+    description: 'Faltan R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT o R2_PUBLIC_BASE_URL',
+  })
   reservarRuta(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Body() dto: NuevaRutaDto,
-  ): RutaSubidaDto {
-    return {
-      pathname: this.donaciones.rutaParaSubida(orgId, dto.nombreArchivo),
-      tiposAceptados: TIPOS_IMAGEN_ACEPTADOS,
-      maxBytes: MAX_IMAGEN_BYTES,
-    };
-  }
-
-  @Post('subidas')
-  @RequirePermission(PermissionSlug.DonacionesWrite)
-  @ApiOperation({
-    summary: 'Emitir el token de subida (protocolo handleUpload de Vercel Blob)',
-    description:
-      'Lo llama el SDK del navegador, no la aplicación directamente. La imagen no pasa por el API.',
-  })
-  @ApiServiceUnavailableResponse({ description: 'Falta configurar BLOB_READ_WRITE_TOKEN' })
-  autorizarSubida(@Param('orgId', ParseUUIDPipe) orgId: string, @Body() body: HandleUploadBody) {
-    return this.donaciones.autorizarSubida(orgId, body);
+  ) {
+    return this.donaciones.reservarSubida(orgId, dto.nombreArchivo, dto.contentType);
   }
 
   @Post()

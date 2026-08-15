@@ -112,3 +112,12 @@ Con el API arriba:
 No forma parte de `/api/health/ready`: un R2 caído no debe tumbar el contenedor.
 
 `R2_PUBLIC_BASE_URL` no entra en este chequeo (es para URLs de fotos, no para S3). No uses el S3 API (`*.r2.cloudflarestorage.com`) como URL pública.
+
+## Subida de donaciones
+
+1. La PWA pide `POST /api/v1/organizations/:orgId/donaciones/subidas/ruta`.
+2. El API firma un **PUT** de 5 minutos contra el S3 API.
+3. El navegador sube el archivo **directo a R2** (hace falta CORS con `PUT`).
+4. La PWA registra `pathname`; el API arma `blobUrl` con `R2_PUBLIC_BASE_URL`.
+
+Sin Public development URL (local) o custom domain (prod), el PUT puede funcionar y las fotos no se ven ni el worker puede descargarlas.

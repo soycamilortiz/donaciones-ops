@@ -149,7 +149,7 @@ export default function NuevaDonacionPage() {
       <input
         ref={entradaRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp"
         capture="environment"
         className="sr-only"
         id="foto-producto"

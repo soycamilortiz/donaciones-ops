@@ -25,7 +25,8 @@ servicios con dirección pública.
 | `REDIS_URL` | ✅ | ✅ | ✅ | — |
 | `JWT_SECRET` | ✅ | — | — | — |
 | `CORS_ORIGIN` | ✅ | — | — | — |
-| `BLOB_READ_WRITE_TOKEN` | ✅ | — | — | — |
+| `BLOB_READ_WRITE_TOKEN` | — (obsoleto) | — | — | — |
+| `R2_*` | ✅ | ✅ | — | — |
 | `JOBS_USER` / `JOBS_PASSWORD` | — | — | ✅ | — |
 | `OCR_*` | — | ✅ | — | — |
 | `RBAC_SYNC_ON_BOOT` / `SWAGGER_ENABLED` | ✅ | — | — | — |
@@ -101,7 +102,11 @@ serverless quien escucha es el runtime.
 | `CORS_ORIGIN` | `https://donaciones-ops-web.vercel.app` | |
 | `JWT_EXPIRES_IN` | `8h` | |
 | `REDIS_URL` | `rediss://default:CLAVE@HOST.upstash.io:6379` | ✅ |
-| `BLOB_READ_WRITE_TOKEN` | lo genera Vercel al crear el store de Blob | ✅ |
+| `R2_ACCOUNT_ID` | el de Cloudflare | |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | token S3 de R2 | ✅ |
+| `R2_BUCKET` | `sos-choco` | |
+| `R2_ENDPOINT` | `https://<accountid>.r2.cloudflarestorage.com` | |
+| `R2_PUBLIC_BASE_URL` | custom domain o `https://pub-….r2.dev` | |
 | `RBAC_SYNC_ON_BOOT` | `false` | |
 | `SWAGGER_ENABLED` | `false` | |
 

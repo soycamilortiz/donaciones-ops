@@ -20,8 +20,7 @@ export const envSchema = z.object({
   /** Cola de reconocimiento de imágenes. La consume apps/worker. */
   REDIS_URL: z.string().min(1).default('redis://localhost:6379'),
   /**
-   * Token de escritura de Vercel Blob (flujo actual). Sin él, donaciones
-   * responde 503. Se reemplaza por Cloudflare R2.
+   * Obsoleto. Las donaciones suben a Cloudflare R2 (`R2_*`).
    */
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
 

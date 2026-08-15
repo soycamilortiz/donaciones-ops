@@ -1,16 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { DonacionImagenEstado, MAX_IMAGEN_BYTES, TIPOS_IMAGEN_ACEPTADOS } from '@soschoco/shared';
-import { type HandleUploadBody, handleUpload } from '@vercel/blob/client';
-import type { Env } from '../config/env.schema';
+import {
+  DonacionImagenEstado,
+  MAX_IMAGEN_BYTES,
+  normalizarTipoImagen,
+  TIPOS_IMAGEN_ACEPTADOS,
+} from '@soschoco/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
 import type { RegistrarImagenDto } from './dto/donacion.dto';
 
@@ -33,49 +37,48 @@ export class DonacionesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cola: ColaService,
-    private readonly config: ConfigService<Env, true>,
+    private readonly r2: R2StorageService,
   ) {}
 
   /**
-   * Implementa el protocolo `handleUpload` de Vercel Blob: el SDK del navegador
-   * pide aquí un token y luego sube el archivo directo al Blob.
-   *
-   * La imagen nunca pasa por el API: una foto de móvil son varios MB y hacerla
-   * viajar dos veces no aporta nada. El API solo decide si se puede subir y con
-   * qué ruta.
-   *
-   * No se usa `onUploadCompleted`: ese callback lo invocan los servidores de
-   * Vercel por webhook y no llega a un entorno local. El registro en base lo
-   * dispara la PWA con `POST /donaciones` en cuanto termina la subida.
+   * Reserva la clave en R2 y firma un PUT de 5 minutos. La PWA sube directo al
+   * bucket; la imagen no pasa por el API.
    */
-  async autorizarSubida(organizationId: string, body: HandleUploadBody) {
-    const token = this.config.get('BLOB_READ_WRITE_TOKEN', { infer: true });
-    if (!token) {
+  async reservarSubida(organizationId: string, nombreArchivo: string, contentType: string) {
+    if (!this.r2.isConfigured()) {
       throw new ServiceUnavailableException(
-        'El almacenamiento de imágenes no está configurado (falta BLOB_READ_WRITE_TOKEN)',
+        `El almacenamiento de imágenes no está configurado (faltan ${this.r2.missingConfig().join(', ')})`,
       );
     }
 
-    return handleUpload({
-      token,
-      body,
-      // El SDK lo usa solo para derivar la URL del callback, que aquí no aplica.
-      request: { headers: {} } as never,
-      onBeforeGenerateToken: async (pathname) => {
-        // El cliente propone la ruta, pero el API la valida: nadie debe poder
-        // escribir fuera del prefijo de su organización.
-        if (!perteneceA(pathname, organizationId)) {
-          throw new ForbiddenException('La ruta no corresponde a esta organización');
-        }
-        return {
-          allowedContentTypes: [...TIPOS_IMAGEN_ACEPTADOS],
-          maximumSizeInBytes: MAX_IMAGEN_BYTES,
-          addRandomSuffix: false,
-          // El token solo tiene que durar lo que tarda una subida.
-          validUntil: Date.now() + 5 * 60 * 1000,
-        };
-      },
-    });
+    if (!this.r2.hasPublicBase()) {
+      throw new ServiceUnavailableException(
+        'El almacenamiento de imágenes no está configurado (falta R2_PUBLIC_BASE_URL)',
+      );
+    }
+
+    const tipo = normalizarTipoImagen(contentType, nombreArchivo);
+    if (!tipo) {
+      throw new BadRequestException(`Formato no aceptado: ${contentType || 'desconocido'}`);
+    }
+
+    const pathname = this.rutaParaSubida(organizationId, nombreArchivo);
+    const uploadUrl = await this.r2.presignPut(pathname, tipo);
+    const publicUrl = this.r2.publicUrlFor(pathname);
+    if (!publicUrl) {
+      throw new ServiceUnavailableException(
+        'El almacenamiento de imágenes no está configurado (falta R2_PUBLIC_BASE_URL)',
+      );
+    }
+
+    return {
+      pathname,
+      uploadUrl,
+      publicUrl,
+      headers: { 'Content-Type': tipo },
+      tiposAceptados: TIPOS_IMAGEN_ACEPTADOS,
+      maxBytes: MAX_IMAGEN_BYTES,
+    };
   }
 
   /** Ruta que la PWA debe pedir para una foto nueva. */
@@ -85,11 +88,19 @@ export class DonacionesService {
 
   /**
    * Registra la imagen ya subida y encola su reconocimiento. Se llama desde la
-   * PWA cuando el Blob confirma la subida.
+   * PWA cuando R2 confirma la subida. La URL pública la arma el API; el cliente
+   * no puede inyectar un host ajeno.
    */
   async registrarImagen(organizationId: string, usuarioId: string, dto: RegistrarImagenDto) {
     if (!perteneceA(dto.pathname, organizationId)) {
       throw new ForbiddenException('La ruta no corresponde a esta organización');
+    }
+
+    const blobUrl = this.r2.publicUrlFor(dto.pathname);
+    if (!blobUrl) {
+      throw new ServiceUnavailableException(
+        'El almacenamiento de imágenes no está configurado (falta R2_PUBLIC_BASE_URL)',
+      );
     }
 
     if (dto.acopioId) {
@@ -108,7 +119,7 @@ export class DonacionesService {
         organizationId,
         acopioId: dto.acopioId ?? null,
         subidaPorId: usuarioId,
-        blobUrl: dto.blobUrl,
+        blobUrl,
         blobPathname: dto.pathname,
         estado: DonacionImagenEstado.Pendiente,
       },

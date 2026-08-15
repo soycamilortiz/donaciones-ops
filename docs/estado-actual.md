@@ -116,7 +116,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Inventario | `/api/v1/organizations/:orgId/acopios/:acopioId/inventory` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
-| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas`, `/subidas/ruta`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
+| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas/ruta`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
 
 `GET /donaciones` está **paginado por cursor**, no por offset: las fotos se insertan sin parar desde el campo y con `OFFSET` una fila nueva desplaza la ventana, haciendo que se repitan o se salten registros entre páginas. Devuelve `{ items, siguienteCursor }`; `siguienteCursor` es `null` cuando ya no hay más. Acepta `?estado=`, `?cursor=` y `?limite=` (1–200, default 50).
 
@@ -133,7 +133,7 @@ Variables del API:
 | `JWT_SECRET` | Firma del token (mínimo 16 caracteres) |
 | `JWT_EXPIRES_IN` | Default `8h` |
 | `REDIS_URL` | Cola de reconocimiento. Default `redis://localhost:6379` |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob (flujo actual). Sin él, donaciones responde 503 |
+| `BLOB_READ_WRITE_TOKEN` | Obsoleto. Las donaciones suben a R2 |
 | `R2_ACCOUNT_ID` | Account ID de Cloudflare |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Token S3 de R2. Solo API/worker |
 | `R2_BUCKET` | Bucket. Default `sos-choco` |
@@ -216,9 +216,9 @@ La PWA fotografía un producto donado y el sistema intenta identificarlo para de
 
 | Pieza | Responsabilidad |
 | --- | --- |
-| `apps/api/src/donaciones` | Autoriza la subida al Blob y encola el job. La imagen no pasa por el API |
+| `apps/api/src/donaciones` | Autoriza el PUT firmado a R2 y encola el job. La imagen no pasa por el API |
 | `apps/worker` | Consume la cola: descarga, preprocesa, OCR y emparejamiento |
-| `donacion_imagenes` | Guarda la URL del Blob y el FK al producto reconocido |
+| `donacion_imagenes` | Guarda la URL pública de R2 y el FK al producto reconocido |
 | `productos` | Catálogo contra el que se resuelve el texto del OCR |
 
 Estados de una imagen: `PENDIENTE` → `PROCESANDO` → `PROCESADA` o `FALLIDA`.
@@ -239,5 +239,5 @@ psql "$DATABASE_URL" -f apps/api/prisma/seed-productos.sql
 
 Verificado contra un PostgreSQL real: las migraciones aplican, `rbac:sync` deja 12 permisos y 6 roles, y un job encolado recorre la cola hasta escribir su resultado en `donacion_imagenes`.
 
-Falta configurar Storage (`R2_*`, o `BLOB_READ_WRITE_TOKEN` mientras dure el Blob) y tener el worker corriendo: sin él las fotos se suben pero se quedan en `PENDIENTE`. Guía del bucket: [r2-storage.md](r2-storage.md).
+Falta configurar `R2_*` (incluido `R2_PUBLIC_BASE_URL`) y tener el worker corriendo: sin él las fotos se suben pero se quedan en `PENDIENTE`. Guía del bucket: [r2-storage.md](r2-storage.md).
 

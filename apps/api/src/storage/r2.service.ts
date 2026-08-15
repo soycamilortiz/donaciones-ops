@@ -1,8 +1,9 @@
-import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
+import { HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../config/env.schema';
-import { normalizeR2Endpoint } from './r2.util';
+import { normalizeR2Endpoint, publicObjectUrl } from './r2.util';
 
 @Injectable()
 export class R2StorageService {
@@ -54,5 +55,30 @@ export class R2StorageService {
     }
     await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
     return { bucket: this.bucket };
+  }
+
+  async presignPut(key: string, contentType: string, expiresIn = 300): Promise<string> {
+    if (!this.client) {
+      throw new Error(`R2 no configurado (${this.missingConfig().join(', ')})`);
+    }
+    return getSignedUrl(
+      this.client,
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: contentType,
+      }),
+      { expiresIn },
+    );
+  }
+
+  publicUrlFor(key: string): string | null {
+    const base = this.config.get('R2_PUBLIC_BASE_URL', { infer: true });
+    if (!base) return null;
+    return publicObjectUrl(base, key);
+  }
+
+  hasPublicBase(): boolean {
+    return Boolean(this.config.get('R2_PUBLIC_BASE_URL', { infer: true }));
   }
 }
