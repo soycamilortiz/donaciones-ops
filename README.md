@@ -23,6 +23,7 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 | http://localhost/api | Metadatos API |
 | http://localhost/api/health | Liveness |
 | http://localhost/api/health/ready | PostgreSQL |
+| http://localhost/api/health/storage | Cloudflare R2 |
 | http://localhost/api/docs | Swagger UI |
 | http://localhost/api/docs/openapi.json | OpenAPI 3 (JSON) |
 | http://localhost:8080 | Dashboard Traefik |
@@ -153,7 +154,7 @@ Para añadir un job nuevo: crea el archivo en `apps/worker/src/jobs` exportando 
 
 El camino que de verdad resuelve el reconocimiento de productos empaquetados es el **código de barras (EAN-13)**, que da identidad exacta y se puede leer en el propio móvil. El modelo ya tiene el campo `ean` en `productos`, y `DefinicionJob` permite enchufar ese motor —o uno de visión— sin tocar la cola ni la persistencia.
 
-Requiere `BLOB_READ_WRITE_TOKEN` (Vercel Blob). Sin él, el módulo responde 503 en vez de tumbar el arranque.
+El API comprueba R2 con `GET /api/health/storage` (`HeadBucket`). Las donaciones todavía suben con `BLOB_READ_WRITE_TOKEN` (Vercel Blob) hasta recablear PutObject. Guía: [docs/r2-storage.md](docs/r2-storage.md). Sin Blob, donaciones responde 503 y no tumba el arranque.
 
 ## PWA
 

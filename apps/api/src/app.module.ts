@@ -10,6 +10,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RbacModule } from './rbac/rbac.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { RbacModule } from './rbac/rbac.module';
       validate: validateEnv,
     }),
     PrismaModule,
+    StorageModule,
     HealthModule,
     AuthModule,
     RbacModule,

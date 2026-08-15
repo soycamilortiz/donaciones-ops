@@ -34,7 +34,7 @@ No usamos Module Federation ni single-spa. Los fronts **no se hablan entre sí**
 | Código común | `packages/shared` (`@soschoco/shared`): enums, RBAC y contratos del API |
 | Cola de jobs | BullMQ sobre Redis 7 |
 | Worker | `apps/worker`: Tesseract (binario nativo) + sharp |
-| Almacenamiento de imágenes | Vercel Blob (subida directa desde la PWA) |
+| Almacenamiento de imágenes | Cloudflare R2 (S3). Health: `/api/health/storage` |
 | PWA | vite-plugin-pwa (manifest + service worker con Workbox) |
 | Observabilidad de la cola | `apps/jobs`: Bull Board tras basic auth |
 | CI | GitHub Actions: lint, tipos, build, tests, migraciones e imágenes |
@@ -58,6 +58,7 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 | http://localhost/api | Metadatos del servicio |
 | http://localhost/api/health | Liveness |
 | http://localhost/api/health/ready | Readiness (PostgreSQL) |
+| http://localhost/api/health/storage | Cloudflare R2 (HeadBucket) |
 | http://localhost/api/docs | Swagger UI |
 | http://localhost/jobs | Panel de la cola de jobs (basic auth) |
 | http://localhost:8080 | Dashboard Traefik |
@@ -130,7 +131,12 @@ Variables del API:
 | `JWT_SECRET` | Firma del token (mínimo 16 caracteres) |
 | `JWT_EXPIRES_IN` | Default `8h` |
 | `REDIS_URL` | Cola de reconocimiento. Default `redis://localhost:6379` |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob. Sin él, donaciones responde 503 |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob (flujo actual). Sin él, donaciones responde 503 |
+| `R2_ACCOUNT_ID` | Account ID de Cloudflare |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Token S3 de R2. Solo API/worker |
+| `R2_BUCKET` | Bucket. Default `sos-choco` |
+| `R2_ENDPOINT` | `https://<accountid>.r2.cloudflarestorage.com` (sin el bucket) |
+| `R2_PUBLIC_BASE_URL` | Dominio público de las fotos (custom domain o `*.r2.dev`) |
 
 En Docker, `DATABASE_URL` apunta al servicio `postgres`. Cambiá `JWT_SECRET` antes de un entorno real.
 
@@ -167,4 +173,4 @@ El job es idempotente por `imagenId` y BullMQ reintenta con backoff exponencial;
 
 El catálogo `productos` está vacío y sin él nada se reconoce: `emparejar()` contra una tabla vacía siempre devuelve `null`. Cargar los productos que realmente se donan (arroz, agua, aceite, panela, jabón, crema dental) con sus alias es lo más barato y lo que más cambia el resultado.
 
-Falta también aplicar la migración contra un Postgres real y configurar `BLOB_READ_WRITE_TOKEN`.
+Falta también aplicar la migración contra un Postgres real y configurar Storage (`R2_*`, o `BLOB_READ_WRITE_TOKEN` mientras dure el Blob). Guía del bucket: [r2-storage.md](r2-storage.md).
