@@ -9,6 +9,8 @@ export const PermissionSlug = {
   AcopiosWrite: 'acopios:write',
   RolesRead: 'roles:read',
   RolesWrite: 'roles:write',
+  DonacionesRead: 'donaciones:read',
+  DonacionesWrite: 'donaciones:write',
 } as const;
 
 export type PermissionSlug = (typeof PermissionSlug)[keyof typeof PermissionSlug];
@@ -79,6 +81,16 @@ export const PERMISSION_CATALOG: Array<{
     nombre: 'Editar roles',
     descripcion: 'Crear roles y cambiar la matriz de permisos',
   },
+  {
+    slug: PermissionSlug.DonacionesRead,
+    nombre: 'Ver donaciones',
+    descripcion: 'Consultar las imagenes de productos donados y su reconocimiento',
+  },
+  {
+    slug: PermissionSlug.DonacionesWrite,
+    nombre: 'Registrar donaciones',
+    descripcion: 'Subir fotos de productos donados y corregir el producto reconocido',
+  },
 ];
 
 const ALL_PERMISSIONS = PERMISSION_CATALOG.map((item) => item.slug);
@@ -88,6 +100,7 @@ const LECTURA = [
   PermissionSlug.AcopiosRead,
   PermissionSlug.MembersRead,
   PermissionSlug.RolesRead,
+  PermissionSlug.DonacionesRead,
 ] as const;
 
 export const ROLE_CATALOG: Array<{
@@ -128,6 +141,8 @@ export const ROLE_CATALOG: Array<{
       PermissionSlug.AcopiosRead,
       PermissionSlug.AcopiosWrite,
       PermissionSlug.RolesRead,
+      PermissionSlug.DonacionesRead,
+      PermissionSlug.DonacionesWrite,
     ],
   },
   {
@@ -145,7 +160,12 @@ export const ROLE_CATALOG: Array<{
   {
     slug: RoleSlug.Voluntario,
     nombre: 'Voluntario',
-    descripcion: 'Apoyo en campo, solo consulta',
-    permissions: [PermissionSlug.OrgRead, PermissionSlug.AcopiosRead],
+    descripcion: 'Apoyo en campo: consulta y registro de donaciones',
+    permissions: [
+      PermissionSlug.OrgRead,
+      PermissionSlug.AcopiosRead,
+      PermissionSlug.DonacionesRead,
+      PermissionSlug.DonacionesWrite,
+    ],
   },
 ];

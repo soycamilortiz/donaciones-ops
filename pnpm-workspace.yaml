@@ -11,3 +11,6 @@ allowBuilds:
   unrs-resolver: true
   # Telemetría de terceros, no hace falta.
   '@scarf/scarf': false
+  # sharp trae binarios nativos; msgpackr-extract lo usa bullmq.
+  sharp: true
+  msgpackr-extract: true
