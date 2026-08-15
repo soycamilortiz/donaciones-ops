@@ -6,6 +6,12 @@
 -- Los `alias` son los términos que el OCR suele sacar del envase. Conviene
 -- añadir variantes cortas (la marca sola) porque Tesseract corta palabras.
 --
+-- Un alias debe DISTINGUIR, no describir. Poner 'botella agua' en el producto
+-- genérico hacía que "AGUA CRISTAL BOTELLA" empatara con "Agua Cristal" y la
+-- foto terminara en revisión manual: las dos coincidencias eran igual de
+-- buenas. Evita palabras de envase (botella, bolsa, caja, paquete) que
+-- aparecen en muchos productos.
+--
 --   psql "$DATABASE_URL" -f apps/api/prisma/seed-productos.sql
 
 INSERT INTO productos (id, nombre, marca, categoria, alias, created_at, updated_at) VALUES
@@ -19,7 +25,7 @@ INSERT INTO productos (id, nombre, marca, categoria, alias, created_at, updated_
   (gen_random_uuid(), 'Atún enlatado',      NULL,        'Alimentos', ARRAY['atun','atun lomitos'],                       now(), now()),
   (gen_random_uuid(), 'Sardina enlatada',   NULL,        'Alimentos', ARRAY['sardina','sardinas'],                        now(), now()),
   (gen_random_uuid(), 'Leche en polvo',     NULL,        'Alimentos', ARRAY['leche polvo','leche en polvo'],              now(), now()),
-  (gen_random_uuid(), 'Agua embotellada',   NULL,        'Bebidas',   ARRAY['agua','agua potable','botella agua'],        now(), now()),
+  (gen_random_uuid(), 'Agua embotellada',   NULL,        'Bebidas',   ARRAY['agua','agua potable'],        now(), now()),
   (gen_random_uuid(), 'Agua Cristal',       'Cristal',   'Bebidas',   ARRAY['agua cristal','cristal'],                    now(), now()),
   (gen_random_uuid(), 'Crema dental',       NULL,        'Aseo',      ARRAY['crema dental','pasta dental','dentifrico'],  now(), now()),
   (gen_random_uuid(), 'Crema dental Colgate','Colgate',  'Aseo',      ARRAY['colgate','colgate triple accion'],           now(), now()),
