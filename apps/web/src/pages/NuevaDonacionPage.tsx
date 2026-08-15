@@ -158,10 +158,13 @@ export default function NuevaDonacionPage() {
       />
 
       {vistaPrevia ? (
+        // `aspect-[4/3]` reserva el hueco antes de que la imagen cargue. Sin esto
+        // el contenido de abajo salta al aparecer la foto, que es justo el
+        // instante en que el usuario esta mirando.
         <img
           src={vistaPrevia}
           alt="Foto tomada del producto"
-          className="max-h-72 w-full rounded-lg object-contain"
+          className="aspect-[4/3] max-h-72 w-full rounded-lg bg-muted object-contain"
         />
       ) : null}
 
