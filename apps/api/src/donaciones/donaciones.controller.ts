@@ -40,10 +40,7 @@ export class DonacionesController {
   @ApiServiceUnavailableResponse({
     description: 'Faltan R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT o R2_PUBLIC_BASE_URL',
   })
-  reservarRuta(
-    @Param('orgId', ParseUUIDPipe) orgId: string,
-    @Body() dto: NuevaRutaDto,
-  ) {
+  reservarRuta(@Param('orgId', ParseUUIDPipe) orgId: string, @Body() dto: NuevaRutaDto) {
     return this.donaciones.reservarSubida(orgId, dto.nombreArchivo, dto.contentType);
   }
 

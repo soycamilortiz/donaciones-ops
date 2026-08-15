@@ -247,14 +247,22 @@ export default function RolesPage() {
                   return (
                     <td key={role.id}>
                       {writable ? (
-                        <input
-                          type="checkbox"
-                          checked={on}
-                          aria-label={`${row.permission.nombre} para ${role.nombre}`}
-                          onChange={(event) =>
-                            void toggle(role, row.permission.slug, event.target.checked)
-                          }
-                        />
+                        /*
+                          La casilla mide 20px, muy por debajo del minimo tactil.
+                          El <label> hace que toda la celda la active, asi el area
+                          pulsable pasa a ser la celda entera sin engordar la
+                          matriz, que es densa a proposito.
+                        */
+                        <label className="celda-casilla">
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            aria-label={`${row.permission.nombre} para ${role.nombre}`}
+                            onChange={(event) =>
+                              void toggle(role, row.permission.slug, event.target.checked)
+                            }
+                          />
+                        </label>
                       ) : on ? (
                         'Sí'
                       ) : (

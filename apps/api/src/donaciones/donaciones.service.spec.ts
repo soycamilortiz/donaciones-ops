@@ -43,9 +43,7 @@ describe('DonacionesService', () => {
       missingConfig: jest.fn().mockReturnValue([]),
       hasPublicBase: jest.fn().mockReturnValue(true),
       presignPut: jest.fn().mockResolvedValue('https://r2.example/signed'),
-      publicUrlFor: jest
-        .fn()
-        .mockImplementation((key: string) => `https://pub.example/${key}`),
+      publicUrlFor: jest.fn().mockImplementation((key: string) => `https://pub.example/${key}`),
     };
 
     const module: TestingModule = await Test.createTestingModule({
