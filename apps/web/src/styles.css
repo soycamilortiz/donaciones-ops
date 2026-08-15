@@ -216,6 +216,8 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* 44px: minimo tactil. Medido antes: 40px. */
+  min-height: 44px;
   border: 0;
   background: var(--accent);
   color: #fffdf8;
@@ -285,10 +287,19 @@ a {
   margin-top: 24px;
 }
 
+/*
+ * Los controles de estos formularios median entre 21px y 42px. Se usan desde el
+ * movil, en campo, y por debajo de 44px se falla el toque con frecuencia.
+ * El minimo va aqui y no en cada pantalla para que aplique tambien a las que
+ * se anadan despues.
+ */
 .field input,
 .field select,
 .field textarea,
+.inline-form input,
+.inline-form select,
 select {
+  min-height: 44px;
   font: inherit;
   padding: 8px;
   border: 1px solid var(--line);
@@ -515,6 +526,7 @@ td {
 .role-head input,
 .permission-name {
   width: 100%;
+  min-height: 44px;
   font: inherit;
   padding: 6px;
   border: 1px solid var(--line);
@@ -665,4 +677,46 @@ td {
   .stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/*
+ * Casillas de verificacion.
+ *
+ * Median 13px, muy por debajo del minimo tactil. Agrandar la casilla en si
+ * deformaria la matriz de permisos, que es densa a proposito, asi que se
+ * agranda la casilla a 20px y el area pulsable se extiende con padding sobre
+ * la celda que la contiene: el toque cuenta igual y la retícula no cambia.
+ */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  /* Sin esto el minimo de 44px de la regla general los deformaria. */
+  min-height: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.matrix td:has(input[type="checkbox"]),
+.matrix th:has(input[type="checkbox"]) {
+  padding: 12px;
+}
+
+label:has(> input[type="checkbox"]),
+label:has(> input[type="radio"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+/* Extiende el area pulsable de la casilla a toda su celda. */
+.celda-casilla {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  cursor: pointer;
 }
