@@ -31,6 +31,7 @@ export default function AppShell() {
           <NavLink to="/app/usuarios">Usuarios</NavLink>
           <NavLink to="/app/roles">Roles</NavLink>
           <NavLink to="/app/acopios">Acopios</NavLink>
+          <NavLink to="/app/donaciones">Donaciones</NavLink>
         </nav>
       </aside>
       <div className="app-main">
