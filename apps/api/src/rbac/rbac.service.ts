@@ -6,7 +6,9 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PERMISSION_CATALOG, PermissionSlug, ROLE_CATALOG, RoleSlug } from '@soschoco/shared';
+import type { Env } from '../config/env.schema';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateRoleDto, UpdatePermissionDto, UpdateRoleDto } from './dto/rbac.dto';
 
@@ -18,9 +20,16 @@ const roleInclude = {
 export class RbacService implements OnModuleInit {
   private readonly logger = new Logger(RbacService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
 
   async onModuleInit(): Promise<void> {
+    if (!this.config.get('RBAC_SYNC_ON_BOOT', { infer: true })) {
+      this.logger.log('Sincronizacion de RBAC omitida al arrancar (RBAC_SYNC_ON_BOOT=false)');
+      return;
+    }
     await this.ensureCatalog();
   }
 
