@@ -57,6 +57,26 @@ test('devuelve null con texto vacío', () => {
   assert.equal(emparejar('', CATALOGO, 0.75), null);
 });
 
+test('ante marca y generico que empatan, gana el mas especifico', () => {
+  // Caso real: el catalogo tiene "Arroz" y "Arroz Diana", y el OCR lee
+  // "ARROZ DIANA 500 G". Ambos puntuan 1; quedarse con el generico perderia la
+  // marca, y negarse a elegir mandaria a revision algo bien reconocido.
+  const catalogo: Producto[] = [
+    producto('generico', 'Arroz', ['arroz', 'arroz blanco']),
+    producto('marca', 'Arroz Diana', ['arroz diana', 'diana'], 'Diana'),
+    producto('otra', 'Arroz Roa', ['arroz roa', 'roa'], 'Roa'),
+  ];
+  assert.equal(emparejar('ARROZ DIANA 500 G', catalogo, 0.75)?.producto.id, 'marca');
+});
+
+test('si solo aparece el generico, no inventa una marca', () => {
+  const catalogo: Producto[] = [
+    producto('generico', 'Arroz', ['arroz', 'arroz blanco']),
+    producto('marca', 'Arroz Diana', ['arroz diana', 'diana'], 'Diana'),
+  ];
+  assert.equal(emparejar('BULTO DE ARROZ', catalogo, 0.75)?.producto.id, 'generico');
+});
+
 test('ante un empate prefiere no elegir', () => {
   const ambiguo: Producto[] = [
     producto('a', 'Jabón azul', ['jabon']),

@@ -6,7 +6,9 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PERMISSION_CATALOG, PermissionSlug, ROLE_CATALOG, RoleSlug } from '@soschoco/shared';
+import type { Env } from '../config/env.schema';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateRoleDto, UpdatePermissionDto, UpdateRoleDto } from './dto/rbac.dto';
 
@@ -18,9 +20,16 @@ const roleInclude = {
 export class RbacService implements OnModuleInit {
   private readonly logger = new Logger(RbacService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
 
   async onModuleInit(): Promise<void> {
+    if (!this.config.get('RBAC_SYNC_ON_BOOT', { infer: true })) {
+      this.logger.log('Sincronizacion de RBAC omitida al arrancar (RBAC_SYNC_ON_BOOT=false)');
+      return;
+    }
     await this.ensureCatalog();
   }
 
@@ -178,9 +187,7 @@ export class RbacService implements OnModuleInit {
       where: { id: roleId },
       data: {
         ...(dto.nombre ? { nombre: dto.nombre.trim() } : {}),
-        ...(dto.descripcion !== undefined
-          ? { descripcion: dto.descripcion.trim() || null }
-          : {}),
+        ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion.trim() || null } : {}),
         ...(typeof dto.isActive === 'boolean' ? { isActive: dto.isActive } : {}),
       },
       include: roleInclude,
@@ -226,9 +233,7 @@ export class RbacService implements OnModuleInit {
       where: { roleId, isActive: true },
     });
     if (members > 0) {
-      throw new ConflictException(
-        'Hay personas con este rol. Reasignalas antes de darlo de baja',
-      );
+      throw new ConflictException('Hay personas con este rol. Reasignalas antes de darlo de baja');
     }
     await this.prisma.role.update({
       where: { id: roleId },

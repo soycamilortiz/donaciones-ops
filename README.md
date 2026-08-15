@@ -32,6 +32,8 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 
 Auth propia: usuario/contraseña, captcha y JWT (`JWT_SECRET` en `.env`). Las rutas viven en `infra/traefik/dynamic/routes.yml`.
 
+Las URL de conexión entre servicios no se escriben a mano: el compose las deriva de los nombres de servicio de la red `soschoco`. El detalle, y qué cambia al desplegar en Vercel, está en [docs/variables-de-entorno.md](docs/variables-de-entorno.md).
+
 ## Desarrollo local (sin rebuild de imagen)
 
 Opción A — API y front en el host (más rápido en Windows):

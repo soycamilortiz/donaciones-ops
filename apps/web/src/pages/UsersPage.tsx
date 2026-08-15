@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
 import type { Member, Role } from '../lib/api';
 import { useApi } from '../lib/useApi';
@@ -9,6 +10,9 @@ export default function UsersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Id de la fila pendiente de confirmar; null = dialogo cerrado.
+  const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState(false);
 
   async function load() {
     const [memberRows, roleRows] = await Promise.all([
@@ -77,6 +81,7 @@ export default function UsersPage() {
 
   async function onRemove(userId: string) {
     setError(null);
+    setEliminando(true);
     try {
       await request(`/api/v1/organizations/${orgId}/members/${userId}`, {
         method: 'DELETE',
@@ -84,6 +89,9 @@ export default function UsersPage() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo dar de baja');
+    } finally {
+      setEliminando(false);
+      setPorConfirmar(null);
     }
   }
 
@@ -92,22 +100,45 @@ export default function UsersPage() {
       <h1>Usuarios</h1>
       {can('members:invite') ? (
         <form className="inline-form" onSubmit={(event) => void onInvite(event)}>
-          <input name="correo" type="email" placeholder="correo@org.org" required />
-          <select name="roleSlug" defaultValue="voluntario">
+          {/*
+            El placeholder desaparece al escribir: no sirve como etiqueta. Se usa
+            `sr-only` para no alterar el formulario en linea, que es compacto a
+            proposito, pero dejando el nombre disponible para lectores de pantalla.
+          */}
+          <label className="sr-only" htmlFor="invitar-correo">
+            Correo de la persona a invitar
+          </label>
+          <input
+            id="invitar-correo"
+            name="correo"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="correo@org.org"
+            required
+          />
+          <label className="sr-only" htmlFor="invitar-rol">
+            Rol que tendrá
+          </label>
+          <select id="invitar-rol" name="roleSlug" defaultValue="voluntario">
             {roles
               .filter((role) => role.isActive !== false)
               .map((role) => (
-              <option key={role.slug} value={role.slug}>
-                {role.nombre}
-              </option>
-            ))}
+                <option key={role.slug} value={role.slug}>
+                  {role.nombre}
+                </option>
+              ))}
           </select>
           <button className="button" type="submit">
             Agregar
           </button>
         </form>
       ) : null}
-      {error ? <p className="error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      ) : null}
       <table>
         <thead>
           <tr>
@@ -126,9 +157,7 @@ export default function UsersPage() {
             >
               <td>
                 {member.nombre}
-                {member.isActive === false ? (
-                  <div className="badge-baja">Baja</div>
-                ) : null}
+                {member.isActive === false ? <div className="badge-baja">Baja</div> : null}
               </td>
               <td>{member.usuario}</td>
               <td>{member.correo}</td>
@@ -141,10 +170,10 @@ export default function UsersPage() {
                     {roles
                       .filter((role) => role.isActive !== false)
                       .map((role) => (
-                      <option key={role.slug} value={role.slug}>
-                        {role.nombre}
-                      </option>
-                    ))}
+                        <option key={role.slug} value={role.slug}>
+                          {role.nombre}
+                        </option>
+                      ))}
                   </select>
                 ) : (
                   member.roleNombre
@@ -166,7 +195,7 @@ export default function UsersPage() {
                     <button
                       type="button"
                       className="linkish"
-                      onClick={() => void onRemove(member.userId)}
+                      onClick={() => setPorConfirmar(member.userId)}
                     >
                       Dar de baja
                     </button>
@@ -177,6 +206,15 @@ export default function UsersPage() {
           ))}
         </tbody>
       </table>
+      <ConfirmDialog
+        abierto={porConfirmar !== null}
+        titulo="Dar de baja a esta persona"
+        descripcion="Pierde el acceso a la organización. Se puede reactivar después, pero deja de ver los datos de inmediato."
+        etiquetaConfirmar="Dar de baja"
+        ocupado={eliminando}
+        onConfirmar={() => porConfirmar && void onRemove(porConfirmar)}
+        onCancelar={() => setPorConfirmar(null)}
+      />
     </section>
   );
 }

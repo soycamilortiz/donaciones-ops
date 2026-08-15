@@ -49,11 +49,7 @@ export class PermissionsGuard implements CanActivate {
       },
     });
 
-    if (
-      !membership?.isActive ||
-      !membership.role.isActive ||
-      !membership.organization.isActive
-    ) {
+    if (!membership?.isActive || !membership.role.isActive || !membership.organization.isActive) {
       throw new ForbiddenException('No perteneces a esta organización');
     }
 

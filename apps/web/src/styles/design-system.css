@@ -57,3 +57,30 @@
   --shadow-lg: 0 10px 15px -3px rgb(28 36 28 / 0.08), 0 4px 6px -4px rgb(28 36 28 / 0.08);
   --shadow-xl: 0 20px 25px -5px rgb(28 36 28 / 0.1);
 }
+
+/*
+ * Respeta a quien pidió menos movimiento en su sistema operativo. No es solo
+ * preferencia estética: para personas con trastornos vestibulares una
+ * transición puede provocar mareo. Se anula el movimiento pero NO la
+ * visibilidad, para que nada quede oculto por desactivar animaciones.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /*
+   * El spinner es la excepción: es información, no decoración. Congelarlo
+   * dejaría al usuario sin saber si la app sigue trabajando. Se conserva el
+   * giro, más lento para que no moleste.
+   */
+  .animate-spin {
+    animation-duration: 1.5s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

@@ -116,7 +116,9 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Inventario | `/api/v1/organizations/:orgId/acopios/:acopioId/inventory` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
-| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
+| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas`, `/subidas/ruta`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
+
+`GET /donaciones` está **paginado por cursor**, no por offset: las fotos se insertan sin parar desde el campo y con `OFFSET` una fila nueva desplaza la ventana, haciendo que se repitan o se salten registros entre páginas. Devuelve `{ items, siguienteCursor }`; `siguienteCursor` es `null` cuando ya no hay más. Acepta `?estado=`, `?cursor=` y `?limite=` (1–200, default 50).
 
 Guards: `JwtAuthGuard` global + `@RequirePermission` por membresía.
 
@@ -137,8 +139,64 @@ Variables del API:
 | `R2_BUCKET` | Bucket. Default `sos-choco` |
 | `R2_ENDPOINT` | `https://<accountid>.r2.cloudflarestorage.com` (sin el bucket) |
 | `R2_PUBLIC_BASE_URL` | Dominio público de las fotos (custom domain o `*.r2.dev`) |
+| `RBAC_SYNC_ON_BOOT` | Default `true`. Ponelo en `false` en serverless |
+| `SWAGGER_ENABLED` | Default `true`. Ponelo en `false` en serverless |
+| `LOGS_TOKEN` | Opcional. Si está, `/logs` exige `?token=…` |
 
 En Docker, `DATABASE_URL` apunta al servicio `postgres`. Cambiá `JWT_SECRET` antes de un entorno real.
+
+Las URL de conexión **no se escriben a mano**: en Docker el compose las deriva de los nombres de servicio de la red `soschoco`. El detalle de las tres topologías (compose, apps en el host, serverless) está en [variables-de-entorno.md](variables-de-entorno.md).
+
+### Dos formas de arrancar el API
+
+| Entrada | Para qué |
+| --- | --- |
+| `src/main.ts` → `dist/main.js` | Proceso de larga vida (Docker, Traefik). `app.listen()` |
+| `src/serverless.ts` → `api/index.js` | Función serverless (Vercel). `app.init()` y devuelve el handler |
+
+`main.ts` no sirve en serverless: `app.listen()` nunca devuelve el control y la función termina en `FUNCTION_INVOCATION_FAILED`. El entry `api/index.js` es JavaScript a propósito, porque Vercel compila los entrypoints con esbuild y no emite metadata de decoradores, sin la cual falla la inyección de dependencias de Nest.
+
+Cada app se despliega como un proyecto propio de Vercel apuntando al mismo repo, cambiando el Root Directory. `apps/worker` no puede: es un proceso residente.
+
+## Visor de logs (`/logs`)
+
+Los logs del despliegue en Vercel solo los ve quien tenga acceso al proyecto. Para que
+cualquiera del equipo pueda diagnosticar, la función expone un visor propio:
+
+| Ruta | Qué devuelve |
+| --- | --- |
+| `/logs` | Página con logs en vivo, chequeos de entorno y el error de arranque |
+| `/logs/data?since=N` | JSON incremental desde el número de secuencia `N` |
+| `/logs/stream` | SSE (la página cae a polling si el entorno no lo soporta) |
+| `/logs/raw` | Texto plano, para `curl` o pegar en un issue |
+| `/logs/reset` | Reintenta el arranque de Nest en la próxima petición |
+
+Vive en `apps/api/api/_lib/`, **fuera** del arranque de Nest y montado antes que él: si la app
+no levanta, `/logs` sigue respondiendo y muestra el stack: sin eso, Vercel solo devuelve
+`FUNCTION_INVOCATION_FAILED` sin causa. Por lo mismo `serverless.ts` usa `abortOnError: false`,
+porque el default de Nest es `process.exit(1)` y mata la función antes de poder reportar nada.
+
+Dos límites que conviene tener presentes:
+
+- El buffer es **por instancia** (las últimas 1000 líneas en memoria). Vercel levanta una
+  instancia por arranque en frío, así que los logs de ejecución son los de la instancia que
+  te atendió. El error de arranque, en cambio, se reproduce en todas.
+- La ruta es **pública**. Todo pasa por `_lib/redact.js` antes de entrar al buffer, que
+  enmascara credenciales de URLs, JWT, hashes bcrypt, correos y los valores literales de las
+  variables sensibles. Para cerrarla, definí `LOGS_TOKEN` en Vercel.
+
+## Accesibilidad
+
+Reglas que el front sostiene y conviene no romper al añadir pantallas:
+
+| Regla | Por qué |
+| --- | --- |
+| Controles de 44px mínimo | Se usa con el móvil en la mano, en campo. A 24px se falla seguido |
+| Errores con `role="alert"` | Si no, el lector de pantalla no los anuncia y el fallo pasa desapercibido |
+| Acciones destructivas confirmadas | `ConfirmDialog` enfoca *Cancelar*, cierra con Escape y devuelve el foco |
+| Foco visible siempre | Es la única pista de ubicación para quien navega con teclado |
+| `prefers-reduced-motion` | Con excepción del spinner: es información, no decoración |
+| Etiquetas visibles o `sr-only` | El placeholder desaparece al escribir, así que no es una etiqueta |
 
 ## Shell (`apps/web`)
 
@@ -165,12 +223,21 @@ La PWA fotografía un producto donado y el sistema intenta identificarlo para de
 
 Estados de una imagen: `PENDIENTE` → `PROCESANDO` → `PROCESADA` o `FALLIDA`.
 
+Cada foto se atribuye a un centro de acopio. La pantalla de captura recuerda el último elegido por organización: en campo se registran muchas fotos seguidas en el mismo sitio y volver a elegirlo cada vez es fricción pura.
+
 **Limitación conocida.** Tesseract es OCR, no reconocimiento de objetos: sobre envases reales acierta poco. Cuando la confianza o el emparejamiento no alcanzan el umbral, la imagen queda `PROCESADA` sin producto para que alguien lo corrija a mano, en vez de escribir un producto equivocado en el inventario. El campo `productos.ean` está listo para migrar a lectura de código de barras, que es lo que resuelve bien este caso.
 
 El job es idempotente por `imagenId` y BullMQ reintenta con backoff exponencial; solo al agotar los reintentos la imagen pasa a `FALLIDA`.
 
-### Pendiente para que la característica quede usable
+### Puesta en marcha
 
-El catálogo `productos` está vacío y sin él nada se reconoce: `emparejar()` contra una tabla vacía siempre devuelve `null`. Cargar los productos que realmente se donan (arroz, agua, aceite, panela, jabón, crema dental) con sus alias es lo más barato y lo que más cambia el resultado.
+El catálogo `productos` no puede quedar vacío: `emparejar()` contra una tabla sin filas siempre devuelve `null` y toda foto termina en revisión manual. Hay una siembra inicial con 20 productos de la zona:
 
-Falta también aplicar la migración contra un Postgres real y configurar Storage (`R2_*`, o `BLOB_READ_WRITE_TOKEN` mientras dure el Blob). Guía del bucket: [r2-storage.md](r2-storage.md).
+```bash
+psql "$DATABASE_URL" -f apps/api/prisma/seed-productos.sql
+```
+
+Verificado contra un PostgreSQL real: las migraciones aplican, `rbac:sync` deja 12 permisos y 6 roles, y un job encolado recorre la cola hasta escribir su resultado en `donacion_imagenes`.
+
+Falta configurar Storage (`R2_*`, o `BLOB_READ_WRITE_TOKEN` mientras dure el Blob) y tener el worker corriendo: sin él las fotos se suben pero se quedan en `PENDIENTE`. Guía del bucket: [r2-storage.md](r2-storage.md).
+

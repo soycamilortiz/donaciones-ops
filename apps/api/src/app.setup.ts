@@ -43,6 +43,10 @@ export function configureApp(app: INestApplication): void {
 
   app.enableShutdownHooks();
 
+  if (!config.get('SWAGGER_ENABLED', { infer: true })) {
+    return;
+  }
+
   const swaggerConfig = new DocumentBuilder()
     .setTitle('SOS Chocó API')
     .setDescription(

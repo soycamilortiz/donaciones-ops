@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
 import type { Permission, Role } from '../lib/api';
 import { useApi } from '../lib/useApi';
@@ -10,6 +11,9 @@ export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Rol pendiente de confirmar; null = dialogo cerrado.
+  const [porConfirmar, setPorConfirmar] = useState<Role | null>(null);
+  const [eliminando, setEliminando] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function load() {
@@ -133,6 +137,9 @@ export default function RolesPage() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo eliminar');
+    } finally {
+      setEliminando(false);
+      setPorConfirmar(null);
     }
   }
 
@@ -144,7 +151,11 @@ export default function RolesPage() {
         módulos (donaciones, envíos) aparecerán filas nuevas.
         {saving ? ' Guardando…' : null}
       </p>
-      {error ? <p className="error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      ) : null}
       <div className="table-wrap">
         <table className="matrix">
           <thead>
@@ -190,7 +201,7 @@ export default function RolesPage() {
                           <button
                             type="button"
                             className="linkish"
-                            onClick={() => void onDelete(role)}
+                            onClick={() => setPorConfirmar(role)}
                           >
                             Dar de baja
                           </button>
@@ -268,6 +279,14 @@ export default function RolesPage() {
           </button>
         </form>
       ) : null}
+      <ConfirmDialog
+        abierto={porConfirmar !== null}
+        titulo={`Eliminar el rol «${porConfirmar?.nombre ?? ''}»`}
+        descripcion="Quien lo tenga asignado se queda sin permisos hasta que se le asigne otro rol."
+        ocupado={eliminando}
+        onConfirmar={() => porConfirmar && void onDelete(porConfirmar)}
+        onCancelar={() => setPorConfirmar(null)}
+      />
     </section>
   );
 }

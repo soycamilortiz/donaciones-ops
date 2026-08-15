@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
 import { ACOPIO_FLUJOS, type Acopio } from '../lib/api';
 import { useApi } from '../lib/useApi';
@@ -8,6 +9,9 @@ export default function AcopiosPage() {
   const request = useApi();
   const [rows, setRows] = useState<Acopio[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Id de la fila pendiente de confirmar; null = dialogo cerrado.
+  const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState(false);
   const [editing, setEditing] = useState<Acopio | null>(null);
 
   async function load() {
@@ -73,6 +77,7 @@ export default function AcopiosPage() {
 
   async function onRemove(id: string) {
     setError(null);
+    setEliminando(true);
     try {
       await request(`/api/v1/organizations/${orgId}/acopios/${id}`, {
         method: 'DELETE',
@@ -80,6 +85,9 @@ export default function AcopiosPage() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo eliminar');
+    } finally {
+      setEliminando(false);
+      setPorConfirmar(null);
     }
   }
 
@@ -90,15 +98,17 @@ export default function AcopiosPage() {
         Acá se registran las bodegas: si reciben donaciones, si las envían a zona, o ambas. No se
         crean al armar la organización.
       </p>
-      {error ? <p className="error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      ) : null}
       <ul className="stack-list">
         {rows.map((row) => (
           <li key={row.id} className={row.isActive === false ? 'is-inactive' : undefined}>
             <div>
               <strong>{row.nombre}</strong>
-              {row.isActive === false ? (
-                <span className="badge-baja"> Baja</span>
-              ) : null}
+              {row.isActive === false ? <span className="badge-baja"> Baja</span> : null}
               <p className="muted">
                 {ACOPIO_FLUJOS.find((item) => item.value === row.flujo)?.label}
                 {' · '}
@@ -120,11 +130,7 @@ export default function AcopiosPage() {
                     Reactivar
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className="linkish"
-                    onClick={() => void onRemove(row.id)}
-                  >
+                  <button type="button" className="linkish" onClick={() => setPorConfirmar(row.id)}>
                     Dar de baja
                   </button>
                 )}
@@ -174,11 +180,23 @@ export default function AcopiosPage() {
           <div className="inline-form">
             <label className="field">
               Lat
-              <input name="lat" type="number" step="any" defaultValue={editing?.lat ?? ''} />
+              <input
+                name="lat"
+                type="number"
+                step="any"
+                inputMode="decimal"
+                defaultValue={editing?.lat ?? ''}
+              />
             </label>
             <label className="field">
               Lng
-              <input name="lng" type="number" step="any" defaultValue={editing?.lng ?? ''} />
+              <input
+                name="lng"
+                type="number"
+                step="any"
+                inputMode="decimal"
+                defaultValue={editing?.lng ?? ''}
+              />
             </label>
           </div>
           <button className="button" type="submit">
@@ -191,6 +209,14 @@ export default function AcopiosPage() {
           ) : null}
         </form>
       ) : null}
+      <ConfirmDialog
+        abierto={porConfirmar !== null}
+        titulo="Eliminar este centro de acopio"
+        descripcion="Se borra de forma permanente. Las donaciones ya registradas en él quedan sin acopio asignado."
+        ocupado={eliminando}
+        onConfirmar={() => porConfirmar && void onRemove(porConfirmar)}
+        onCancelar={() => setPorConfirmar(null)}
+      />
     </section>
   );
 }

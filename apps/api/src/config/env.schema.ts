@@ -41,6 +41,27 @@ export const envSchema = z.object({
    * Ejemplo: `https://media.ejemplo.org` o `https://pub-xxxxx.r2.dev`
    */
   R2_PUBLIC_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+
+  /**
+   * Sincroniza el catalogo de roles y permisos al arrancar. Tiene sentido en un
+   * proceso de larga vida (Docker), pero en serverless correria en cada
+   * arranque en frio: son ~20 escrituras que retrasan la primera peticion y
+   * tumban la funcion si la base no responde. Alli se pone en false y se
+   * sincroniza con `pnpm --filter api rbac:sync` tras cada despliegue.
+   */
+  RBAC_SYNC_ON_BOOT: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((valor) => valor === 'true'),
+
+  /**
+   * Swagger recorre toda la metadata al construir el documento. En un proceso
+   * de larga vida se paga una vez; en serverless, en cada arranque en frio.
+   */
+  SWAGGER_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((valor) => valor === 'true'),
 });
 
 export type Env = z.infer<typeof envSchema>;

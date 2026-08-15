@@ -1,4 +1,4 @@
-import type { DonacionImagen, Producto, RutaSubida } from '@soschoco/shared';
+import type { DonacionImagen, Pagina, Producto, RutaSubida } from '@soschoco/shared';
 import { upload } from '@vercel/blob/client';
 
 /**
@@ -16,10 +16,14 @@ const base = (orgId: string) => `/api/v1/organizations/${orgId}/donaciones`;
 export function listarImagenes(
   request: Peticion,
   orgId: string,
-  estado?: string,
-): Promise<DonacionImagen[]> {
-  const query = estado ? `?estado=${encodeURIComponent(estado)}` : '';
-  return request<DonacionImagen[]>(`${base(orgId)}${query}`);
+  opciones: { estado?: string; cursor?: string; limite?: number } = {},
+): Promise<Pagina<DonacionImagen>> {
+  const query = new URLSearchParams();
+  if (opciones.estado) query.set('estado', opciones.estado);
+  if (opciones.cursor) query.set('cursor', opciones.cursor);
+  if (opciones.limite) query.set('limite', String(opciones.limite));
+  const sufijo = query.size > 0 ? `?${query}` : '';
+  return request<Pagina<DonacionImagen>>(`${base(orgId)}${sufijo}`);
 }
 
 export function obtenerImagen(

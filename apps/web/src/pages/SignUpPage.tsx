@@ -89,7 +89,11 @@ export default function SignUpPage() {
         </label>
         <p className="muted">Mínimo 8 caracteres, con letras y números.</p>
         <CaptchaFields refreshKey={refreshKey} />
-        {error ? <p className="error">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        ) : null}
         <button className="button" type="submit">
           Registrarme
         </button>
