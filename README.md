@@ -4,6 +4,8 @@ Logística de donaciones, centros de acopio y envíos. Un dominio, varios conten
 
 Documentación de lo que hay hoy: [docs/estado-actual.md](docs/estado-actual.md).
 
+Los cambios de producto se registran con **Changesets** ([guía](docs/changesets.md)). En la raíz: `npm install` una vez, después `npm run changeset`.
+
 ## Arranque
 
 ```bash
@@ -24,6 +26,8 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 | http://localhost/api/docs | Swagger UI |
 | http://localhost/api/docs/openapi.json | OpenAPI 3 (JSON) |
 | http://localhost:8080 | Dashboard Traefik |
+| localhost:5432 | Postgres |
+| localhost:6379 | Redis (cola BullMQ) |
 
 Auth propia: usuario/contraseña, captcha y JWT (`JWT_SECRET` en `.env`). Las rutas viven en `infra/traefik/dynamic/routes.yml`.
 
@@ -34,7 +38,7 @@ Las URL de conexión entre servicios no se escriben a mano: el compose las deriv
 Opción A — API y front en el host (más rápido en Windows):
 
 ```bash
-docker compose up postgres traefik -d
+docker compose up postgres redis traefik -d
 pnpm install
 pnpm dev
 ```

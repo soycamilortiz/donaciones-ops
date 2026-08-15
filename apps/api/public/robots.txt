@@ -1,0 +1,3 @@
+# El API y el visor de logs no deben indexarse.
+User-agent: *
+Disallow: /

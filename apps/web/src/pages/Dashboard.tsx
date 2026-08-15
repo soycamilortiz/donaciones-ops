@@ -30,6 +30,11 @@ export default function Dashboard() {
           <p>Bodegas para recibir o enviar donaciones.</p>
           <Link to="/app/acopios">Abrir</Link>
         </li>
+        <li>
+          <h3>Inventario</h3>
+          <p>Existencias por centro de acopio: producto, lote y vencimiento.</p>
+          <Link to="/app/inventario">Abrir</Link>
+        </li>
       </ul>
     </section>
   );

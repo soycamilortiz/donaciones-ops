@@ -9,27 +9,34 @@ export class AcopiosService {
   list(orgId: string) {
     return this.prisma.acopio.findMany({
       where: { organizationId: orgId },
-      orderBy: { nombre: 'asc' },
+      orderBy: [{ isActive: 'desc' }, { nombre: 'asc' }],
     });
   }
 
   create(orgId: string, dto: CreateAcopioDto) {
     return this.prisma.acopio.create({
-      data: { organizationId: orgId, ...dto },
+      data: { organizationId: orgId, ...dto, isActive: true },
     });
   }
 
   async update(orgId: string, acopioId: string, dto: UpdateAcopioDto) {
     await this.requireAcopio(orgId, acopioId);
+    const { isActive, ...rest } = dto;
     return this.prisma.acopio.update({
       where: { id: acopioId },
-      data: dto,
+      data: {
+        ...rest,
+        ...(typeof isActive === 'boolean' ? { isActive } : {}),
+      },
     });
   }
 
   async remove(orgId: string, acopioId: string) {
     await this.requireAcopio(orgId, acopioId);
-    await this.prisma.acopio.delete({ where: { id: acopioId } });
+    await this.prisma.acopio.update({
+      where: { id: acopioId },
+      data: { isActive: false },
+    });
   }
 
   private async requireAcopio(orgId: string, acopioId: string) {

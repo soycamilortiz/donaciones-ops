@@ -1,8 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AcopioFlujo } from '@prisma/client';
 import type { Acopio } from '@soschoco/shared';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -12,6 +13,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { toOptionalBoolean } from '../../common/soft-delete';
 
 export class CreateAcopioDto {
   @ApiProperty({ example: 'Acopio Istmina' })
@@ -121,6 +123,12 @@ export class UpdateAcopioDto {
   @Min(-180)
   @Max(180)
   lng?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(toOptionalBoolean)
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 export class AcopioDto implements Acopio {
@@ -153,4 +161,7 @@ export class AcopioDto implements Acopio {
 
   @ApiPropertyOptional()
   lng?: number | null;
+
+  @ApiProperty()
+  isActive: boolean;
 }

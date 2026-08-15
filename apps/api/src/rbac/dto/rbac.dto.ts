@@ -1,14 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { Permission, Role } from '@soschoco/shared';
+import { Transform } from 'class-transformer';
 import {
   ArrayUnique,
   IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { toOptionalBoolean } from '../../common/soft-delete';
 
 export class PermissionDto implements Permission {
   @ApiProperty()
@@ -33,6 +36,9 @@ export class RoleDto implements Role {
 
   @ApiPropertyOptional()
   descripcion?: string | null;
+
+  @ApiProperty()
+  isActive: boolean;
 
   @ApiProperty({ type: [PermissionDto] })
   permissions: PermissionDto[];
@@ -78,6 +84,12 @@ export class UpdateRoleDto {
   @IsString()
   @MaxLength(240)
   descripcion?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(toOptionalBoolean)
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 export class UpdateRolePermissionsDto {

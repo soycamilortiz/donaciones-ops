@@ -439,8 +439,18 @@ td {
   padding: 0 8px;
 }
 
+.form-wide {
+  max-width: none;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
 @media (max-width: 800px) {
-  .app-shell {
+  .form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -514,4 +524,145 @@ td {
 
 .permission-name {
   font-weight: 600;
+}
+
+.inventory-dash .dash-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.inventory-dash .dash-head h1 {
+  margin-bottom: 4px;
+}
+
+.acopio-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.acopio-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  padding: 12px 14px;
+  min-width: 160px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.acopio-chip span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.acopio-chip.is-selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.acopio-meta {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 8px 0 20px;
+}
+
+.stat-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 14px 16px;
+}
+
+.stat-card span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.stat-card strong {
+  font-size: 1.45rem;
+  letter-spacing: -0.03em;
+}
+
+.dash-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.dash-toolbar .field {
+  min-width: 180px;
+}
+
+.toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.dash-table table {
+  border: 1px solid var(--line);
+}
+
+.is-inactive,
+.is-inactive td {
+  opacity: 0.55;
+}
+
+.badge-baja {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--down);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(28 36 28 / 45%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px;
+  overflow: auto;
+  z-index: 20;
+}
+
+.modal {
+  width: min(860px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 20px 24px 28px;
+}
+
+.modal .form {
+  margin-top: 0;
+}
+
+@media (max-width: 960px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

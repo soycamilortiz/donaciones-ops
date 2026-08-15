@@ -2,6 +2,10 @@
 
 Logística humanitaria para donaciones, centros de acopio y envíos a zonas remotas. Un dominio, varios contenedores, un API NestJS y un shell React.
 
+## Changesets
+
+Desde ahora **todo cambio de producto** (API, web, Prisma, Traefik, env) lleva un changeset. Guía: [docs/changesets.md](changesets.md). Comando: `npm run changeset` en la raíz (paquete `soschoco`). No hay workspaces npm: cada app conserva su `package-lock` para Docker. El agente tiene la misma regla en `AGENTS.md` y `.cursor/rules/changesets.mdc`.
+
 ## Decisión de arquitectura
 
 Cada solución (pantalla o app) es un **contenedor Docker propio**. El usuario entra a un solo origen (`http://localhost` en local). **Traefik** mira el path y reenvía:
@@ -58,11 +62,12 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 | http://localhost/jobs | Panel de la cola de jobs (basic auth) |
 | http://localhost:8080 | Dashboard Traefik |
 | localhost:5432 | Postgres (`soschoco` / `soschoco`) |
+| localhost:6379 | Redis (cola BullMQ) |
 
 Desarrollo sin rebuild de imagen:
 
 ```bash
-docker compose up postgres -d
+docker compose up postgres redis -d
 pnpm install                # una vez, desde la raíz
 pnpm dev                    # API en :3000/api y front en :5173
 ```
@@ -92,7 +97,9 @@ Invitar personas: quien se suma **ya tiene que estar registrada** con ese correo
 
 Roles semilla: administrador de acopio, auxiliar administrativo, líder de zona, finanzas, transportador, voluntario. Quien crea la org queda como administrador de acopio. El alta por defecto es voluntario. La matriz se edita en `/app/roles` (permiso `roles:write`). Los permisos nuevos de código aparecen como filas; no se pisan los tildes ya guardados.
 
-Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `donaciones:read/write`.
+Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `inventory:read/write`, `donaciones:read/write`.
+
+Inventario: por centro de acopio. Dashboard en `/app/inventario`. Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol e ítem. Dar de baja no bloquea un alta nueva (el producto siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
 
 ## API NestJS
 
@@ -105,6 +112,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Organizaciones | `/api/v1/organizations` |
 | Miembros | `/api/v1/organizations/:orgId/members` |
 | Acopios | `/api/v1/organizations/:orgId/acopios` |
+| Inventario | `/api/v1/organizations/:orgId/acopios/:acopioId/inventory` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
 | Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas`, `/subidas/ruta`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
@@ -125,8 +133,9 @@ Variables del API:
 | `JWT_EXPIRES_IN` | Default `8h` |
 | `REDIS_URL` | Cola de reconocimiento. Default `redis://localhost:6379` |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob. Sin él, donaciones responde 503 |
-| `RBAC_SYNC_ON_BOOT` | Sincroniza roles y permisos al arrancar. `false` en serverless |
-| `SWAGGER_ENABLED` | Construir el documento de Swagger es caro en cada arranque en frío |
+| `RBAC_SYNC_ON_BOOT` | Default `true`. Ponelo en `false` en serverless |
+| `SWAGGER_ENABLED` | Default `true`. Ponelo en `false` en serverless |
+| `LOGS_TOKEN` | Opcional. Si está, `/logs` exige `?token=…` |
 
 En Docker, `DATABASE_URL` apunta al servicio `postgres`. Cambiá `JWT_SECRET` antes de un entorno real.
 
@@ -143,9 +152,36 @@ Las URL de conexión **no se escriben a mano**: en Docker el compose las deriva 
 
 Cada app se despliega como un proyecto propio de Vercel apuntando al mismo repo, cambiando el Root Directory. `apps/worker` no puede: es un proceso residente.
 
+## Visor de logs (`/logs`)
+
+Los logs del despliegue en Vercel solo los ve quien tenga acceso al proyecto. Para que
+cualquiera del equipo pueda diagnosticar, la función expone un visor propio:
+
+| Ruta | Qué devuelve |
+| --- | --- |
+| `/logs` | Página con logs en vivo, chequeos de entorno y el error de arranque |
+| `/logs/data?since=N` | JSON incremental desde el número de secuencia `N` |
+| `/logs/stream` | SSE (la página cae a polling si el entorno no lo soporta) |
+| `/logs/raw` | Texto plano, para `curl` o pegar en un issue |
+| `/logs/reset` | Reintenta el arranque de Nest en la próxima petición |
+
+Vive en `apps/api/api/_lib/`, **fuera** del arranque de Nest y montado antes que él: si la app
+no levanta, `/logs` sigue respondiendo y muestra el stack: sin eso, Vercel solo devuelve
+`FUNCTION_INVOCATION_FAILED` sin causa. Por lo mismo `serverless.ts` usa `abortOnError: false`,
+porque el default de Nest es `process.exit(1)` y mata la función antes de poder reportar nada.
+
+Dos límites que conviene tener presentes:
+
+- El buffer es **por instancia** (las últimas 1000 líneas en memoria). Vercel levanta una
+  instancia por arranque en frío, así que los logs de ejecución son los de la instancia que
+  te atendió. El error de arranque, en cambio, se reproduce en todas.
+- La ruta es **pública**. Todo pasa por `_lib/redact.js` antes de entrar al buffer, que
+  enmascara credenciales de URLs, JWT, hashes bcrypt, correos y los valores literales de las
+  variables sensibles. Para cerrarla, definí `LOGS_TOKEN` en Vercel.
+
 ## Shell (`apps/web`)
 
-Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`.
+Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio.
 
 ## Qué falta
 

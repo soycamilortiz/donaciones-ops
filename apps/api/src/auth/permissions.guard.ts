@@ -42,13 +42,14 @@ export class PermissionsGuard implements CanActivate {
         },
       },
       include: {
+        organization: true,
         role: {
           include: { rolePermissions: { include: { permission: true } } },
         },
       },
     });
 
-    if (!membership) {
+    if (!membership?.isActive || !membership.role.isActive || !membership.organization.isActive) {
       throw new ForbiddenException('No perteneces a esta organización');
     }
 
