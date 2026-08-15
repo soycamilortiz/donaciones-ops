@@ -1,66 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { OrganizationTipo } from '@prisma/client';
-import { Type } from 'class-transformer';
-import {
-  IsEmail,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-  MinLength,
-  ValidateNested,
-} from 'class-validator';
-
-export class CreateAcopioNestedDto {
-  @ApiProperty({ example: 'Acopio Quibdó' })
-  @IsString()
-  @MinLength(2)
-  @MaxLength(160)
-  nombre: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(40)
-  telefono?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  descripcion?: string;
-
-  @ApiPropertyOptional({ example: 'Quibdó' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(120)
-  municipio?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(240)
-  direccion?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(-90)
-  @Max(90)
-  lat?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(-180)
-  @Max(180)
-  lng?: number;
-}
+import type { Member, Organization } from '@soschoco/shared';
+import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateOrganizationDto {
   @ApiProperty({ example: 'Fundación Río Atrato' })
@@ -94,12 +35,6 @@ export class CreateOrganizationDto {
   @IsString()
   @MaxLength(500)
   descripcion?: string;
-
-  @ApiPropertyOptional({ type: CreateAcopioNestedDto })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => CreateAcopioNestedDto)
-  acopio?: CreateAcopioNestedDto;
 }
 
 export class UpdateOrganizationDto {
@@ -159,7 +94,7 @@ export class UpdateMemberDto {
   roleSlug: string;
 }
 
-export class OrganizationDto {
+export class OrganizationDto implements Organization {
   @ApiProperty()
   id: string;
 
@@ -185,7 +120,7 @@ export class OrganizationDto {
   createdAt: Date;
 }
 
-export class MemberDto {
+export class MemberDto implements Member {
   @ApiProperty()
   membershipId: string;
 

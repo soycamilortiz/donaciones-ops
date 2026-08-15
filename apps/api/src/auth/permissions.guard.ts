@@ -1,13 +1,8 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import type { PermissionSlug } from '@soschoco/shared';
 import type { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
-import type { PermissionSlug } from '../rbac/catalog';
 import type { AuthUser } from './auth.types';
 import { PERMISSION_KEY } from './require-permission.decorator';
 
@@ -21,9 +16,10 @@ export class PermissionsGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const permission = this.reflector.getAllAndOverride<
-      PermissionSlug | undefined
-    >(PERMISSION_KEY, [context.getHandler(), context.getClass()]);
+    const permission = this.reflector.getAllAndOverride<PermissionSlug | undefined>(
+      PERMISSION_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     if (!permission) {
       return true;
@@ -56,9 +52,7 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('No perteneces a esta organización');
     }
 
-    const slugs = membership.role.rolePermissions.map(
-      (item) => item.permission.slug,
-    );
+    const slugs = membership.role.rolePermissions.map((item) => item.permission.slug);
     if (!slugs.includes(permission)) {
       throw new ForbiddenException('No tienes permiso para esta acción');
     }

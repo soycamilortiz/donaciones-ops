@@ -1,18 +1,7 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import type { PermissionSlug } from '@soschoco/shared';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import {
-  readStoredOrgId,
-  storeOrgId,
-  type Me,
-  type Membership,
-} from '../lib/api';
+import { type Me, type Membership, readStoredOrgId, storeOrgId } from '../lib/api';
 import { useApi } from '../lib/useApi';
 
 type OrgContextValue = {
@@ -21,10 +10,12 @@ type OrgContextValue = {
   membership: Membership;
   setOrgId: (id: string) => void;
   refresh: () => Promise<void>;
-  can: (permission: string) => boolean;
+  can: (permission: PermissionSlug) => boolean;
 };
 
 const OrgContext = createContext<OrgContextValue | null>(null);
+
+const RUTAS_SIN_ORG = ['/empezar', '/empezar/organizacion', '/pendiente'];
 
 export function useOrg(): OrgContextValue {
   const value = useContext(OrgContext);
@@ -73,17 +64,17 @@ export default function OrgGate() {
   }
 
   if (!me) {
-    return <p className="page">Cargando organización…</p>;
+    return <p className="page">Cargando sesión…</p>;
   }
 
   if (me.memberships.length === 0) {
-    if (location.pathname !== '/onboarding') {
-      return <Navigate to="/onboarding" replace />;
+    if (!RUTAS_SIN_ORG.includes(location.pathname)) {
+      return <Navigate to="/empezar" replace />;
     }
     return <Outlet context={{ me, refresh }} />;
   }
 
-  if (location.pathname === '/onboarding') {
+  if (RUTAS_SIN_ORG.includes(location.pathname)) {
     return <Navigate to="/app" replace />;
   }
 

@@ -12,8 +12,7 @@ export default function Dashboard() {
         Tipo {org.tipo} · tu rol es {membership.role.nombre}
       </p>
       <p>
-        {me.nombre} ({me.correo}) puede cambiar de organización si tiene varias
-        membresías.
+        {me.nombre} ({me.correo}) puede cambiar de organización si tiene varias membresías.
       </p>
       <ul className="modules">
         <li>
@@ -28,7 +27,7 @@ export default function Dashboard() {
         </li>
         <li>
           <h3>Acopios</h3>
-          <p>Sedes / bodegas de la organización.</p>
+          <p>Bodegas para recibir o enviar donaciones.</p>
           <Link to="/app/acopios">Abrir</Link>
         </li>
       </ul>

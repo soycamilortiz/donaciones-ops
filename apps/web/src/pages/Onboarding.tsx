@@ -1,12 +1,12 @@
 import { type FormEvent, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
-import { ORGANIZATION_TIPOS, storeOrgId, type Me } from '../lib/api';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
+import { type Me, ORGANIZATION_TIPOS, storeOrgId } from '../lib/api';
 import { useApi } from '../lib/useApi';
 
 type OutletCtx = { me: Me; refresh: () => Promise<void> };
 
 export default function Onboarding() {
-  const { refresh } = useOutletContext<OutletCtx>();
+  const { me, refresh } = useOutletContext<OutletCtx>();
   const request = useApi();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +16,6 @@ export default function Onboarding() {
     event.preventDefault();
     setError(null);
     const data = new FormData(event.currentTarget);
-    const acopioNombre = String(data.get('acopioNombre') ?? '').trim();
     const payload = {
       nombre: String(data.get('nombre') ?? '').trim(),
       correo: String(data.get('correo') ?? '').trim(),
@@ -24,13 +23,6 @@ export default function Onboarding() {
       descripcion: String(data.get('descripcion') ?? '').trim() || undefined,
       tipo,
       tipoDetalle: String(data.get('tipoDetalle') ?? '').trim() || undefined,
-      acopio: acopioNombre
-        ? {
-            nombre: acopioNombre,
-            municipio: String(data.get('municipio') ?? '').trim() || undefined,
-            telefono: String(data.get('acopioTelefono') ?? '').trim() || undefined,
-          }
-        : undefined,
     };
 
     try {
@@ -40,18 +32,21 @@ export default function Onboarding() {
       });
       storeOrgId(org.id);
       await refresh();
-      navigate('/app');
+      navigate('/app/acopios');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear');
     }
   }
 
   return (
-    <div className="page">
-      <h1>Caracterizar organización</h1>
+    <section>
+      <p className="eyebrow">
+        <Link to="/empezar">Volver</Link>
+      </p>
+      <h1>Crear organización</h1>
       <p className="lede">
-        Todavía no pertenecés a ninguna organización. Creá la primera: tipo,
-        contacto y, si aplica, un centro de acopio inicial.
+        Solo caracterización (quiénes son y cómo contactarlos). Los centros de acopio —recibir o
+        enviar donaciones— se cargan en Acopios, ya dentro del panel.
       </p>
       <form className="form" onSubmit={(event) => void onSubmit(event)}>
         <label className="field">
@@ -60,7 +55,7 @@ export default function Onboarding() {
         </label>
         <label className="field">
           Correo
-          <input name="correo" type="email" required />
+          <input name="correo" type="email" required defaultValue={me.correo} />
         </label>
         <label className="field">
           Tipo
@@ -86,24 +81,11 @@ export default function Onboarding() {
           Descripción
           <textarea name="descripcion" rows={3} />
         </label>
-        <h2>Acopio inicial (opcional)</h2>
-        <label className="field">
-          Nombre del acopio
-          <input name="acopioNombre" />
-        </label>
-        <label className="field">
-          Municipio
-          <input name="municipio" />
-        </label>
-        <label className="field">
-          Teléfono del acopio
-          <input name="acopioTelefono" />
-        </label>
         {error ? <p className="error">{error}</p> : null}
         <button className="button" type="submit">
           Crear organización
         </button>
       </form>
-    </div>
+    </section>
   );
 }

@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useOrg } from '../components/OrgGate';
-import { useApi } from '../lib/useApi';
 import type { Member, Role } from '../lib/api';
+import { useApi } from '../lib/useApi';
 
 export default function UsersPage() {
   const { orgId, can } = useOrg();
@@ -19,6 +19,7 @@ export default function UsersPage() {
     setRoles(roleRows);
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void load().catch((err: unknown) => {
       setError(err instanceof Error ? err.message : 'Error al cargar');
@@ -28,7 +29,8 @@ export default function UsersPage() {
   async function onInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     try {
       await request(`/api/v1/organizations/${orgId}/members`, {
         method: 'POST',
@@ -37,7 +39,7 @@ export default function UsersPage() {
           roleSlug: String(data.get('roleSlug') || 'voluntario'),
         }),
       });
-      event.currentTarget.reset();
+      form.reset();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo agregar');
@@ -108,9 +110,7 @@ export default function UsersPage() {
                 {can('members:role') ? (
                   <select
                     value={member.roleSlug}
-                    onChange={(event) =>
-                      void onRole(member.userId, event.target.value)
-                    }
+                    onChange={(event) => void onRole(member.userId, event.target.value)}
                   >
                     {roles.map((role) => (
                       <option key={role.slug} value={role.slug}>

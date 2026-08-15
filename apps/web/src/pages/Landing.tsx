@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useSession } from '../lib/AuthProvider';
-import { fetchApiHealth, type ApiHealth, type HealthStatus } from '../lib/health';
+import { type ApiHealth, fetchApiHealth, type HealthStatus } from '../lib/health';
 
 const MODULES = [
   {
@@ -68,9 +68,8 @@ export default function Landing() {
         <p className="eyebrow">Operación logística</p>
         <h1>SOS Chocó</h1>
         <p className="lede">
-          WMS para centros de acopio: organizaciones, sedes, personas y roles.
-          Creá una cuenta con usuario y contraseña para administrar una
-          organización.
+          Coordinación de donaciones, centros de acopio y envíos. Creá una cuenta; la organización
+          es opcional hasta que armes la tuya o te inviten.
         </p>
       </header>
 

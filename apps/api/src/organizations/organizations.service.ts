@@ -4,9 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { RoleSlug } from '../rbac/catalog';
+import { RoleSlug } from '@soschoco/shared';
 import type { AuthUser } from '../auth/auth.types';
+import { PrismaService } from '../prisma/prisma.service';
 import type {
   AddMemberDto,
   CreateOrganizationDto,
@@ -68,15 +68,6 @@ export class OrganizationsService {
         },
       });
 
-      if (dto.acopio) {
-        await tx.acopio.create({
-          data: {
-            organizationId: organization.id,
-            ...dto.acopio,
-          },
-        });
-      }
-
       return organization;
     });
   }
@@ -103,9 +94,7 @@ export class OrganizationsService {
       where: { correo: dto.correo.toLowerCase() },
     });
     if (!user) {
-      throw new ConflictException(
-        'El usuario debe registrarse primero con ese correo',
-      );
+      throw new ConflictException('El usuario debe registrarse primero con ese correo');
     }
 
     const existing = await this.prisma.membership.findUnique({

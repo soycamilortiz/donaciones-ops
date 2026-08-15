@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useOrg } from '../components/OrgGate';
-import { useApi } from '../lib/useApi';
 import type { Permission, Role } from '../lib/api';
+import { useApi } from '../lib/useApi';
 
 export default function RolesPage() {
   const { orgId, can } = useOrg();
@@ -21,6 +21,7 @@ export default function RolesPage() {
     setPermissions(permissionRows);
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void load().catch((err: unknown) => {
       setError(err instanceof Error ? err.message : 'Error al cargar');
@@ -30,9 +31,7 @@ export default function RolesPage() {
   const matrix = useMemo(() => {
     return permissions.map((permission) => ({
       permission,
-      flags: roles.map((role) =>
-        role.permissions.some((item) => item.slug === permission.slug),
-      ),
+      flags: roles.map((role) => role.permissions.some((item) => item.slug === permission.slug)),
     }));
   }, [permissions, roles]);
 
@@ -50,9 +49,7 @@ export default function RolesPage() {
         `/api/v1/organizations/${orgId}/roles/${role.id}/permissions`,
         { method: 'PUT', body: JSON.stringify({ permissionSlugs: next }) },
       );
-      setRoles((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      );
+      setRoles((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar');
     } finally {
@@ -66,13 +63,11 @@ export default function RolesPage() {
     }
     setError(null);
     try {
-      const updated = await request<Role>(
-        `/api/v1/organizations/${orgId}/roles/${roleId}`,
-        { method: 'PATCH', body: JSON.stringify(body) },
-      );
-      setRoles((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      );
+      const updated = await request<Role>(`/api/v1/organizations/${orgId}/roles/${roleId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      setRoles((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo renombrar');
     }
@@ -106,19 +101,17 @@ export default function RolesPage() {
       return;
     }
     setError(null);
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     try {
-      const created = await request<Role>(
-        `/api/v1/organizations/${orgId}/roles`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            nombre: String(data.get('nombre') ?? '').trim(),
-            descripcion: String(data.get('descripcion') ?? '').trim() || undefined,
-          }),
-        },
-      );
-      event.currentTarget.reset();
+      const created = await request<Role>(`/api/v1/organizations/${orgId}/roles`, {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre: String(data.get('nombre') ?? '').trim(),
+          descripcion: String(data.get('descripcion') ?? '').trim() || undefined,
+        }),
+      });
+      form.reset();
       setRoles((current) => [...current, created]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear el rol');
@@ -144,8 +137,8 @@ export default function RolesPage() {
     <section className="panel">
       <h1>Roles y permisos</h1>
       <p className="muted">
-        La matriz es del sistema: un cambio aplica a todas las organizaciones.
-        Cuando se agreguen módulos (donaciones, envíos) aparecerán filas nuevas.
+        La matriz es del sistema: un cambio aplica a todas las organizaciones. Cuando se agreguen
+        módulos (donaciones, envíos) aparecerán filas nuevas.
         {saving ? ' Guardando…' : null}
       </p>
       {error ? <p className="error">{error}</p> : null}
@@ -194,9 +187,7 @@ export default function RolesPage() {
                   ) : (
                     <>
                       {role.nombre}
-                      {role.descripcion ? (
-                        <div className="muted">{role.descripcion}</div>
-                      ) : null}
+                      {role.descripcion ? <div className="muted">{role.descripcion}</div> : null}
                     </>
                   )}
                 </th>
@@ -212,9 +203,7 @@ export default function RolesPage() {
                       key={`${row.permission.slug}-${row.permission.nombre}`}
                       className="permission-name"
                       defaultValue={row.permission.nombre}
-                      onBlur={(event) =>
-                        void renamePermission(row.permission, event.target.value)
-                      }
+                      onBlur={(event) => void renamePermission(row.permission, event.target.value)}
                     />
                   ) : (
                     <strong>{row.permission.nombre}</strong>
