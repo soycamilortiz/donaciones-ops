@@ -131,8 +131,38 @@ Variables del API:
 | `JWT_EXPIRES_IN` | Default `8h` |
 | `REDIS_URL` | Cola de reconocimiento. Default `redis://localhost:6379` |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob. Sin él, donaciones responde 503 |
+| `RBAC_SYNC_ON_BOOT` | Default `true`. Ponelo en `false` en serverless |
+| `SWAGGER_ENABLED` | Default `true`. Ponelo en `false` en serverless |
+| `LOGS_TOKEN` | Opcional. Si está, `/logs` exige `?token=…` |
 
 En Docker, `DATABASE_URL` apunta al servicio `postgres`. Cambiá `JWT_SECRET` antes de un entorno real.
+
+## Visor de logs (`/logs`)
+
+Los logs del despliegue en Vercel solo los ve quien tenga acceso al proyecto. Para que
+cualquiera del equipo pueda diagnosticar, la función expone un visor propio:
+
+| Ruta | Qué devuelve |
+| --- | --- |
+| `/logs` | Página con logs en vivo, chequeos de entorno y el error de arranque |
+| `/logs/data?since=N` | JSON incremental desde el número de secuencia `N` |
+| `/logs/stream` | SSE (la página cae a polling si el entorno no lo soporta) |
+| `/logs/raw` | Texto plano, para `curl` o pegar en un issue |
+| `/logs/reset` | Reintenta el arranque de Nest en la próxima petición |
+
+Vive en `apps/api/api/_lib/`, **fuera** del arranque de Nest y montado antes que él: si la app
+no levanta, `/logs` sigue respondiendo y muestra el stack: sin eso, Vercel solo devuelve
+`FUNCTION_INVOCATION_FAILED` sin causa. Por lo mismo `serverless.ts` usa `abortOnError: false`,
+porque el default de Nest es `process.exit(1)` y mata la función antes de poder reportar nada.
+
+Dos límites que conviene tener presentes:
+
+- El buffer es **por instancia** (las últimas 1000 líneas en memoria). Vercel levanta una
+  instancia por arranque en frío, así que los logs de ejecución son los de la instancia que
+  te atendió. El error de arranque, en cambio, se reproduce en todas.
+- La ruta es **pública**. Todo pasa por `_lib/redact.js` antes de entrar al buffer, que
+  enmascara credenciales de URLs, JWT, hashes bcrypt, correos y los valores literales de las
+  variables sensibles. Para cerrarla, definí `LOGS_TOKEN` en Vercel.
 
 ## Shell (`apps/web`)
 

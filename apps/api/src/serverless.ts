@@ -24,6 +24,11 @@ async function crearApp(): Promise<Express> {
     // En serverless los logs van a stdout de la función; el buffer solo
     // esconde los errores de arranque, que es justo lo que hay que ver.
     bufferLogs: false,
+    // Por defecto NestFactory llama a process.exit(1) si el arranque falla:
+    // la función muere y Vercel solo devuelve FUNCTION_INVOCATION_FAILED, sin
+    // causa. Con esto el fallo llega como promesa rechazada y api/index.js
+    // puede responder 503 con el motivo y dejarlo visible en /logs.
+    abortOnError: false,
   });
   configureApp(app);
 
