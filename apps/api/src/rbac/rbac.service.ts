@@ -187,9 +187,7 @@ export class RbacService implements OnModuleInit {
       where: { id: roleId },
       data: {
         ...(dto.nombre ? { nombre: dto.nombre.trim() } : {}),
-        ...(dto.descripcion !== undefined
-          ? { descripcion: dto.descripcion.trim() || null }
-          : {}),
+        ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion.trim() || null } : {}),
         ...(typeof dto.isActive === 'boolean' ? { isActive: dto.isActive } : {}),
       },
       include: roleInclude,
@@ -235,9 +233,7 @@ export class RbacService implements OnModuleInit {
       where: { roleId, isActive: true },
     });
     if (members > 0) {
-      throw new ConflictException(
-        'Hay personas con este rol. Reasignalas antes de darlo de baja',
-      );
+      throw new ConflictException('Hay personas con este rol. Reasignalas antes de darlo de baja');
     }
     await this.prisma.role.update({
       where: { id: roleId },

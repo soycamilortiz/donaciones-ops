@@ -3,6 +3,7 @@
   "framework": null,
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile --filter api...",
   "buildCommand": "cd ../.. && pnpm --filter @soschoco/shared build && pnpm --filter api build",
+  "outputDirectory": "public",
   "functions": {
     "api/index.js": {
       "memory": 1024,

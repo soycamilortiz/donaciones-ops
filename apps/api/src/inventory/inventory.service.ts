@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { blankToNull } from '../common/soft-delete';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,9 +28,7 @@ export class InventoryService {
   ): Promise<InventoryItemDto> {
     const acopio = await this.requireAcopio(orgId, acopioId);
     if (!acopio.isActive) {
-      throw new BadRequestException(
-        'No se puede cargar inventario en un acopio dado de baja',
-      );
+      throw new BadRequestException('No se puede cargar inventario en un acopio dado de baja');
     }
     const row = await this.prisma.inventoryItem.create({
       data: {
@@ -110,9 +104,7 @@ export class InventoryService {
     const { cantidad, vencimiento, isActive, ...rest } = dto;
     return {
       ...rest,
-      ...(cantidad === undefined
-        ? {}
-        : { cantidad: new Prisma.Decimal(cantidad) }),
+      ...(cantidad === undefined ? {} : { cantidad: new Prisma.Decimal(cantidad) }),
       ...(vencimiento === undefined
         ? {}
         : { vencimiento: vencimiento ? new Date(vencimiento) : null }),
