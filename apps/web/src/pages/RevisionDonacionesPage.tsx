@@ -114,7 +114,13 @@ export default function RevisionDonacionesPage() {
           <Spinner /> Cargando…
         </p>
       ) : pendientes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hay nada pendiente de revisar.</p>
+        <div className="space-y-1 rounded-lg border border-border p-6 text-center">
+          <p className="text-sm font-medium text-foreground">No hay nada pendiente de revisar.</p>
+          <p className="text-sm text-muted-foreground">
+            Todas las fotos se reconocieron con suficiente certeza. Vuelven a aparecer aquí si
+            alguna queda sin identificar.
+          </p>
+        </div>
       ) : (
         <ul className="space-y-4">
           {pendientes.map((imagen) => (
