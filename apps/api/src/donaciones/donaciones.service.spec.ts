@@ -1,7 +1,7 @@
-import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { DonacionImagenEstado } from '@soschoco/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
 import { DonacionesService } from './donaciones.service';
 
@@ -17,7 +17,13 @@ describe('DonacionesService', () => {
     acopio: Record<string, jest.Mock>;
   };
   let cola: { encolarReconocimiento: jest.Mock };
-  let config: { get: jest.Mock };
+  let r2: {
+    isConfigured: jest.Mock;
+    missingConfig: jest.Mock;
+    hasPublicBase: jest.Mock;
+    presignPut: jest.Mock;
+    publicUrlFor: jest.Mock;
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -32,14 +38,22 @@ describe('DonacionesService', () => {
       acopio: { findFirst: jest.fn().mockResolvedValue({ id: 'acopio-1' }) },
     };
     cola = { encolarReconocimiento: jest.fn().mockResolvedValue(undefined) };
-    config = { get: jest.fn().mockReturnValue(undefined) };
+    r2 = {
+      isConfigured: jest.fn().mockReturnValue(true),
+      missingConfig: jest.fn().mockReturnValue([]),
+      hasPublicBase: jest.fn().mockReturnValue(true),
+      presignPut: jest.fn().mockResolvedValue('https://r2.example/signed'),
+      publicUrlFor: jest
+        .fn()
+        .mockImplementation((key: string) => `https://pub.example/${key}`),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DonacionesService,
         { provide: PrismaService, useValue: prisma },
         { provide: ColaService, useValue: cola },
-        { provide: ConfigService, useValue: config },
+        { provide: R2StorageService, useValue: r2 },
       ],
     }).compile();
 
@@ -68,11 +82,32 @@ describe('DonacionesService', () => {
     });
   });
 
-  describe('autorizarSubida', () => {
-    it('responde 503 en vez de tumbar el arranque si falta el token del Blob', async () => {
-      await expect(service.autorizarSubida(ORG, {} as never)).rejects.toThrow(
-        /BLOB_READ_WRITE_TOKEN/,
+  describe('reservarSubida', () => {
+    it('responde 503 si faltan las keys de R2', async () => {
+      r2.isConfigured.mockReturnValue(false);
+      r2.missingConfig.mockReturnValue(['R2_ACCESS_KEY_ID']);
+
+      await expect(service.reservarSubida(ORG, 'foto.jpg', 'image/jpeg')).rejects.toThrow(
+        /R2_ACCESS_KEY_ID/,
       );
+    });
+
+    it('responde 503 si falta la URL pública', async () => {
+      r2.hasPublicBase.mockReturnValue(false);
+
+      await expect(service.reservarSubida(ORG, 'foto.jpg', 'image/jpeg')).rejects.toThrow(
+        /R2_PUBLIC_BASE_URL/,
+      );
+    });
+
+    it('firma un PUT y devuelve la URL pública', async () => {
+      const ruta = await service.reservarSubida(ORG, 'foto.jpg', 'image/jpeg');
+
+      expect(ruta.uploadUrl).toBe('https://r2.example/signed');
+      expect(ruta.pathname.startsWith(`donaciones/${ORG}/`)).toBe(true);
+      expect(ruta.publicUrl).toBe(`https://pub.example/${ruta.pathname}`);
+      expect(ruta.headers).toEqual({ 'Content-Type': 'image/jpeg' });
+      expect(r2.presignPut).toHaveBeenCalledWith(ruta.pathname, 'image/jpeg');
     });
   });
 
@@ -90,7 +125,7 @@ describe('DonacionesService', () => {
           data: expect.objectContaining({
             organizationId: ORG,
             subidaPorId: USUARIO,
-            blobUrl: dto.blobUrl,
+            blobUrl: `https://pub.example/${dto.pathname}`,
             estado: DonacionImagenEstado.Pendiente,
           }),
         }),

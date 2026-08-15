@@ -35,7 +35,7 @@ Variables de entorno obligatorias:
 | `RBAC_SYNC_ON_BOOT` | `false` — ver abajo |
 | `SWAGGER_ENABLED` | `false` en producción |
 | `REDIS_URL` | Solo si se usa el módulo de donaciones |
-| `BLOB_READ_WRITE_TOKEN` | Solo si se usa el módulo de donaciones |
+| `R2_*` | Subida de fotos de donaciones (S3). Ver [r2-storage.md](../../docs/r2-storage.md) |
 
 Si falta `DATABASE_URL` o `JWT_SECRET`, la validación de entorno lanza y la función **crashea al arrancar**: es la causa más común de un 500 en el primer despliegue.
 

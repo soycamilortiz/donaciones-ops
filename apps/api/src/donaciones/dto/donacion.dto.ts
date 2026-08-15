@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { DonacionImagenEstado, MAX_IMAGEN_BYTES, TIPOS_IMAGEN_ACEPTADOS } from '@soschoco/shared';
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  DonacionImagenEstado,
+  MAX_IMAGEN_BYTES,
+  normalizarTipoImagen,
+  TIPOS_IMAGEN_ACEPTADOS,
+} from '@soschoco/shared';
+import { Transform } from 'class-transformer';
+import { IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class NuevaRutaDto {
   @ApiProperty({
@@ -9,14 +15,28 @@ export class NuevaRutaDto {
   })
   @IsString()
   nombreArchivo: string;
+
+  @ApiProperty({ enum: TIPOS_IMAGEN_ACEPTADOS })
+  @Transform(({ value, obj }) => normalizarTipoImagen(value, obj.nombreArchivo) ?? value)
+  @IsIn([...TIPOS_IMAGEN_ACEPTADOS])
+  contentType: string;
 }
 
 export class RutaSubidaDto {
   @ApiProperty({
     example: 'donaciones/<orgId>/9f1c….jpg',
-    description: 'Ruta que la PWA debe pasar a upload() del SDK de Vercel Blob',
+    description: 'Clave del objeto en R2',
   })
   pathname: string;
+
+  @ApiProperty({ description: 'PUT firmado (5 minutos) contra el endpoint S3 de R2' })
+  uploadUrl: string;
+
+  @ApiProperty({ description: 'URL pública para <img> y para el worker' })
+  publicUrl: string;
+
+  @ApiProperty({ example: { 'Content-Type': 'image/jpeg' } })
+  headers: Record<string, string>;
 
   @ApiProperty({ enum: TIPOS_IMAGEN_ACEPTADOS, isArray: true })
   tiposAceptados: readonly string[];
@@ -26,13 +46,16 @@ export class RutaSubidaDto {
 }
 
 export class RegistrarImagenDto {
-  @ApiProperty({ description: 'Pathname devuelto al autorizar la subida' })
+  @ApiProperty({ description: 'Pathname devuelto al reservar la subida' })
   @IsString()
   pathname: string;
 
-  @ApiProperty({ description: 'URL pública que devolvió Vercel Blob al subir' })
+  @ApiPropertyOptional({
+    description: 'Ignorado: la URL pública la arma el API con R2_PUBLIC_BASE_URL',
+  })
+  @IsOptional()
   @IsString()
-  blobUrl: string;
+  blobUrl?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -70,7 +93,7 @@ export class DonacionImagenDto {
   @ApiPropertyOptional()
   acopioId?: string | null;
 
-  @ApiProperty({ description: 'URL de la imagen en Vercel Blob' })
+  @ApiProperty({ description: 'URL pública de la imagen en Cloudflare R2' })
   blobUrl: string;
 
   @ApiProperty({ enum: Object.values(DonacionImagenEstado) })

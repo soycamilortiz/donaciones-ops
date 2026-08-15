@@ -1,12 +1,16 @@
-import type { DonacionImagen, Pagina, Producto, RutaSubida } from '@soschoco/shared';
-import { upload } from '@vercel/blob/client';
+import {
+  type DonacionImagen,
+  normalizarTipoImagen,
+  type Pagina,
+  type Producto,
+  type RutaSubida,
+} from '@soschoco/shared';
 
 /**
  * Cliente del módulo de donaciones.
  *
- * El archivo no pasa por el API: se pide una ruta, el SDK de Vercel Blob negocia
- * el token contra `/subidas` y sube directo. Recién entonces se registra la
- * imagen, que es lo que encola el reconocimiento.
+ * El archivo no pasa por el API: se pide una URL firmada de R2, se hace PUT
+ * al bucket y recién entonces se registra la imagen (eso encola el OCR).
  */
 
 export type Peticion = <T>(path: string, init?: RequestInit) => Promise<T>;
@@ -55,8 +59,8 @@ export function reprocesar(request: Peticion, orgId: string, id: string): Promis
 }
 
 /**
- * Sube la foto y la registra. Devuelve la imagen recién creada, todavía en
- * estado PENDIENTE: el reconocimiento ocurre en el worker.
+ * Sube la foto a R2 y la registra. Devuelve la imagen en PENDIENTE: el
+ * reconocimiento ocurre en el worker.
  */
 export async function subirFoto(
   request: Peticion,
@@ -64,30 +68,36 @@ export async function subirFoto(
   archivo: File,
   opciones: { token: string | null; acopioId?: string },
 ): Promise<DonacionImagen> {
+  const contentType = normalizarTipoImagen(archivo.type, archivo.name);
+  if (!contentType) {
+    throw new Error(`Formato no aceptado: ${archivo.type || 'desconocido'}`);
+  }
+
   const ruta = await request<RutaSubida>(`${base(orgId)}/subidas/ruta`, {
     method: 'POST',
-    body: JSON.stringify({ nombreArchivo: archivo.name }),
+    body: JSON.stringify({
+      nombreArchivo: archivo.name,
+      contentType,
+    }),
   });
 
   if (archivo.size > ruta.maxBytes) {
     throw new Error(`La foto pesa más de ${Math.round(ruta.maxBytes / 1024 / 1024)} MB`);
   }
-  if (!ruta.tiposAceptados.includes(archivo.type)) {
-    throw new Error(`Formato no aceptado: ${archivo.type || 'desconocido'}`);
-  }
 
-  const blob = await upload(ruta.pathname, archivo, {
-    access: 'public',
-    handleUploadUrl: `${base(orgId)}/subidas`,
-    // El endpoint que emite el token exige JWT como cualquier otro del API.
-    headers: opciones.token ? { Authorization: `Bearer ${opciones.token}` } : undefined,
+  const subida = await fetch(ruta.uploadUrl, {
+    method: 'PUT',
+    body: archivo,
+    headers: ruta.headers,
   });
+  if (!subida.ok) {
+    throw new Error(`No se pudo subir la foto a R2 (HTTP ${subida.status})`);
+  }
 
   return request<DonacionImagen>(base(orgId), {
     method: 'POST',
     body: JSON.stringify({
       pathname: ruta.pathname,
-      blobUrl: blob.url,
       acopioId: opciones.acopioId,
     }),
   });

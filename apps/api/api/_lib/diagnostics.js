@@ -27,7 +27,16 @@ const PUBLIC_KEYS = [
 ];
 
 /** Variables de las que solo se reporta presencia. */
-const SECRET_KEYS = ['DATABASE_URL', 'DIRECT_URL', 'REDIS_URL', 'JWT_SECRET', 'BLOB_READ_WRITE_TOKEN', 'LOGS_TOKEN'];
+const SECRET_KEYS = [
+  'DATABASE_URL',
+  'DIRECT_URL',
+  'REDIS_URL',
+  'JWT_SECRET',
+  'BLOB_READ_WRITE_TOKEN',
+  'R2_ACCESS_KEY_ID',
+  'R2_SECRET_ACCESS_KEY',
+  'LOGS_TOKEN',
+];
 
 function collectEnv() {
   const publicVars = PUBLIC_KEYS.map((key) => ({

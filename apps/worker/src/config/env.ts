@@ -1,9 +1,19 @@
 import { z } from 'zod';
 
+const emptyToUndefined = (value: unknown) =>
+  value === '' || value === undefined || value === null ? undefined : value;
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url().default('redis://localhost:6379'),
+
+  R2_ACCOUNT_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  R2_ACCESS_KEY_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  R2_SECRET_ACCESS_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  R2_BUCKET: z.string().min(1).default('sos-choco'),
+  R2_ENDPOINT: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  R2_PUBLIC_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
 
   /** Cuántas imágenes procesa en paralelo este proceso. */
   OCR_CONCURRENCIA: z.coerce.number().int().min(1).max(16).default(2),

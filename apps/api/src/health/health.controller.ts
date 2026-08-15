@@ -9,6 +9,7 @@ import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
 import { Public } from '../auth/public.decorator';
 import { LivenessResponseDto, ReadinessResponseDto } from './dto/health.dto';
 import { PrismaHealthIndicator } from './indicators/prisma.health-indicator';
+import { R2HealthIndicator } from './indicators/r2.health-indicator';
 
 @ApiTags('health')
 @Public()
@@ -17,6 +18,7 @@ export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
     private readonly prismaHealth: PrismaHealthIndicator,
+    private readonly r2Health: R2HealthIndicator,
   ) {}
 
   @Get()
@@ -44,5 +46,21 @@ export class HealthController {
   })
   readiness() {
     return this.health.check([() => this.prismaHealth.isHealthy('database')]);
+  }
+
+  @Get('storage')
+  @HealthCheck()
+  @ApiOperation({
+    summary: 'Cloudflare R2',
+    description:
+      'HeadBucket contra el bucket configurado. 200 si las keys y el endpoint responden; 503 si faltan env o R2 rechaza la petición.',
+  })
+  @ApiOkResponse({ type: ReadinessResponseDto })
+  @ApiServiceUnavailableResponse({
+    description: 'R2 no configurado o no alcanzable',
+    type: ReadinessResponseDto,
+  })
+  storage() {
+    return this.health.check([() => this.r2Health.isHealthy('r2')]);
   }
 }

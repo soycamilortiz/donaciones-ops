@@ -51,7 +51,7 @@ export const reconocerProductoJob: DefinicionJob<ReconocerProductoJob> = {
 };
 
 /**
- * Marca la imagen PROCESANDO, la descarga del Blob, la pasa por el motor de
+ * Marca la imagen PROCESANDO, la descarga de R2, la pasa por el motor de
  * reconocimiento y guarda el resultado ya relacionado con el producto.
  *
  * Es idempotente por `imagenId`: si el job se reintenta vuelve a leer el estado
@@ -91,7 +91,7 @@ export async function procesarImagen(
   const { texto, confianza } = await efectos.reconocerTexto(archivo);
   const resultado = await resolver(texto, confianza, contexto);
 
-  // Aquí queda la relación: la fila conserva la URL del Blob y apunta al
+  // Aquí queda la relación: la fila conserva la URL pública de R2 y apunta al
   // producto del catálogo que se reconoció.
   await prisma.donacionImagen.update({
     where: { id: imagenId },
@@ -138,8 +138,8 @@ async function resolver(
 }
 
 /**
- * Descarga desde Vercel Blob. Las URL del Blob son públicas e inmutables, así
- * que basta un fetch; el token de escritura solo hace falta para subir.
+ * Descarga desde la URL pública de R2. El worker no necesita las keys S3 si
+ * el bucket tiene custom domain o Public development URL.
  */
 async function descargar(url: string): Promise<Buffer> {
   const respuesta = await fetch(url);
@@ -148,8 +148,12 @@ async function descargar(url: string): Promise<Buffer> {
   }
 
   const tipo = respuesta.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
-  if (!TIPOS_IMAGEN_ACEPTADOS.includes(tipo as TipoImagenAceptado)) {
-    throw new Error(`Tipo de archivo no aceptado: ${tipo || 'desconocido'}`);
+  if (
+    tipo &&
+    tipo !== 'application/octet-stream' &&
+    !TIPOS_IMAGEN_ACEPTADOS.includes(tipo as TipoImagenAceptado)
+  ) {
+    throw new Error(`Tipo de archivo no aceptado: ${tipo}`);
   }
 
   return Buffer.from(await respuesta.arrayBuffer());

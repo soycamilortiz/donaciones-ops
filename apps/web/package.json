@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@soschoco/shared": "workspace:*",
-    "@vercel/blob": "^2.8.0",
     "clsx": "^2.1.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+const emptyToUndefined = (value: unknown) => {
+  if (value === '' || value === undefined || value === null) return undefined;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed === '' ? undefined : trimmed;
+  }
+  return value;
+};
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -11,11 +20,26 @@ export const envSchema = z.object({
   /** Cola de reconocimiento de imágenes. La consume apps/worker. */
   REDIS_URL: z.string().min(1).default('redis://localhost:6379'),
   /**
-   * Token de escritura de Vercel Blob. El API no sube el archivo: solo firma
-   * el permiso para que la PWA lo suba directo. Sin él, el módulo de
-   * donaciones responde 503 en vez de tumbar el arranque.
+   * Obsoleto. Las donaciones suben a Cloudflare R2 (`R2_*`).
    */
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
+
+  /** Account ID de Cloudflare (Settings → R2). */
+  R2_ACCOUNT_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  /** Access Key ID de un API token R2 (Object Read & Write). Solo backend. */
+  R2_ACCESS_KEY_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  R2_SECRET_ACCESS_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  R2_BUCKET: z.string().min(1).default('sos-choco'),
+  /**
+   * Endpoint S3 sin el nombre del bucket:
+   * `https://<accountid>.r2.cloudflarestorage.com`
+   */
+  R2_ENDPOINT: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  /**
+   * Base pública para armar URLs de imagen (custom domain o r2.dev).
+   * Ejemplo: `https://media.ejemplo.org` o `https://pub-xxxxx.r2.dev`
+   */
+  R2_PUBLIC_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
 
   /**
    * Sincroniza el catalogo de roles y permisos al arrancar. Tiene sentido en un

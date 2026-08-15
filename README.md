@@ -23,6 +23,7 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 | http://localhost/api | Metadatos API |
 | http://localhost/api/health | Liveness |
 | http://localhost/api/health/ready | PostgreSQL |
+| http://localhost/api/health/storage | Cloudflare R2 |
 | http://localhost/api/docs | Swagger UI |
 | http://localhost/api/docs/openapi.json | OpenAPI 3 (JSON) |
 | http://localhost:8080 | Dashboard Traefik |
@@ -125,10 +126,9 @@ La PWA toma la foto de un producto (arroz, agua, crema dental), la sube y el sis
 El recorrido:
 
 ```
-PWA ──1─► API: POST /donaciones/subidas/ruta (reserva el pathname)
-PWA ──2─► Vercel Blob                        (upload() negocia el token contra
-                                              /subidas y sube el archivo)
-PWA ──3─► API: POST /donaciones              (registra la URL y encola el job)
+PWA ──1─► API: POST /donaciones/subidas/ruta (pathname + PUT firmado a R2)
+PWA ──2─► Cloudflare R2                      (PUT directo al bucket)
+PWA ──3─► API: POST /donaciones              (registra la URL pública y encola)
                     │
                   Redis
                     │
@@ -155,7 +155,7 @@ Para añadir un job nuevo: crea el archivo en `apps/worker/src/jobs` exportando 
 
 El camino que de verdad resuelve el reconocimiento de productos empaquetados es el **código de barras (EAN-13)**, que da identidad exacta y se puede leer en el propio móvil. El modelo ya tiene el campo `ean` en `productos`, y `DefinicionJob` permite enchufar ese motor —o uno de visión— sin tocar la cola ni la persistencia.
 
-Requiere `BLOB_READ_WRITE_TOKEN` (Vercel Blob). Sin él, el módulo responde 503 en vez de tumbar el arranque.
+El API comprueba R2 con `GET /api/health/storage`. Las donaciones suben con PUT firmado a Cloudflare R2. Guía: [docs/r2-storage.md](docs/r2-storage.md). Sin `R2_*` / `R2_PUBLIC_BASE_URL`, donaciones responde 503 y no tumba el arranque.
 
 ## PWA
 
