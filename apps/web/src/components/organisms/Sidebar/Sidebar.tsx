@@ -1,7 +1,7 @@
-import type { ReactElement } from "react";
-import { cn } from "@/lib/utils";
-import { NavItem } from "@/components/molecules/NavItem";
-import type { SidebarProps } from "./Sidebar.types";
+import type { ReactElement } from 'react';
+import { NavItem } from '@/components/molecules/NavItem';
+import { cn } from '@/lib/utils';
+import type { SidebarProps } from './Sidebar.types';
 
 export function Sidebar({
   className,
@@ -12,7 +12,7 @@ export function Sidebar({
 }: SidebarProps): ReactElement {
   return (
     <aside
-      className={cn("flex h-full w-64 flex-col border-r border-border bg-card", className)}
+      className={cn('flex h-full w-64 flex-col border-r border-border bg-card', className)}
       {...props}
     >
       {header ? <div className="border-b border-border p-4">{header}</div> : null}
@@ -26,4 +26,4 @@ export function Sidebar({
   );
 }
 
-Sidebar.displayName = "Sidebar";
+Sidebar.displayName = 'Sidebar';

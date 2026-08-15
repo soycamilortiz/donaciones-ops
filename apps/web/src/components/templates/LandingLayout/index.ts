@@ -1,2 +1,2 @@
-export { LandingLayout } from "./LandingLayout";
-export type { LandingLayoutProps } from "./LandingLayout.types";
+export { LandingLayout } from './LandingLayout';
+export type { LandingLayoutProps } from './LandingLayout.types';

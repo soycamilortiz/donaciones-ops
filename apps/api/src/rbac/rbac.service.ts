@@ -67,6 +67,8 @@ export class RbacService implements OnModuleInit {
         PermissionSlug.RolesWrite,
         PermissionSlug.InventoryRead,
         PermissionSlug.InventoryWrite,
+        PermissionSlug.DonacionesRead,
+        PermissionSlug.DonacionesWrite,
       ]) {
         const permission = await this.prisma.permission.findUnique({
           where: { slug },
@@ -93,7 +95,7 @@ export class RbacService implements OnModuleInit {
         continue;
       }
       for (const slug of role.permissions) {
-        if (!slug.startsWith('inventory:')) {
+        if (!slug.startsWith('inventory:') && !slug.startsWith('donaciones:')) {
           continue;
         }
         const permission = await this.prisma.permission.findUnique({

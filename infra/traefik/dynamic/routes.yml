@@ -7,6 +7,13 @@ http:
       priority: 100
       service: api
 
+    jobs:
+      rule: (Host(`localhost`) || Host(`127.0.0.1`) || Host(`soschoco.localhost`)) && PathPrefix(`/jobs`)
+      entryPoints:
+        - web
+      priority: 90
+      service: jobs
+
     web:
       rule: Host(`localhost`) || Host(`127.0.0.1`) || Host(`soschoco.localhost`)
       entryPoints:
@@ -19,6 +26,12 @@ http:
       loadBalancer:
         servers:
           - url: http://api:3000
+        passHostHeader: true
+
+    jobs:
+      loadBalancer:
+        servers:
+          - url: http://jobs:3100
         passHostHeader: true
 
     web:

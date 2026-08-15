@@ -1,34 +1,90 @@
-/** Datos mock del módulo donaciones. Reemplazar por llamadas a `apiRequest` cuando exista el endpoint. */
+import type { DonacionImagen, Producto, RutaSubida } from '@soschoco/shared';
+import { upload } from '@vercel/blob/client';
 
-export interface Donacion extends Record<string, unknown> {
-  id: string;
-  donante: string;
-  tipo: 'Alimentos' | 'Agua' | 'Ropa' | 'Medicinas' | 'Aseo';
-  cantidad: string;
-  centro: string;
-  estado: 'recibida' | 'en_transito' | 'entregada';
-  fecha: string;
+/**
+ * Cliente del módulo de donaciones.
+ *
+ * El archivo no pasa por el API: se pide una ruta, el SDK de Vercel Blob negocia
+ * el token contra `/subidas` y sube directo. Recién entonces se registra la
+ * imagen, que es lo que encola el reconocimiento.
+ */
+
+export type Peticion = <T>(path: string, init?: RequestInit) => Promise<T>;
+
+const base = (orgId: string) => `/api/v1/organizations/${orgId}/donaciones`;
+
+export function listarImagenes(
+  request: Peticion,
+  orgId: string,
+  estado?: string,
+): Promise<DonacionImagen[]> {
+  const query = estado ? `?estado=${encodeURIComponent(estado)}` : '';
+  return request<DonacionImagen[]>(`${base(orgId)}${query}`);
 }
 
-export interface DonacionesStats {
-  total: string;
-  recibidas: string;
-  enTransito: string;
-  centros: string;
+export function obtenerImagen(
+  request: Peticion,
+  orgId: string,
+  id: string,
+): Promise<DonacionImagen> {
+  return request<DonacionImagen>(`${base(orgId)}/${id}`);
 }
 
-const DONACIONES: Donacion[] = [
-  { id: 'don_1042', donante: 'Fundación Río', tipo: 'Alimentos', cantidad: '120 kits', centro: 'Acopio Quibdó', estado: 'recibida', fecha: '2026-08-15' },
-  { id: 'don_1041', donante: 'María González', tipo: 'Agua', cantidad: '500 L', centro: 'Acopio Istmina', estado: 'en_transito', fecha: '2026-08-15' },
-  { id: 'don_1040', donante: 'Colegio San José', tipo: 'Ropa', cantidad: '30 cajas', centro: 'Acopio Quibdó', estado: 'entregada', fecha: '2026-08-14' },
-  { id: 'don_1039', donante: 'Droguería Central', tipo: 'Medicinas', cantidad: '18 cajas', centro: 'Acopio Condoto', estado: 'recibida', fecha: '2026-08-14' },
-  { id: 'don_1038', donante: 'Anónimo', tipo: 'Aseo', cantidad: '60 kits', centro: 'Acopio Istmina', estado: 'entregada', fecha: '2026-08-13' },
-];
-
-export function getDonaciones(): Donacion[] {
-  return DONACIONES;
+export function listarProductos(request: Peticion, orgId: string): Promise<Producto[]> {
+  return request<Producto[]>(`${base(orgId)}/productos`);
 }
 
-export function getDonacionesStats(): DonacionesStats {
-  return { total: '1.284', recibidas: '842', enTransito: '196', centros: '7' };
+export function corregirProducto(
+  request: Peticion,
+  orgId: string,
+  id: string,
+  productoId: string,
+): Promise<DonacionImagen> {
+  return request<DonacionImagen>(`${base(orgId)}/${id}/producto`, {
+    method: 'PATCH',
+    body: JSON.stringify({ productoId }),
+  });
+}
+
+export function reprocesar(request: Peticion, orgId: string, id: string): Promise<DonacionImagen> {
+  return request<DonacionImagen>(`${base(orgId)}/${id}/reprocesar`, { method: 'POST' });
+}
+
+/**
+ * Sube la foto y la registra. Devuelve la imagen recién creada, todavía en
+ * estado PENDIENTE: el reconocimiento ocurre en el worker.
+ */
+export async function subirFoto(
+  request: Peticion,
+  orgId: string,
+  archivo: File,
+  opciones: { token: string | null; acopioId?: string },
+): Promise<DonacionImagen> {
+  const ruta = await request<RutaSubida>(`${base(orgId)}/subidas/ruta`, {
+    method: 'POST',
+    body: JSON.stringify({ nombreArchivo: archivo.name }),
+  });
+
+  if (archivo.size > ruta.maxBytes) {
+    throw new Error(`La foto pesa más de ${Math.round(ruta.maxBytes / 1024 / 1024)} MB`);
+  }
+  if (!ruta.tiposAceptados.includes(archivo.type)) {
+    throw new Error(`Formato no aceptado: ${archivo.type || 'desconocido'}`);
+  }
+
+  const blob = await upload(ruta.pathname, archivo, {
+    access: 'public',
+    handleUploadUrl: `${base(orgId)}/subidas`,
+    // El endpoint que emite el token exige JWT como cualquier otro del API.
+    headers: opciones.token ? { Authorization: `Bearer ${opciones.token}` } : undefined,
+  });
+
+  return request<DonacionImagen>(base(orgId), {
+    method: 'POST',
+    body: JSON.stringify({
+      pathname: ruta.pathname,
+      blobUrl: blob.url,
+      acopioId: opciones.acopioId,
+    }),
+  });
 }

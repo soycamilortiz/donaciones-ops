@@ -32,6 +32,12 @@ No usamos Module Federation ni single-spa. Los fronts **no se hablan entre sí**
 | Monorepo | pnpm workspaces + Turborepo |
 | Lint y formato | Biome 2 (reemplaza ESLint + Prettier) |
 | Código común | `packages/shared` (`@soschoco/shared`): enums, RBAC y contratos del API |
+| Cola de jobs | BullMQ sobre Redis 7 |
+| Worker | `apps/worker`: Tesseract (binario nativo) + sharp |
+| Almacenamiento de imágenes | Vercel Blob (subida directa desde la PWA) |
+| PWA | vite-plugin-pwa (manifest + service worker con Workbox) |
+| Observabilidad de la cola | `apps/jobs`: Bull Board tras basic auth |
+| CI | GitHub Actions: lint, tipos, build, tests, migraciones e imágenes |
 
 Traefik usa **provider de archivo** (`infra/traefik/dynamic/routes.yml`), no labels sobre el socket de Docker.
 
@@ -53,6 +59,7 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 | http://localhost/api/health | Liveness |
 | http://localhost/api/health/ready | Readiness (PostgreSQL) |
 | http://localhost/api/docs | Swagger UI |
+| http://localhost/jobs | Panel de la cola de jobs (basic auth) |
 | http://localhost:8080 | Dashboard Traefik |
 | localhost:5432 | Postgres (`soschoco` / `soschoco`) |
 
@@ -85,11 +92,11 @@ Invitar personas: quien se suma **ya tiene que estar registrada** con ese correo
 
 ## Dominio (Prisma)
 
-`User` (usuario + correo únicos, `password_hash`), `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`.
+`User` (usuario + correo únicos, `password_hash`), `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto`, `DonacionImagen`.
 
 Roles semilla: administrador de acopio, auxiliar administrativo, líder de zona, finanzas, transportador, voluntario. Quien crea la org queda como administrador de acopio. El alta por defecto es voluntario. La matriz se edita en `/app/roles` (permiso `roles:write`). Los permisos nuevos de código aparecen como filas; no se pisan los tildes ya guardados.
 
-Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `inventory:read/write`.
+Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `inventory:read/write`, `donaciones:read/write`.
 
 Inventario: por centro de acopio. Dashboard en `/app/inventario`. Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol e ítem. Dar de baja no bloquea un alta nueva (el producto siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
 
@@ -107,6 +114,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Inventario | `/api/v1/organizations/:orgId/acopios/:acopioId/inventory` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
+| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
 
 Guards: `JwtAuthGuard` global + `@RequirePermission` por membresía.
 
@@ -120,6 +128,8 @@ Variables del API:
 | `CORS_ORIGIN` | Orígenes separados por coma |
 | `JWT_SECRET` | Firma del token (mínimo 16 caracteres) |
 | `JWT_EXPIRES_IN` | Default `8h` |
+| `REDIS_URL` | Cola de reconocimiento. Default `redis://localhost:6379` |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob. Sin él, donaciones responde 503 |
 
 En Docker, `DATABASE_URL` apunta al servicio `postgres`. Cambiá `JWT_SECRET` antes de un entorno real.
 
@@ -129,7 +139,31 @@ Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. 
 
 ## Qué falta
 
-- Módulos de donaciones y envíos (contenedores + API).
+- Módulo de envíos (contenedor + API).
+- Lectura de código de barras en la PWA, que es lo que de verdad resuelve el reconocimiento de producto empaquetado.
 - Cookie httpOnly en lugar de `localStorage` si se endurece XSS.
 - Rate limit explícito en login (hoy el captcha cubre brute-force básico).
 - Contenedores de front por módulo, con `base path` y ruta Traefik.
+
+## Reconocimiento de productos donados
+
+La PWA fotografía un producto donado y el sistema intenta identificarlo para dejarlo registrado. El detalle del flujo y de los comandos está en el [README](../README.md#reconocimiento-de-productos-donados).
+
+| Pieza | Responsabilidad |
+| --- | --- |
+| `apps/api/src/donaciones` | Autoriza la subida al Blob y encola el job. La imagen no pasa por el API |
+| `apps/worker` | Consume la cola: descarga, preprocesa, OCR y emparejamiento |
+| `donacion_imagenes` | Guarda la URL del Blob y el FK al producto reconocido |
+| `productos` | Catálogo contra el que se resuelve el texto del OCR |
+
+Estados de una imagen: `PENDIENTE` → `PROCESANDO` → `PROCESADA` o `FALLIDA`.
+
+**Limitación conocida.** Tesseract es OCR, no reconocimiento de objetos: sobre envases reales acierta poco. Cuando la confianza o el emparejamiento no alcanzan el umbral, la imagen queda `PROCESADA` sin producto para que alguien lo corrija a mano, en vez de escribir un producto equivocado en el inventario. El campo `productos.ean` está listo para migrar a lectura de código de barras, que es lo que resuelve bien este caso.
+
+El job es idempotente por `imagenId` y BullMQ reintenta con backoff exponencial; solo al agotar los reintentos la imagen pasa a `FALLIDA`.
+
+### Pendiente para que la característica quede usable
+
+El catálogo `productos` está vacío y sin él nada se reconoce: `emparejar()` contra una tabla vacía siempre devuelve `null`. Cargar los productos que realmente se donan (arroz, agua, aceite, panela, jabón, crema dental) con sus alias es lo más barato y lo que más cambia el resultado.
+
+Falta también aplicar la migración contra un Postgres real y configurar `BLOB_READ_WRITE_TOKEN`.

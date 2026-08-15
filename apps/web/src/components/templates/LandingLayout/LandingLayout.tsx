@@ -1,7 +1,7 @@
-import type { ReactElement } from "react";
-import { Header } from "@/components/organisms/Header";
-import { Footer } from "@/components/organisms/Footer";
-import type { LandingLayoutProps } from "./LandingLayout.types";
+import type { ReactElement } from 'react';
+import { Footer } from '@/components/organisms/Footer';
+import { Header } from '@/components/organisms/Header';
+import type { LandingLayoutProps } from './LandingLayout.types';
 
 export function LandingLayout({ children }: LandingLayoutProps): ReactElement {
   return (

@@ -1,23 +1,19 @@
-import type { ReactElement } from "react";
-import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Avatar } from "@/components/atoms/Avatar";
-import { Button } from "@/components/atoms/Button";
-import { Icon } from "@/components/atoms/Icon";
-import { SearchBar } from "@/components/molecules/SearchBar";
-import { APP_NAME, ROUTES } from "@/lib/constants";
-import type { HeaderProps } from "./Header.types";
+import type { ReactElement } from 'react';
+import { Link } from 'react-router-dom';
+import { Avatar } from '@/components/atoms/Avatar';
+import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
+import { SearchBar } from '@/components/molecules/SearchBar';
+import { APP_NAME, ROUTES } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import type { HeaderProps } from './Header.types';
 
-export function Header({
-  className,
-  sticky = false,
-  ...props
-}: HeaderProps): ReactElement {
+export function Header({ className, sticky = false, ...props }: HeaderProps): ReactElement {
   return (
     <header
       className={cn(
-        "flex h-16 items-center gap-4 border-b border-border bg-background px-4",
-        sticky && "sticky top-0 z-40",
+        'flex h-16 items-center gap-4 border-b border-border bg-background px-4',
+        sticky && 'sticky top-0 z-40',
         className,
       )}
       {...props}
@@ -39,4 +35,4 @@ export function Header({
   );
 }
 
-Header.displayName = "Header";
+Header.displayName = 'Header';

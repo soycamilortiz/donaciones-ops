@@ -11,6 +11,8 @@ export const PermissionSlug = {
   RolesWrite: 'roles:write',
   InventoryRead: 'inventory:read',
   InventoryWrite: 'inventory:write',
+  DonacionesRead: 'donaciones:read',
+  DonacionesWrite: 'donaciones:write',
 } as const;
 
 export type PermissionSlug = (typeof PermissionSlug)[keyof typeof PermissionSlug];
@@ -91,6 +93,16 @@ export const PERMISSION_CATALOG: Array<{
     nombre: 'Gestionar inventario',
     descripcion: 'Cargar, editar y dar de baja productos en bodega',
   },
+  {
+    slug: PermissionSlug.DonacionesRead,
+    nombre: 'Ver donaciones',
+    descripcion: 'Consultar las imagenes de productos donados y su reconocimiento',
+  },
+  {
+    slug: PermissionSlug.DonacionesWrite,
+    nombre: 'Registrar donaciones',
+    descripcion: 'Subir fotos de productos donados y corregir el producto reconocido',
+  },
 ];
 
 const ALL_PERMISSIONS = PERMISSION_CATALOG.map((item) => item.slug);
@@ -101,6 +113,7 @@ const LECTURA = [
   PermissionSlug.MembersRead,
   PermissionSlug.RolesRead,
   PermissionSlug.InventoryRead,
+  PermissionSlug.DonacionesRead,
 ] as const;
 
 export const ROLE_CATALOG: Array<{
@@ -131,6 +144,8 @@ export const ROLE_CATALOG: Array<{
       PermissionSlug.RolesWrite,
       PermissionSlug.InventoryRead,
       PermissionSlug.InventoryWrite,
+      PermissionSlug.DonacionesRead,
+      PermissionSlug.DonacionesWrite,
     ],
   },
   {
@@ -145,6 +160,8 @@ export const ROLE_CATALOG: Array<{
       PermissionSlug.RolesRead,
       PermissionSlug.InventoryRead,
       PermissionSlug.InventoryWrite,
+      PermissionSlug.DonacionesRead,
+      PermissionSlug.DonacionesWrite,
     ],
   },
   {
@@ -161,16 +178,19 @@ export const ROLE_CATALOG: Array<{
       PermissionSlug.OrgRead,
       PermissionSlug.AcopiosRead,
       PermissionSlug.InventoryRead,
+      PermissionSlug.DonacionesRead,
     ],
   },
   {
     slug: RoleSlug.Voluntario,
     nombre: 'Voluntario',
-    descripcion: 'Apoyo en campo, solo consulta',
+    descripcion: 'Apoyo en campo: consulta de inventario y registro de donaciones',
     permissions: [
       PermissionSlug.OrgRead,
       PermissionSlug.AcopiosRead,
       PermissionSlug.InventoryRead,
+      PermissionSlug.DonacionesRead,
+      PermissionSlug.DonacionesWrite,
     ],
   },
 ];

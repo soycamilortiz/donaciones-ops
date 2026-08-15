@@ -1,2 +1,2 @@
-export { AuthLayout } from "./AuthLayout";
-export type { AuthLayoutProps } from "./AuthLayout.types";
+export { AuthLayout } from './AuthLayout';
+export type { AuthLayoutProps } from './AuthLayout.types';

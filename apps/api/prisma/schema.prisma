@@ -25,7 +25,8 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  memberships Membership[]
+  memberships     Membership[]
+  imagenesSubidas DonacionImagen[]
 
   @@map("users")
 }
@@ -42,19 +43,20 @@ model CaptchaChallenge {
 }
 
 model Organization {
-  id          String            @id @default(uuid()) @db.Uuid
+  id          String           @id @default(uuid()) @db.Uuid
   nombre      String
   correo      String
   telefono    String?
   descripcion String?
   tipo        OrganizationTipo
-  tipoDetalle String?           @map("tipo_detalle")
-  isActive    Boolean           @default(true) @map("is_active")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  tipoDetalle String?          @map("tipo_detalle")
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
 
   memberships Membership[]
   acopios     Acopio[]
+  imagenes    DonacionImagen[]
 
   @@map("organizations")
 }
@@ -66,22 +68,23 @@ enum AcopioFlujo {
 }
 
 model Acopio {
-  id             String       @id @default(uuid()) @db.Uuid
-  organizationId String       @map("organization_id") @db.Uuid
+  id             String      @id @default(uuid()) @db.Uuid
+  organizationId String      @map("organization_id") @db.Uuid
   nombre         String
-  flujo          AcopioFlujo  @default(AMBOS)
+  flujo          AcopioFlujo @default(AMBOS)
   telefono       String?
   descripcion    String?
   municipio      String?
   direccion      String?
   lat            Float?
   lng            Float?
-  isActive       Boolean      @default(true) @map("is_active")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   inventoryItems InventoryItem[]
+  imagenes       DonacionImagen[]
 
   @@index([organizationId])
   @@map("acopios")
@@ -226,4 +229,66 @@ model InventoryItem {
   @@index([acopioId, nombre])
   @@index([acopioId, isActive])
   @@map("inventory_items")
+}
+
+enum DonacionImagenEstado {
+  PENDIENTE
+  PROCESANDO
+  PROCESADA
+  FALLIDA
+}
+
+/// Catálogo contra el que el worker intenta resolver el texto que saca del OCR.
+/// `ean` queda listo para cuando se lea el código de barras desde la PWA.
+model Producto {
+  id        String   @id @default(uuid()) @db.Uuid
+  nombre    String
+  marca     String?
+  categoria String?
+  ean       String?  @unique
+  /// Términos que, si aparecen en el texto reconocido, apuntan a este producto.
+  alias     String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  imagenes DonacionImagen[]
+
+  @@index([marca])
+  @@map("productos")
+}
+
+/// Una foto de un producto donado. La sube la PWA directo a Vercel Blob y el
+/// worker la procesa de forma asíncrona.
+model DonacionImagen {
+  id             String  @id @default(uuid()) @db.Uuid
+  organizationId String  @map("organization_id") @db.Uuid
+  acopioId       String? @map("acopio_id") @db.Uuid
+  subidaPorId    String  @map("subida_por_id") @db.Uuid
+
+  blobUrl      String @map("blob_url")
+  blobPathname String @unique @map("blob_pathname")
+
+  estado   DonacionImagenEstado @default(PENDIENTE)
+  intentos Int                  @default(0)
+  error    String?
+
+  /// Texto crudo que devolvió el OCR, útil para depurar y reprocesar.
+  textoOcr   String? @map("texto_ocr")
+  /// Confianza del reconocimiento, 0..1.
+  confianza  Float?
+  /// Null si no se pudo identificar: queda para revisión manual.
+  productoId String? @map("producto_id") @db.Uuid
+
+  procesadaEn DateTime? @map("procesada_en")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio       Acopio?      @relation(fields: [acopioId], references: [id], onDelete: SetNull)
+  subidaPor    User         @relation(fields: [subidaPorId], references: [id], onDelete: Restrict)
+  producto     Producto?    @relation(fields: [productoId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, estado])
+  @@index([estado])
+  @@map("donacion_imagenes")
 }

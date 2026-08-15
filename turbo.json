@@ -40,6 +40,27 @@
     },
     "clean": {
       "cache": false
+    },
+
+    // El worker comparte el cliente de Prisma que genera el API desde
+    // apps/api/prisma/schema.prisma, así que sus tareas dependen de esa
+    // generación aunque no tenga schema propio.
+    "worker#build": {
+      "dependsOn": ["^build", "api#db:generate"],
+      "outputs": ["dist/**"]
+    },
+    "worker#typecheck": {
+      "dependsOn": ["^build", "api#db:generate"],
+      "outputs": []
+    },
+    "worker#test": {
+      "dependsOn": ["^build", "api#db:generate"],
+      "outputs": []
+    },
+    "worker#dev": {
+      "dependsOn": ["^build", "api#db:generate"],
+      "cache": false,
+      "persistent": true
     }
   }
 }

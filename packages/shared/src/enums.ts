@@ -22,6 +22,15 @@ export const ORGANIZATION_TIPO = {
 
 export type OrganizationTipo = (typeof ORGANIZATION_TIPO)[keyof typeof ORGANIZATION_TIPO];
 
+export const DonacionImagenEstado = {
+  Pendiente: 'PENDIENTE',
+  Procesando: 'PROCESANDO',
+  Procesada: 'PROCESADA',
+  Fallida: 'FALLIDA',
+} as const;
+
+export type DonacionImagenEstado = (typeof DonacionImagenEstado)[keyof typeof DonacionImagenEstado];
+
 /** Opciones con etiqueta para los selects del front. */
 export const ACOPIO_FLUJOS: ReadonlyArray<{ value: AcopioFlujo; label: string }> = [
   { value: AcopioFlujo.Recibir, label: 'Recibir donaciones' },

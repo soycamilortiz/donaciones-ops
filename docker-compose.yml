@@ -36,6 +36,20 @@ services:
       - soschoco
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - soschoco
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -47,8 +61,12 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost,http://127.0.0.1,http://soschoco.localhost}
       JWT_SECRET: ${JWT_SECRET:-soschoco-dev-jwt-secret-cambia-esto}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      REDIS_URL: redis://redis:6379
+      BLOB_READ_WRITE_TOKEN: ${BLOB_READ_WRITE_TOKEN:-}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test:
@@ -66,6 +84,58 @@ services:
       - soschoco
     restart: unless-stopped
 
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-soschoco}:${POSTGRES_PASSWORD:-soschoco}@postgres:5432/${POSTGRES_DB:-soschoco}
+      REDIS_URL: redis://redis:6379
+      OCR_CONCURRENCIA: ${OCR_CONCURRENCIA:-2}
+      OCR_MAX_INTENTOS: ${OCR_MAX_INTENTOS:-3}
+      OCR_TIMEOUT_MS: ${OCR_TIMEOUT_MS:-30000}
+      OCR_IDIOMAS: ${OCR_IDIOMAS:-spa+eng}
+      OCR_CONFIANZA_MINIMA: ${OCR_CONFIANZA_MINIMA:-0.6}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - soschoco
+    restart: unless-stopped
+
+  jobs:
+    build:
+      context: .
+      dockerfile: apps/jobs/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      REDIS_URL: redis://redis:6379
+      JOBS_USER: ${JOBS_USER:-admin}
+      JOBS_PASSWORD: ${JOBS_PASSWORD:-cambia-esta-clave}
+      JOBS_BASE_PATH: /jobs
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3100/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - soschoco
+    restart: unless-stopped
+
   web:
     build:
       context: .
@@ -78,6 +148,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   soschoco:

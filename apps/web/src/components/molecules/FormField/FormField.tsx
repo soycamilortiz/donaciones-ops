@@ -1,6 +1,6 @@
-import type { ReactElement } from "react";
-import { cn } from "@/lib/utils";
-import type { FormFieldProps } from "./FormField.types";
+import type { ReactElement } from 'react';
+import { cn } from '@/lib/utils';
+import type { FormFieldProps } from './FormField.types';
 
 export function FormField({
   className,
@@ -13,7 +13,7 @@ export function FormField({
   ...props
 }: FormFieldProps): ReactElement {
   return (
-    <div className={cn("space-y-1.5", className)} {...props}>
+    <div className={cn('space-y-1.5', className)} {...props}>
       <label htmlFor={htmlFor} className="text-sm font-medium leading-none">
         {label}
         {required ? <span className="text-error"> *</span> : null}

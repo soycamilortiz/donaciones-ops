@@ -4,6 +4,7 @@ import { AcopiosModule } from './acopios/acopios.module';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.schema';
+import { DonacionesModule } from './donaciones/donaciones.module';
 import { HealthModule } from './health/health.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { OrganizationsModule } from './organizations/organizations.module';
@@ -24,6 +25,7 @@ import { RbacModule } from './rbac/rbac.module';
     OrganizationsModule,
     AcopiosModule,
     InventoryModule,
+    DonacionesModule,
   ],
   controllers: [AppController],
 })

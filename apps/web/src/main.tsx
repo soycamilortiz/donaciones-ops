@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import ActualizacionPWA from './components/ActualizacionPWA';
 import { AuthProvider } from './lib/AuthProvider';
 import './styles/design-system.css';
 
@@ -16,6 +17,7 @@ createRoot(root).render(
     <BrowserRouter>
       <AuthProvider>
         <App />
+        <ActualizacionPWA />
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

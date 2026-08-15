@@ -1,16 +1,17 @@
-import type { ReactElement } from "react";
-import { cn } from "@/lib/utils";
-import { Icon } from "@/components/atoms/Icon";
-import { Input } from "@/components/atoms/Input";
-import type { SearchBarProps } from "./SearchBar.types";
+import type { ReactElement } from 'react';
+import { Icon } from '@/components/atoms/Icon';
+import { Input } from '@/components/atoms/Input';
+import { cn } from '@/lib/utils';
+import type { SearchBarProps } from './SearchBar.types';
 
 export function SearchBar({
-  placeholder = "Search...",
+  placeholder = 'Search...',
   className,
   ...props
 }: SearchBarProps): ReactElement {
   return (
-    <form role="search" className={cn("relative w-full", className)} {...props}>
+    // biome-ignore lint/a11y/useSemanticElements: role="search" sobre el form es el landmark de mayor compatibilidad; <search> aun no llega a todos los lectores.
+    <form role="search" className={cn('relative w-full', className)} {...props}>
       <div className="relative">
         <Icon
           name="search"
