@@ -115,7 +115,9 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Inventario | `/api/v1/organizations/:orgId/acopios/:acopioId/inventory` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
-| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
+| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas`, `/subidas/ruta`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
+
+`GET /donaciones` está **paginado por cursor**, no por offset: las fotos se insertan sin parar desde el campo y con `OFFSET` una fila nueva desplaza la ventana, haciendo que se repitan o se salten registros entre páginas. Devuelve `{ items, siguienteCursor }`; `siguienteCursor` es `null` cuando ya no hay más. Acepta `?estado=`, `?cursor=` y `?limite=` (1–200, default 50).
 
 Guards: `JwtAuthGuard` global + `@RequirePermission` por membresía.
 
@@ -136,6 +138,19 @@ Variables del API:
 | `LOGS_TOKEN` | Opcional. Si está, `/logs` exige `?token=…` |
 
 En Docker, `DATABASE_URL` apunta al servicio `postgres`. Cambiá `JWT_SECRET` antes de un entorno real.
+
+Las URL de conexión **no se escriben a mano**: en Docker el compose las deriva de los nombres de servicio de la red `soschoco`. El detalle de las tres topologías (compose, apps en el host, serverless) está en [variables-de-entorno.md](variables-de-entorno.md).
+
+### Dos formas de arrancar el API
+
+| Entrada | Para qué |
+| --- | --- |
+| `src/main.ts` → `dist/main.js` | Proceso de larga vida (Docker, Traefik). `app.listen()` |
+| `src/serverless.ts` → `api/index.js` | Función serverless (Vercel). `app.init()` y devuelve el handler |
+
+`main.ts` no sirve en serverless: `app.listen()` nunca devuelve el control y la función termina en `FUNCTION_INVOCATION_FAILED`. El entry `api/index.js` es JavaScript a propósito, porque Vercel compila los entrypoints con esbuild y no emite metadata de decoradores, sin la cual falla la inyección de dependencias de Nest.
+
+Cada app se despliega como un proyecto propio de Vercel apuntando al mismo repo, cambiando el Root Directory. `apps/worker` no puede: es un proceso residente.
 
 ## Visor de logs (`/logs`)
 
@@ -189,12 +204,20 @@ La PWA fotografía un producto donado y el sistema intenta identificarlo para de
 
 Estados de una imagen: `PENDIENTE` → `PROCESANDO` → `PROCESADA` o `FALLIDA`.
 
+Cada foto se atribuye a un centro de acopio. La pantalla de captura recuerda el último elegido por organización: en campo se registran muchas fotos seguidas en el mismo sitio y volver a elegirlo cada vez es fricción pura.
+
 **Limitación conocida.** Tesseract es OCR, no reconocimiento de objetos: sobre envases reales acierta poco. Cuando la confianza o el emparejamiento no alcanzan el umbral, la imagen queda `PROCESADA` sin producto para que alguien lo corrija a mano, en vez de escribir un producto equivocado en el inventario. El campo `productos.ean` está listo para migrar a lectura de código de barras, que es lo que resuelve bien este caso.
 
 El job es idempotente por `imagenId` y BullMQ reintenta con backoff exponencial; solo al agotar los reintentos la imagen pasa a `FALLIDA`.
 
-### Pendiente para que la característica quede usable
+### Puesta en marcha
 
-El catálogo `productos` está vacío y sin él nada se reconoce: `emparejar()` contra una tabla vacía siempre devuelve `null`. Cargar los productos que realmente se donan (arroz, agua, aceite, panela, jabón, crema dental) con sus alias es lo más barato y lo que más cambia el resultado.
+El catálogo `productos` no puede quedar vacío: `emparejar()` contra una tabla sin filas siempre devuelve `null` y toda foto termina en revisión manual. Hay una siembra inicial con 20 productos de la zona:
 
-Falta también aplicar la migración contra un Postgres real y configurar `BLOB_READ_WRITE_TOKEN`.
+```bash
+psql "$DATABASE_URL" -f apps/api/prisma/seed-productos.sql
+```
+
+Verificado contra un PostgreSQL real: las 5 migraciones aplican limpio, `rbac:sync` deja 12 permisos y 6 roles, y un job encolado recorre la cola hasta escribir su resultado en `donacion_imagenes`.
+
+Falta configurar `BLOB_READ_WRITE_TOKEN` y tener el worker corriendo en algún host: sin él las fotos se suben pero se quedan en `PENDIENTE`.

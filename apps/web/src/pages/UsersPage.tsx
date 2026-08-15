@@ -97,10 +97,10 @@ export default function UsersPage() {
             {roles
               .filter((role) => role.isActive !== false)
               .map((role) => (
-              <option key={role.slug} value={role.slug}>
-                {role.nombre}
-              </option>
-            ))}
+                <option key={role.slug} value={role.slug}>
+                  {role.nombre}
+                </option>
+              ))}
           </select>
           <button className="button" type="submit">
             Agregar
@@ -126,9 +126,7 @@ export default function UsersPage() {
             >
               <td>
                 {member.nombre}
-                {member.isActive === false ? (
-                  <div className="badge-baja">Baja</div>
-                ) : null}
+                {member.isActive === false ? <div className="badge-baja">Baja</div> : null}
               </td>
               <td>{member.usuario}</td>
               <td>{member.correo}</td>
@@ -141,10 +139,10 @@ export default function UsersPage() {
                     {roles
                       .filter((role) => role.isActive !== false)
                       .map((role) => (
-                      <option key={role.slug} value={role.slug}>
-                        {role.nombre}
-                      </option>
-                    ))}
+                        <option key={role.slug} value={role.slug}>
+                          {role.nombre}
+                        </option>
+                      ))}
                   </select>
                 ) : (
                   member.roleNombre

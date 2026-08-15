@@ -27,13 +27,16 @@ export default function DonacionesPage() {
   const { orgId, can } = useOrg();
 
   const [imagenes, setImagenes] = useState<Fila[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [cargandoMas, setCargandoMas] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     try {
-      const filas = await listarImagenes(request, orgId);
-      setImagenes(filas as Fila[]);
+      const pagina = await listarImagenes(request, orgId);
+      setImagenes(pagina.items as Fila[]);
+      setCursor(pagina.siguienteCursor);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudieron cargar las donaciones');
@@ -41,6 +44,22 @@ export default function DonacionesPage() {
       setCargando(false);
     }
   }, [request, orgId]);
+
+  const cargarMas = useCallback(async () => {
+    if (!cursor) {
+      return;
+    }
+    setCargandoMas(true);
+    try {
+      const pagina = await listarImagenes(request, orgId, { cursor });
+      setImagenes((previas) => [...previas, ...(pagina.items as Fila[])]);
+      setCursor(pagina.siguienteCursor);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar más donaciones');
+    } finally {
+      setCargandoMas(false);
+    }
+  }, [request, orgId, cursor]);
 
   useEffect(() => {
     void cargar();
@@ -81,6 +100,16 @@ export default function DonacionesPage() {
           <span className="font-medium">{fila.producto.nombre}</span>
         ) : (
           <span className="text-muted-foreground">Sin identificar</span>
+        ),
+    },
+    {
+      key: 'acopio',
+      header: 'Acopio',
+      render: (fila) =>
+        fila.acopio ? (
+          fila.acopio.nombre
+        ) : (
+          <span className="text-muted-foreground">Sin especificar</span>
         ),
     },
     {
@@ -144,14 +173,27 @@ export default function DonacionesPage() {
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-error">
+          {error}
+        </p>
+      ) : null}
 
       {cargando ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Spinner /> Cargando…
         </p>
       ) : (
-        <DataTable columns={columns} data={imagenes} caption="Fotos de productos donados" />
+        <>
+          <DataTable columns={columns} data={imagenes} caption="Fotos de productos donados" />
+          {cursor ? (
+            <div className="flex justify-center">
+              <Button variant="outline" disabled={cargandoMas} onClick={() => void cargarMas()}>
+                {cargandoMas ? 'Cargando…' : 'Cargar más'}
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

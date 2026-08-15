@@ -96,9 +96,7 @@ export default function AcopiosPage() {
           <li key={row.id} className={row.isActive === false ? 'is-inactive' : undefined}>
             <div>
               <strong>{row.nombre}</strong>
-              {row.isActive === false ? (
-                <span className="badge-baja"> Baja</span>
-              ) : null}
+              {row.isActive === false ? <span className="badge-baja"> Baja</span> : null}
               <p className="muted">
                 {ACOPIO_FLUJOS.find((item) => item.value === row.flujo)?.label}
                 {' · '}
@@ -120,11 +118,7 @@ export default function AcopiosPage() {
                     Reactivar
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className="linkish"
-                    onClick={() => void onRemove(row.id)}
-                  >
+                  <button type="button" className="linkish" onClick={() => void onRemove(row.id)}>
                     Dar de baja
                   </button>
                 )}

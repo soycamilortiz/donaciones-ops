@@ -3,8 +3,12 @@ import { Spinner } from '@/components/atoms/Spinner';
 import { cn } from '@/lib/utils';
 import type { ButtonProps, ButtonSize, ButtonVariant } from './Button.types';
 
+// `min-h-11`/`min-w-11` = 44px: el minimo tactil. La app se usa con el movil en
+// la mano, en campo y muchas veces con guantes o bajo lluvia; alli un boton de
+// 36px se falla seguido. El alto visual lo sigue marcando `sizes`, pero el area
+// pulsable nunca baja de 44.
 const base =
-  'appearance-none inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50';
+  'appearance-none inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50';
 
 const variants: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
@@ -16,10 +20,10 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: 'h-9 px-3',
-  md: 'h-10 px-4 py-2',
-  lg: 'h-11 px-8',
-  icon: 'h-10 w-10',
+  sm: 'h-11 px-3',
+  md: 'h-11 px-4 py-2',
+  lg: 'h-12 px-8',
+  icon: 'h-11 w-11',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

@@ -10,6 +10,7 @@
       "**",
       "!**/dist",
       "!**/dist-test",
+      "!**/dev-dist",
       "!**/coverage",
       "!**/node_modules",
       "!**/.turbo",

@@ -82,9 +82,11 @@ export function puntuarTermino(tokensTexto: string[], termino: string): number {
 export type Emparejamiento = {
   producto: Producto;
   puntaje: number;
+  /** Palabras del término que acertó. Sirve para desempatar por especificidad. */
+  especificidad: number;
 };
 
-/** Los términos por los que se puede reconocer un producto, de más a menos específico. */
+/** Los términos por los que se puede reconocer un producto. */
 function terminosDe(producto: Producto): string[] {
   return [producto.nombre, ...producto.alias, producto.marca ?? ''].filter(
     (termino) => termino.trim() !== '',
@@ -92,9 +94,37 @@ function terminosDe(producto: Producto): string[] {
 }
 
 /**
- * Devuelve el mejor candidato, o null si nadie supera el umbral o si hay empate
- * entre productos distintos (mejor dejarlo para revisión manual que elegir al
- * azar entre dos marcas).
+ * Mejor puntaje de un producto, y cuántas palabras tenía el término que lo
+ * consiguió. Entre términos con el mismo puntaje gana el más largo: si tanto
+ * "arroz" como "arroz diana" aciertan, el segundo describe mejor lo que se leyó.
+ */
+function evaluar(tokensTexto: string[], producto: Producto): Emparejamiento {
+  let puntaje = 0;
+  let especificidad = 0;
+
+  for (const termino of terminosDe(producto)) {
+    const actual = puntuarTermino(tokensTexto, termino);
+    const palabras = tokenizar(termino).length;
+    if (actual > puntaje || (actual === puntaje && palabras > especificidad)) {
+      puntaje = actual;
+      especificidad = palabras;
+    }
+  }
+
+  return { producto, puntaje, especificidad };
+}
+
+/**
+ * Devuelve el mejor candidato, o null si nadie supera el umbral.
+ *
+ * Ante puntajes iguales gana el emparejamiento más específico: un catálogo real
+ * tiene "Arroz" y "Arroz Diana" a la vez, y ambos aciertan al leer
+ * "ARROZ DIANA 500 G". Elegir el genérico perdería la marca, y negarse a elegir
+ * mandaría a revisión manual algo que se reconoció perfectamente.
+ *
+ * Solo se devuelve null cuando el empate es real —mismo puntaje y misma
+ * especificidad—, porque ahí no hay forma de saber cuál es: mejor un hueco que
+ * una marca inventada.
  */
 export function emparejar(
   texto: string,
@@ -107,12 +137,9 @@ export function emparejar(
   }
 
   const puntuados = productos
-    .map((producto) => ({
-      producto,
-      puntaje: Math.max(...terminosDe(producto).map((t) => puntuarTermino(tokensTexto, t)), 0),
-    }))
+    .map((producto) => evaluar(tokensTexto, producto))
     .filter((item) => item.puntaje >= umbral)
-    .sort((a, b) => b.puntaje - a.puntaje);
+    .sort((a, b) => b.puntaje - a.puntaje || b.especificidad - a.especificidad);
 
   const mejor = puntuados[0];
   if (!mejor) {
@@ -120,9 +147,8 @@ export function emparejar(
   }
 
   const segundo = puntuados[1];
-  if (segundo && segundo.puntaje === mejor.puntaje) {
-    return null;
-  }
+  const empateReal =
+    segundo?.puntaje === mejor.puntaje && segundo?.especificidad === mejor.especificidad;
 
-  return mejor;
+  return empateReal ? null : mejor;
 }

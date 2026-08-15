@@ -103,3 +103,14 @@ export class CorregirProductoDto {
   @IsUUID()
   productoId: string;
 }
+
+export class PaginaDonacionImagenDto {
+  @ApiProperty({ type: [DonacionImagenDto] })
+  items: DonacionImagenDto[];
+
+  @ApiPropertyOptional({
+    description: 'Pasar como `cursor` para la página siguiente. Null si ya no hay más',
+    nullable: true,
+  })
+  siguienteCursor: string | null;
+}

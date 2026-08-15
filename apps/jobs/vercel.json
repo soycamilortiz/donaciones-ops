@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile --filter jobs...",
+  "buildCommand": "cd ../.. && pnpm --filter @soschoco/shared build && pnpm --filter jobs build",
+  "functions": {
+    "api/index.js": {
+      "memory": 512,
+      "maxDuration": 15
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ]
+}

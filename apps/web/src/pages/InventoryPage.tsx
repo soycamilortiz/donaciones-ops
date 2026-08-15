@@ -3,21 +3,18 @@ import { Link } from 'react-router-dom';
 import { useOrg } from '../components/OrgGate';
 import {
   ACOPIO_FLUJOS,
+  type Acopio,
   INVENTORY_CATEGORIAS,
   INVENTORY_DESTINATARIOS,
   INVENTORY_ESTADOS,
   INVENTORY_UNIDADES,
-  type Acopio,
   type InventoryItem,
 } from '../lib/api';
 import { useApi } from '../lib/useApi';
 
 const ACOPIO_KEY = 'soschoco.inventoryAcopio';
 
-function labelOf(
-  options: readonly { value: string; label: string }[],
-  value: string,
-) {
+function labelOf(options: readonly { value: string; label: string }[], value: string) {
   return options.find((item) => item.value === value)?.label ?? value;
 }
 
@@ -43,9 +40,7 @@ export default function InventoryPage() {
   const request = useApi();
   const writable = can('inventory:write');
   const [acopios, setAcopios] = useState<Acopio[]>([]);
-  const [acopioId, setAcopioId] = useState<string>(
-    () => localStorage.getItem(ACOPIO_KEY) ?? '',
-  );
+  const [acopioId, setAcopioId] = useState<string>(() => localStorage.getItem(ACOPIO_KEY) ?? '');
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [editing, setEditing] = useState<InventoryItem | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -70,18 +65,18 @@ export default function InventoryPage() {
 
   async function loadItems(id: string) {
     setItems(
-      await request<InventoryItem[]>(
-        `/api/v1/organizations/${orgId}/acopios/${id}/inventory`,
-      ),
+      await request<InventoryItem[]>(`/api/v1/organizations/${orgId}/acopios/${id}/inventory`),
     );
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadAcopios se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void loadAcopios().catch((err: unknown) => {
       setError(err instanceof Error ? err.message : 'Error al cargar acopios');
     });
   }, [orgId]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadItems se redefine en cada render; acopioId es el disparador real de la recarga.
   useEffect(() => {
     if (!acopioId) {
       setItems([]);
@@ -93,19 +88,14 @@ export default function InventoryPage() {
   }, [orgId, acopioId]);
 
   const selected = acopios.find((row) => row.id === acopioId);
-  const activeItems = useMemo(
-    () => items.filter((item) => item.isActive !== false),
-    [items],
-  );
+  const activeItems = useMemo(() => items.filter((item) => item.isActive !== false), [items]);
 
   const stats = useMemo(() => {
     const categories = new Set(activeItems.map((item) => item.categoria));
     const qty = activeItems.reduce((sum, item) => sum + Number(item.cantidad), 0);
     const alertas = activeItems.filter(
       (item) =>
-        item.estado === 'VENCIDO' ||
-        item.estado === 'PROXIMO_A_VENCER' ||
-        soon(item.vencimiento),
+        item.estado === 'VENCIDO' || item.estado === 'PROXIMO_A_VENCER' || soon(item.vencimiento),
     ).length;
     return {
       activos: activeItems.length,
@@ -158,6 +148,23 @@ export default function InventoryPage() {
     setFormOpen(false);
   }
 
+  // Cerrar pinchando el fondo es una comodidad de raton; con teclado el gesto
+  // equivalente es Escape. Sin esto, quien no usa raton queda atrapado en el
+  // modal.
+  useEffect(() => {
+    if (!formOpen) {
+      return;
+    }
+    const alPulsar = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') {
+        setEditing(null);
+        setFormOpen(false);
+      }
+    };
+    document.addEventListener('keydown', alPulsar);
+    return () => document.removeEventListener('keydown', alPulsar);
+  }, [formOpen]);
+
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!acopioId || !writable) {
@@ -193,10 +200,10 @@ export default function InventoryPage() {
           { method: 'PATCH', body: JSON.stringify(payload) },
         );
       } else {
-        await request(
-          `/api/v1/organizations/${orgId}/acopios/${acopioId}/inventory`,
-          { method: 'POST', body: JSON.stringify(payload) },
-        );
+        await request(`/api/v1/organizations/${orgId}/acopios/${acopioId}/inventory`, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
       }
       closeForm();
       await loadItems(acopioId);
@@ -211,15 +218,13 @@ export default function InventoryPage() {
     }
     setError(null);
     try {
-      await request(
-        `/api/v1/organizations/${orgId}/acopios/${acopioId}/inventory/${item.id}`,
-        { method: 'PATCH', body: JSON.stringify({ isActive }) },
-      );
+      await request(`/api/v1/organizations/${orgId}/acopios/${acopioId}/inventory/${item.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isActive }),
+      });
       await loadItems(acopioId);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'No se pudo actualizar el estado',
-      );
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar el estado');
     }
   }
 
@@ -227,9 +232,7 @@ export default function InventoryPage() {
     return (
       <section className="panel">
         <h1>Inventario</h1>
-        <p className="lede">
-          El inventario vive en cada centro de acopio. Primero creá un acopio.
-        </p>
+        <p className="lede">El inventario vive en cada centro de acopio. Primero creá un acopio.</p>
         <Link className="button" to="/app/acopios">
           Ir a acopios
         </Link>
@@ -244,8 +247,7 @@ export default function InventoryPage() {
           <p className="eyebrow">Bodega</p>
           <h1>Inventario</h1>
           <p className="muted">
-            Existencias del centro seleccionado. Los productos se dan de baja;
-            no se borran.
+            Existencias del centro seleccionado. Los productos se dan de baja; no se borran.
           </p>
         </div>
         {writable ? (
@@ -259,25 +261,23 @@ export default function InventoryPage() {
         {acopios
           .filter((row) => row.isActive !== false)
           .map((row) => (
-          <button
-            key={row.id}
-            type="button"
-            role="option"
-            aria-selected={row.id === acopioId}
-            className={row.id === acopioId ? 'acopio-chip is-selected' : 'acopio-chip'}
-            onClick={() => selectAcopio(row.id)}
-          >
-            <strong>{row.nombre}</strong>
-            <span>
-              {labelOf(ACOPIO_FLUJOS, row.flujo)}
-              {row.municipio ? ` · ${row.municipio}` : ''}
-            </span>
-          </button>
-        ))}
+            <button
+              key={row.id}
+              type="button"
+              role="option"
+              aria-selected={row.id === acopioId}
+              className={row.id === acopioId ? 'acopio-chip is-selected' : 'acopio-chip'}
+              onClick={() => selectAcopio(row.id)}
+            >
+              <strong>{row.nombre}</strong>
+              <span>
+                {labelOf(ACOPIO_FLUJOS, row.flujo)}
+                {row.municipio ? ` · ${row.municipio}` : ''}
+              </span>
+            </button>
+          ))}
       </div>
-      {selected?.direccion ? (
-        <p className="muted acopio-meta">{selected.direccion}</p>
-      ) : null}
+      {selected?.direccion ? <p className="muted acopio-meta">{selected.direccion}</p> : null}
 
       <div className="stat-grid">
         <article className="stat-card">
@@ -313,10 +313,7 @@ export default function InventoryPage() {
         </label>
         <label className="field">
           Categoría
-          <select
-            value={categoria}
-            onChange={(event) => setCategoria(event.target.value)}
-          >
+          <select value={categoria} onChange={(event) => setCategoria(event.target.value)}>
             <option value="">Todas</option>
             {INVENTORY_CATEGORIAS.map((item) => (
               <option key={item.value} value={item.value}>
@@ -359,10 +356,7 @@ export default function InventoryPage() {
               </tr>
             ) : (
               visible.map((item) => (
-                <tr
-                  key={item.id}
-                  className={item.isActive === false ? 'is-inactive' : undefined}
-                >
+                <tr key={item.id} className={item.isActive === false ? 'is-inactive' : undefined}>
                   <td>
                     <strong>{item.nombre}</strong>
                     <div className="muted">
@@ -370,25 +364,18 @@ export default function InventoryPage() {
                         .filter(Boolean)
                         .join(' · ')}
                     </div>
-                    {item.isActive === false ? (
-                      <span className="badge-baja">Baja</span>
-                    ) : null}
+                    {item.isActive === false ? <span className="badge-baja">Baja</span> : null}
                   </td>
                   <td>{labelOf(INVENTORY_CATEGORIAS, item.categoria)}</td>
                   <td>
-                    {item.cantidad}{' '}
-                    {labelOf(INVENTORY_UNIDADES, item.unidad).toLowerCase()}
+                    {item.cantidad} {labelOf(INVENTORY_UNIDADES, item.unidad).toLowerCase()}
                   </td>
                   <td>{dateInput(item.vencimiento) || '—'}</td>
                   <td>{labelOf(INVENTORY_ESTADOS, item.estado)}</td>
                   <td>
                     {writable ? (
                       <div className="row-actions">
-                        <button
-                          type="button"
-                          className="linkish"
-                          onClick={() => openEdit(item)}
-                        >
+                        <button type="button" className="linkish" onClick={() => openEdit(item)}>
                           Editar
                         </button>
                         {item.isActive === false ? (
@@ -419,21 +406,29 @@ export default function InventoryPage() {
       </div>
 
       {formOpen && writable ? (
-        <div className="modal-backdrop" role="presentation" onClick={closeForm}>
+        // biome-ignore lint/a11y/noStaticElementInteractions: el fondo es decorativo y cerrar al pincharlo es una comodidad de raton; el camino de teclado es Escape, manejado arriba.
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            // Solo si el clic cayo en el fondo, no en el dialogo.
+            if (event.target === event.currentTarget) {
+              closeForm();
+            }
+          }}
+        >
           <div
             className="modal"
             role="dialog"
+            aria-modal="true"
             aria-labelledby="inventory-form-title"
-            onClick={(event) => event.stopPropagation()}
           >
             <form
               className="form form-wide"
               key={editing?.id ?? 'new'}
               onSubmit={(event) => void onSave(event)}
             >
-              <h2 id="inventory-form-title">
-                {editing ? 'Editar producto' : 'Nuevo producto'}
-              </h2>
+              <h2 id="inventory-form-title">{editing ? 'Editar producto' : 'Nuevo producto'}</h2>
               <p className="muted">
                 {editing
                   ? 'Actualizá ficha y cantidades. El registro se conserva.'
@@ -464,10 +459,7 @@ export default function InventoryPage() {
                 </label>
                 <label className="field">
                   Detalle de categoría
-                  <input
-                    name="categoriaDetalle"
-                    defaultValue={editing?.categoriaDetalle ?? ''}
-                  />
+                  <input name="categoriaDetalle" defaultValue={editing?.categoriaDetalle ?? ''} />
                 </label>
                 <label className="field">
                   SKU / código
@@ -491,10 +483,7 @@ export default function InventoryPage() {
                 </label>
                 <label className="field">
                   Destinatario
-                  <select
-                    name="destinatario"
-                    defaultValue={editing?.destinatario ?? 'NO_APLICA'}
-                  >
+                  <select name="destinatario" defaultValue={editing?.destinatario ?? 'NO_APLICA'}>
                     {INVENTORY_DESTINATARIOS.map((item) => (
                       <option key={item.value} value={item.value}>
                         {item.label}
@@ -525,10 +514,7 @@ export default function InventoryPage() {
                 </label>
                 <label className="field">
                   Detalle de unidad
-                  <input
-                    name="unidadDetalle"
-                    defaultValue={editing?.unidadDetalle ?? ''}
-                  />
+                  <input name="unidadDetalle" defaultValue={editing?.unidadDetalle ?? ''} />
                 </label>
                 <label className="field">
                   Vencimiento
@@ -562,17 +548,11 @@ export default function InventoryPage() {
                 </label>
                 <label className="field">
                   Donante
-                  <input
-                    name="donanteNombre"
-                    defaultValue={editing?.donanteNombre ?? ''}
-                  />
+                  <input name="donanteNombre" defaultValue={editing?.donanteNombre ?? ''} />
                 </label>
                 <label className="field">
                   Contacto del donante
-                  <input
-                    name="donanteContacto"
-                    defaultValue={editing?.donanteContacto ?? ''}
-                  />
+                  <input name="donanteContacto" defaultValue={editing?.donanteContacto ?? ''} />
                 </label>
               </div>
               <label className="field">

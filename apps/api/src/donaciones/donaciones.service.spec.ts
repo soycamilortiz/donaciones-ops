@@ -186,6 +186,54 @@ describe('DonacionesService', () => {
     });
   });
 
+  describe('listar (paginado por cursor)', () => {
+    it('pide una fila de mas para saber si hay pagina siguiente', async () => {
+      await service.listar(ORG, { limite: 10 });
+
+      expect(prisma.donacionImagen.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 11 }),
+      );
+    });
+
+    it('devuelve cursor cuando hay mas paginas y lo omite cuando no', async () => {
+      const filas = Array.from({ length: 3 }, (_, i) => ({ id: `img-${i}` }));
+      prisma.donacionImagen.findMany.mockResolvedValue(filas);
+
+      const conMas = await service.listar(ORG, { limite: 2 });
+      expect(conMas.items).toHaveLength(2);
+      expect(conMas.siguienteCursor).toBe('img-1');
+
+      const sinMas = await service.listar(ORG, { limite: 5 });
+      expect(sinMas.items).toHaveLength(3);
+      expect(sinMas.siguienteCursor).toBeNull();
+    });
+
+    it('acota el limite para que nadie pida la tabla entera', async () => {
+      await service.listar(ORG, { limite: 100000 });
+      expect(prisma.donacionImagen.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 201 }),
+      );
+    });
+
+    it('cae al default con un limite inservible en vez de romper la consulta', async () => {
+      // '?limite=abc' llega como NaN tras el parseInt del controlador.
+      for (const limite of [Number.NaN, 0, -5]) {
+        await service.listar(ORG, { limite });
+        expect(prisma.donacionImagen.findMany).toHaveBeenLastCalledWith(
+          expect.objectContaining({ take: 51 }),
+        );
+      }
+    });
+
+    it('salta la fila del cursor para no repetirla entre paginas', async () => {
+      await service.listar(ORG, { cursor: 'img-9' });
+
+      expect(prisma.donacionImagen.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ cursor: { id: 'img-9' }, skip: 1 }),
+      );
+    });
+  });
+
   describe('listar', () => {
     it('acota siempre por organización', async () => {
       await service.listar(ORG);
@@ -196,7 +244,7 @@ describe('DonacionesService', () => {
     });
 
     it('filtra por estado cuando se pide', async () => {
-      await service.listar(ORG, DonacionImagenEstado.Fallida);
+      await service.listar(ORG, { estado: DonacionImagenEstado.Fallida });
 
       expect(prisma.donacionImagen.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
