@@ -26,6 +26,8 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 | http://localhost/api/docs | Swagger UI |
 | http://localhost/api/docs/openapi.json | OpenAPI 3 (JSON) |
 | http://localhost:8080 | Dashboard Traefik |
+| localhost:5432 | Postgres |
+| localhost:6379 | Redis (cola BullMQ) |
 
 Auth propia: usuario/contraseña, captcha y JWT (`JWT_SECRET` en `.env`). Las rutas viven en `infra/traefik/dynamic/routes.yml`.
 
@@ -34,7 +36,7 @@ Auth propia: usuario/contraseña, captcha y JWT (`JWT_SECRET` en `.env`). Las ru
 Opción A — API y front en el host (más rápido en Windows):
 
 ```bash
-docker compose up postgres traefik -d
+docker compose up postgres redis traefik -d
 pnpm install
 pnpm dev
 ```
