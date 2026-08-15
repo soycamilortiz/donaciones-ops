@@ -57,6 +57,7 @@ export type Permission = {
 export type Acopio = {
   id: string;
   nombre: string;
+  flujo: 'RECIBIR' | 'ENVIAR' | 'AMBOS';
   telefono?: string | null;
   descripcion?: string | null;
   municipio?: string | null;
@@ -64,6 +65,12 @@ export type Acopio = {
   lat?: number | null;
   lng?: number | null;
 };
+
+export const ACOPIO_FLUJOS = [
+  { value: 'RECIBIR', label: 'Recibir donaciones' },
+  { value: 'ENVIAR', label: 'Enviar donaciones' },
+  { value: 'AMBOS', label: 'Recibir y enviar' },
+] as const;
 
 export const ORGANIZATION_TIPOS = [
   { value: 'CENTRO_ACOPIO', label: 'Centro de acopio' },

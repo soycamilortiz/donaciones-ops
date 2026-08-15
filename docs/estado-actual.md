@@ -72,7 +72,7 @@ No hay proveedor externo. El API emite un JWT y el front lo guarda en `localStor
 | Sesión | `Authorization: Bearer <jwt>`. Default 8h (`JWT_EXPIRES_IN`) |
 | Rutas públicas | health, metadatos, Swagger, `/api/v1/auth/*` |
 
-Flujo de producto: registrarse → caracterizar organización (onboarding) → panel (usuarios, roles, acopios).
+Flujo de producto: registrarse → elegir crear organización **o** esperar invitación (no es obligatorio tener org) → si crea org, los acopios (recibir / enviar donaciones) se cargan en `/app/acopios`.
 
 Invitar personas: quien se suma **ya tiene que estar registrada** con ese correo; no hay magic link.
 

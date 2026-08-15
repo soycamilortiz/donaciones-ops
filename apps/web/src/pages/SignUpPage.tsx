@@ -40,7 +40,7 @@ export default function SignUpPage() {
         },
       );
       setSession(session.accessToken);
-      navigate('/onboarding');
+      navigate('/empezar');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo registrar');
       onSubmitFailed(event);

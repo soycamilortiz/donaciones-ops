@@ -28,7 +28,8 @@ export default function UsersPage() {
   async function onInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     try {
       await request(`/api/v1/organizations/${orgId}/members`, {
         method: 'POST',
@@ -37,7 +38,7 @@ export default function UsersPage() {
           roleSlug: String(data.get('roleSlug') || 'voluntario'),
         }),
       });
-      event.currentTarget.reset();
+      form.reset();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo agregar');

@@ -28,7 +28,7 @@ export default function Dashboard() {
         </li>
         <li>
           <h3>Acopios</h3>
-          <p>Sedes / bodegas de la organización.</p>
+          <p>Bodegas para recibir o enviar donaciones.</p>
           <Link to="/app/acopios">Abrir</Link>
         </li>
       </ul>

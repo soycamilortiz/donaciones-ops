@@ -106,7 +106,8 @@ export default function RolesPage() {
       return;
     }
     setError(null);
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     try {
       const created = await request<Role>(
         `/api/v1/organizations/${orgId}/roles`,
@@ -118,7 +119,7 @@ export default function RolesPage() {
           }),
         },
       );
-      event.currentTarget.reset();
+      form.reset();
       setRoles((current) => [...current, created]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear el rol');

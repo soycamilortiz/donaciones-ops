@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useOrg } from '../components/OrgGate';
+import { ACOPIO_FLUJOS, type Acopio } from '../lib/api';
 import { useApi } from '../lib/useApi';
-import type { Acopio } from '../lib/api';
 
 export default function AcopiosPage() {
   const { orgId, can } = useOrg();
@@ -23,11 +23,13 @@ export default function AcopiosPage() {
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     const latRaw = String(data.get('lat') ?? '').trim();
     const lngRaw = String(data.get('lng') ?? '').trim();
     const payload = {
       nombre: String(data.get('nombre') ?? '').trim(),
+      flujo: String(data.get('flujo') ?? 'AMBOS'),
       telefono: String(data.get('telefono') ?? '').trim() || undefined,
       descripcion: String(data.get('descripcion') ?? '').trim() || undefined,
       municipio: String(data.get('municipio') ?? '').trim() || undefined,
@@ -48,7 +50,7 @@ export default function AcopiosPage() {
         });
       }
       setEditing(null);
-      event.currentTarget.reset();
+      form.reset();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar');
@@ -70,6 +72,10 @@ export default function AcopiosPage() {
   return (
     <section className="panel">
       <h1>Centros de acopio</h1>
+      <p className="muted">
+        Acá se registran las bodegas: si reciben donaciones, si las envían a
+        zona, o ambas. No se crean al armar la organización.
+      </p>
       {error ? <p className="error">{error}</p> : null}
       <ul className="stack-list">
         {rows.map((row) => (
@@ -77,6 +83,8 @@ export default function AcopiosPage() {
             <div>
               <strong>{row.nombre}</strong>
               <p className="muted">
+                {ACOPIO_FLUJOS.find((item) => item.value === row.flujo)?.label}
+                {' · '}
                 {[row.municipio, row.direccion, row.telefono]
                   .filter(Boolean)
                   .join(' · ') || 'Sin datos de ubicación'}
@@ -96,7 +104,7 @@ export default function AcopiosPage() {
         ))}
       </ul>
       {can('acopios:write') ? (
-        <form className="form" onSubmit={(event) => void onSave(event)}>
+        <form className="form" key={editing?.id ?? 'new'} onSubmit={(event) => void onSave(event)}>
           <h2>{editing ? 'Editar acopio' : 'Nuevo acopio'}</h2>
           <label className="field">
             Nombre
@@ -106,6 +114,16 @@ export default function AcopiosPage() {
               defaultValue={editing?.nombre ?? ''}
               key={editing?.id ?? 'new'}
             />
+          </label>
+          <label className="field">
+            Flujo de donaciones
+            <select name="flujo" defaultValue={editing?.flujo ?? 'RECIBIR'}>
+              {ACOPIO_FLUJOS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="field">
             Municipio

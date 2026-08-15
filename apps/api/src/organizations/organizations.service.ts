@@ -68,15 +68,6 @@ export class OrganizationsService {
         },
       });
 
-      if (dto.acopio) {
-        await tx.acopio.create({
-          data: {
-            organizationId: organization.id,
-            ...dto.acopio,
-          },
-        });
-      }
-
       return organization;
     });
   }

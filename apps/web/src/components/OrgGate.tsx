@@ -26,6 +26,8 @@ type OrgContextValue = {
 
 const OrgContext = createContext<OrgContextValue | null>(null);
 
+const RUTAS_SIN_ORG = ['/empezar', '/empezar/organizacion', '/pendiente'];
+
 export function useOrg(): OrgContextValue {
   const value = useContext(OrgContext);
   if (!value) {
@@ -73,17 +75,17 @@ export default function OrgGate() {
   }
 
   if (!me) {
-    return <p className="page">Cargando organización…</p>;
+    return <p className="page">Cargando sesión…</p>;
   }
 
   if (me.memberships.length === 0) {
-    if (location.pathname !== '/onboarding') {
-      return <Navigate to="/onboarding" replace />;
+    if (!RUTAS_SIN_ORG.includes(location.pathname)) {
+      return <Navigate to="/empezar" replace />;
     }
     return <Outlet context={{ me, refresh }} />;
   }
 
-  if (location.pathname === '/onboarding') {
+  if (RUTAS_SIN_ORG.includes(location.pathname)) {
     return <Navigate to="/app" replace />;
   }
 

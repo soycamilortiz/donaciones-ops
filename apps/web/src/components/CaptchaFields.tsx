@@ -67,7 +67,8 @@ export function useCaptchaRefresh() {
     refreshKey,
     refreshCaptcha: () => setRefreshKey((value) => value + 1),
     onSubmitFailed: (event: FormEvent<HTMLFormElement>) => {
-      const answer = event.currentTarget.elements.namedItem('captchaAnswer');
+      const form = event.currentTarget;
+      const answer = form?.elements.namedItem('captchaAnswer');
       if (answer instanceof HTMLInputElement) {
         answer.value = '';
       }

@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AcopioFlujo } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -16,6 +18,14 @@ export class CreateAcopioDto {
   @MinLength(2)
   @MaxLength(160)
   nombre: string;
+
+  @ApiProperty({
+    enum: AcopioFlujo,
+    example: AcopioFlujo.RECIBIR,
+    description: 'Si el punto recibe donaciones, las envía, o ambas',
+  })
+  @IsEnum(AcopioFlujo)
+  flujo: AcopioFlujo;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -65,6 +75,11 @@ export class UpdateAcopioDto {
   @MinLength(2)
   @MaxLength(160)
   nombre?: string;
+
+  @ApiPropertyOptional({ enum: AcopioFlujo })
+  @IsOptional()
+  @IsEnum(AcopioFlujo)
+  flujo?: AcopioFlujo;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -116,6 +131,9 @@ export class AcopioDto {
 
   @ApiProperty()
   nombre: string;
+
+  @ApiProperty({ enum: AcopioFlujo })
+  flujo: AcopioFlujo;
 
   @ApiPropertyOptional()
   telefono?: string | null;
