@@ -1,19 +1,46 @@
+# Dependencias
 node_modules/
+.pnpm-store/
+
+# Compilados
 dist/
+dist-ssr/
 dist-test/
+build/
+*.tsbuildinfo
+
+# Caches de herramientas
+.turbo/
+.cache/
 coverage/
+
+# Entorno — el .example sí se versiona
 .env
 .env.*
 !.env.example
+*.local
+
+# Secretos y certificados
+*.pem
+*.key
+!**/prisma/**/*.key
+
+# Logs
 *.log
+logs/
+
+# Editores
+.idea/
+.vscode/
+*.swp
+*~
+
+# Sistema operativo
 .DS_Store
 Thumbs.db
-.idea/
-*.tsbuildinfo
+desktop.ini
 
-# turborepo
-.turbo/
-
-# lockfiles de otros gestores — este monorepo usa pnpm
+# Lockfiles de otros gestores — este monorepo usa pnpm
 package-lock.json
 yarn.lock
+bun.lockb
