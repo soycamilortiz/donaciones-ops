@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 export interface DataTableColumn<T> {
   key: keyof T & string;
   header: string;
-  align?: "left" | "center" | "right";
+  align?: 'left' | 'center' | 'right';
   render?: (row: T) => ReactNode;
   className?: string;
 }

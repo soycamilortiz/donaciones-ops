@@ -1,4 +1,4 @@
-import type { IconName } from "@/components/atoms/Icon";
+import type { IconName } from '@/components/atoms/Icon';
 
 export interface NavItemProps {
   href: string;

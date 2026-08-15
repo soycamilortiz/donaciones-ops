@@ -15,7 +15,8 @@
       "!**/.turbo",
       "!**/prisma/migrations",
       "!apps/web/public",
-      "!pnpm-lock.yaml"
+      "!pnpm-lock.yaml",
+      "!apps/web/src/styles/design-system.css"
     ]
   },
   "formatter": {

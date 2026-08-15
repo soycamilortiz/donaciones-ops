@@ -1,6 +1,6 @@
-import type { ReactElement } from "react";
-import { cn } from "@/lib/utils";
-import type { IconName, IconProps } from "./Icon.types";
+import type { ReactElement } from 'react';
+import { cn } from '@/lib/utils';
+import type { IconName, IconProps } from './Icon.types';
 
 /** Stroke-based 24x24 path data, keyed by icon name. */
 const PATHS: Record<IconName, ReactElement> = {
@@ -12,8 +12,8 @@ const PATHS: Record<IconName, ReactElement> = {
       <path d="m21 21-4.3-4.3" />
     </>
   ),
-  "chevron-down": <path d="m6 9 6 6 6-6" />,
-  "chevron-right": <path d="m9 6 6 6-6 6" />,
+  'chevron-down': <path d="m6 9 6 6 6-6" />,
+  'chevron-right': <path d="m9 6 6 6-6 6" />,
   check: <path d="M20 6 9 17l-5-5" />,
   user: (
     <>
@@ -44,14 +44,14 @@ const PATHS: Record<IconName, ReactElement> = {
       <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
     </>
   ),
-  "external-link": (
+  'external-link': (
     <>
       <path d="M15 3h6v6" />
       <path d="M10 14 21 3" />
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
     </>
   ),
-  "alert-circle": (
+  'alert-circle': (
     <>
       <circle cx="12" cy="12" r="10" />
       <path d="M12 8v4M12 16h.01" />
@@ -74,13 +74,7 @@ const PATHS: Record<IconName, ReactElement> = {
   ),
 };
 
-export function Icon({
-  name,
-  size = 20,
-  title,
-  className,
-  ...props
-}: IconProps): ReactElement {
+export function Icon({ name, size = 20, title, className, ...props }: IconProps): ReactElement {
   return (
     <svg
       width={size}
@@ -91,10 +85,10 @@ export function Icon({
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      role={title ? "img" : "presentation"}
+      role={title ? 'img' : 'presentation'}
       aria-label={title}
       aria-hidden={title ? undefined : true}
-      className={cn("shrink-0", className)}
+      className={cn('shrink-0', className)}
       {...props}
     >
       {title ? <title>{title}</title> : null}

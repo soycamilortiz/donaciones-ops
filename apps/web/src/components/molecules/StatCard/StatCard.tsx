@@ -1,7 +1,7 @@
-import type { ReactElement } from "react";
-import { cn } from "@/lib/utils";
-import { Icon } from "@/components/atoms/Icon";
-import type { StatCardProps } from "./StatCard.types";
+import type { ReactElement } from 'react';
+import { Icon } from '@/components/atoms/Icon';
+import { cn } from '@/lib/utils';
+import type { StatCardProps } from './StatCard.types';
 
 export function StatCard({
   className,
@@ -13,10 +13,7 @@ export function StatCard({
 }: StatCardProps): ReactElement {
   return (
     <div
-      className={cn(
-        "rounded-lg border border-border bg-card p-5 shadow-sm",
-        className,
-      )}
+      className={cn('rounded-lg border border-border bg-card p-5 shadow-sm', className)}
       {...props}
     >
       <div className="flex items-center justify-between">
@@ -31,12 +28,12 @@ export function StatCard({
       {trend ? (
         <p
           className={cn(
-            "mt-1 text-xs font-medium",
-            trend.direction === "up"
-              ? "text-success"
-              : trend.direction === "down"
-                ? "text-error"
-                : "text-muted-foreground",
+            'mt-1 text-xs font-medium',
+            trend.direction === 'up'
+              ? 'text-success'
+              : trend.direction === 'down'
+                ? 'text-error'
+                : 'text-muted-foreground',
           )}
         >
           {trend.value}

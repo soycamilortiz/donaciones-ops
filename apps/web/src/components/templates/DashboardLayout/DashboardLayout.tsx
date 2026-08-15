@@ -1,15 +1,15 @@
-import type { ReactElement } from "react";
-import { cn } from "@/lib/utils";
-import { Sidebar } from "@/components/organisms/Sidebar";
-import { Header } from "@/components/organisms/Header";
-import { Icon } from "@/components/atoms/Icon";
-import { APP_NAME, ROUTES } from "@/lib/constants";
-import type { SidebarItem } from "@/components/organisms/Sidebar";
-import type { DashboardLayoutProps } from "./DashboardLayout.types";
+import type { ReactElement } from 'react';
+import { Icon } from '@/components/atoms/Icon';
+import { Header } from '@/components/organisms/Header';
+import type { SidebarItem } from '@/components/organisms/Sidebar';
+import { Sidebar } from '@/components/organisms/Sidebar';
+import { APP_NAME, ROUTES } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import type { DashboardLayoutProps } from './DashboardLayout.types';
 
 const defaultNavItems: SidebarItem[] = [
-  { href: ROUTES.home, label: "Dashboard", icon: "home" },
-  { href: ROUTES.donaciones, label: "Donaciones", icon: "heart" },
+  { href: ROUTES.home, label: 'Dashboard', icon: 'home' },
+  { href: ROUTES.donaciones, label: 'Donaciones', icon: 'heart' },
 ];
 
 export function DashboardLayout({
@@ -31,9 +31,7 @@ export function DashboardLayout({
       />
       <div className="flex flex-1 flex-col">
         <Header sticky />
-        <main className={cn("flex-1 overflow-y-auto p-6", className)}>
-          {children}
-        </main>
+        <main className={cn('flex-1 overflow-y-auto p-6', className)}>{children}</main>
       </div>
     </div>
   );

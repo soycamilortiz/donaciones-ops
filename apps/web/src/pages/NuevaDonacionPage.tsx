@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { type FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { Button } from '@/components/atoms/Button';
@@ -54,16 +54,36 @@ export default function NuevaDonacionPage() {
         noValidate
       >
         <FormField label="Donante" htmlFor="donante" error={errors.donante}>
-          <Input id="donante" name="donante" placeholder="Nombre del donante" invalid={Boolean(errors.donante)} />
+          <Input
+            id="donante"
+            name="donante"
+            placeholder="Nombre del donante"
+            invalid={Boolean(errors.donante)}
+          />
         </FormField>
         <FormField label="Tipo" htmlFor="tipo" error={errors.tipo}>
-          <Input id="tipo" name="tipo" placeholder="Alimentos, Agua, Ropa…" invalid={Boolean(errors.tipo)} />
+          <Input
+            id="tipo"
+            name="tipo"
+            placeholder="Alimentos, Agua, Ropa…"
+            invalid={Boolean(errors.tipo)}
+          />
         </FormField>
         <FormField label="Cantidad" htmlFor="cantidad" error={errors.cantidad}>
-          <Input id="cantidad" name="cantidad" placeholder="120 kits" invalid={Boolean(errors.cantidad)} />
+          <Input
+            id="cantidad"
+            name="cantidad"
+            placeholder="120 kits"
+            invalid={Boolean(errors.cantidad)}
+          />
         </FormField>
         <FormField label="Centro de acopio" htmlFor="centro" error={errors.centro}>
-          <Input id="centro" name="centro" placeholder="Acopio Quibdó" invalid={Boolean(errors.centro)} />
+          <Input
+            id="centro"
+            name="centro"
+            placeholder="Acopio Quibdó"
+            invalid={Boolean(errors.centro)}
+          />
         </FormField>
         <div className="flex items-center gap-3">
           <Button type="submit">Registrar donación</Button>

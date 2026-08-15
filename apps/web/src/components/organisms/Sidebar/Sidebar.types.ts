@@ -1,5 +1,5 @@
-import type { HTMLAttributes, ReactNode } from "react";
-import type { IconName } from "@/components/atoms/Icon";
+import type { HTMLAttributes, ReactNode } from 'react';
+import type { IconName } from '@/components/atoms/Icon';
 
 export type SidebarItem = {
   href: string;
