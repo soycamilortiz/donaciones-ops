@@ -17,10 +17,10 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PermissionSlug } from '@soschoco/shared';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import { PermissionSlug } from '../rbac/catalog';
 import {
   AddMemberDto,
   CreateOrganizationDto,

@@ -1,5 +1,6 @@
 packages:
   - 'apps/*'
+  - 'packages/*'
 
 # Scripts de build permitidos (pnpm 11 los bloquea por defecto).
 allowBuilds:

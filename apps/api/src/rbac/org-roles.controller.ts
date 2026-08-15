@@ -18,8 +18,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PermissionSlug } from '@soschoco/shared';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import { PermissionSlug } from './catalog';
 import {
   CreateRoleDto,
   PermissionDto,

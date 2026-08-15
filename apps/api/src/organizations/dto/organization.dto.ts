@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { OrganizationTipo } from '@prisma/client';
+import type { Member, Organization } from '@soschoco/shared';
 import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateOrganizationDto {
@@ -93,7 +94,7 @@ export class UpdateMemberDto {
   roleSlug: string;
 }
 
-export class OrganizationDto {
+export class OrganizationDto implements Organization {
   @ApiProperty()
   id: string;
 
@@ -119,7 +120,7 @@ export class OrganizationDto {
   createdAt: Date;
 }
 
-export class MemberDto {
+export class MemberDto implements Member {
   @ApiProperty()
   membershipId: string;
 

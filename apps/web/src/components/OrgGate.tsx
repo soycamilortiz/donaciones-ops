@@ -1,3 +1,4 @@
+import type { PermissionSlug } from '@soschoco/shared';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { type Me, type Membership, readStoredOrgId, storeOrgId } from '../lib/api';
@@ -9,7 +10,7 @@ type OrgContextValue = {
   membership: Membership;
   setOrgId: (id: string) => void;
   refresh: () => Promise<void>;
-  can: (permission: string) => boolean;
+  can: (permission: PermissionSlug) => boolean;
 };
 
 const OrgContext = createContext<OrgContextValue | null>(null);

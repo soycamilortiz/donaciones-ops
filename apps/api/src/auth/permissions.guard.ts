@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import type { PermissionSlug } from '@soschoco/shared';
 import type { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
-import type { PermissionSlug } from '../rbac/catalog';
 import type { AuthUser } from './auth.types';
 import { PERMISSION_KEY } from './require-permission.decorator';
 

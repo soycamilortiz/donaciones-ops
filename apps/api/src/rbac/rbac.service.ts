@@ -6,8 +6,8 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import { PERMISSION_CATALOG, PermissionSlug, ROLE_CATALOG, RoleSlug } from '@soschoco/shared';
 import { PrismaService } from '../prisma/prisma.service';
-import { PERMISSION_CATALOG, PermissionSlug, ROLE_CATALOG, RoleSlug } from './catalog';
 import type { CreateRoleDto, UpdatePermissionDto, UpdateRoleDto } from './dto/rbac.dto';
 
 const roleInclude = {
