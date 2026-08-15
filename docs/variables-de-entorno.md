@@ -75,32 +75,96 @@ REDIS_URL=redis://localhost:6379
 
 ## Vercel
 
-Cada app es un proyecto propio de Vercel apuntando al mismo repo, cambiando el
-**Root Directory**. Las variables se cargan en cada proyecto por separado.
+Cada app es un proyecto propio de Vercel apuntando **al mismo repositorio**, lo
+único que cambia es el *Root Directory*. El `vercel.json` de cada app ya define
+el build; en la interfaz solo hay que fijar el directorio y las variables.
 
-| Proyecto | Root Directory | Variables |
+| Proyecto | Root Directory | Framework Preset |
 | --- | --- | --- |
-| `…-api` | `apps/api` | `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `REDIS_URL`, `BLOB_READ_WRITE_TOKEN`, `RBAC_SYNC_ON_BOOT=false`, `SWAGGER_ENABLED=false` |
-| `…-web` | `apps/web` | ninguna |
-| `…-jobs` | `apps/jobs` | `REDIS_URL`, `JOBS_USER`, `JOBS_PASSWORD` |
+| `donaciones-ops-api` | `apps/api` | Other |
+| `donaciones-ops-web` | `apps/web` | Vite |
+| `donaciones-ops-jobs` | `apps/jobs` | Other |
 
-`apps/worker` no va a Vercel: es un proceso residente que escucha Redis.
+En los tres hay que dejar activado **"Include source files outside of the Root
+Directory"**, porque el build instala desde la raíz del monorepo y necesita
+`pnpm-workspace.yaml`, el lockfile y `packages/shared`.
 
-En serverless, `DATABASE_URL` **tiene que apuntar al pooler** del proveedor
-(Supabase `:6543`, Neon con `-pooler`). Cada arranque en frío abre una conexión
-y Vercel escala a muchas instancias en paralelo; sin pooler, Postgres se queda
-sin conexiones. Las migraciones necesitan la URL directa:
+`NODE_ENV` no se configura: Vercel la fija en `production`. `PORT` tampoco: en
+serverless quien escucha es el runtime.
+
+### Proyecto `api` — Root Directory `apps/api`
+
+| Variable | Valor | Secreto |
+| --- | --- | :-: |
+| `DATABASE_URL` | `postgresql://USUARIO:CLAVE@HOST:6543/DB?pgbouncer=true&connection_limit=1` | ✅ |
+| `JWT_SECRET` | 32+ caracteres aleatorios (`openssl rand -base64 32`) | ✅ |
+| `CORS_ORIGIN` | `https://donaciones-ops-web.vercel.app` | |
+| `JWT_EXPIRES_IN` | `8h` | |
+| `REDIS_URL` | `rediss://default:CLAVE@HOST.upstash.io:6379` | ✅ |
+| `BLOB_READ_WRITE_TOKEN` | lo genera Vercel al crear el store de Blob | ✅ |
+| `RBAC_SYNC_ON_BOOT` | `false` | |
+| `SWAGGER_ENABLED` | `false` | |
+
+El puerto `6543` y `pgbouncer=true` son de Supabase; en Neon el host lleva
+`-pooler`. `connection_limit=1` es lo recomendado en serverless: cada instancia
+abre su propia conexión y no debe acaparar el pool.
+
+### Proyecto `web` — Root Directory `apps/web`
+
+**Ninguna variable.** El front llama a `/api` en el mismo origen y el rewrite de
+`apps/web/vercel.json` lo reenvía al despliegue del API. Si la URL del API no es
+`https://donaciones-ops-api.vercel.app`, hay que corregir ese `destination`.
+
+Que no lleve variables es deliberado: todo lo que entra en un bundle de front es
+público, así que ahí no puede haber secretos.
+
+### Proyecto `jobs` — Root Directory `apps/jobs`
+
+| Variable | Valor | Secreto |
+| --- | --- | :-: |
+| `REDIS_URL` | **el mismo** que el del API | ✅ |
+| `JOBS_USER` | `admin` | |
+| `JOBS_PASSWORD` | 16+ caracteres aleatorios | ✅ |
+| `JOBS_BASE_PATH` | `/jobs` | |
+
+Si el `REDIS_URL` no es idéntico al del API, el panel se ve vacío: estaría
+mirando otra instancia.
+
+### El worker no va a Vercel
+
+`apps/worker` es un proceso residente que escucha Redis; Vercel no hospeda eso.
+Su `Dockerfile` corre tal cual en cualquier host de contenedores (Railway,
+Render, Fly, o un VPS con el compose). Necesita:
+
+| Variable | Valor |
+| --- | --- |
+| `DATABASE_URL` | la **directa**, sin pooler: es un proceso largo con una sola conexión |
+| `REDIS_URL` | el mismo que el API y el panel |
+| `OCR_*` | los valores por defecto sirven |
+
+Sin el worker corriendo en algún lado, las fotos se suben pero se quedan en
+`PENDIENTE` para siempre.
+
+### Después del primer despliegue
+
+Las migraciones y la siembra no corren solas. Una vez, con la URL **directa**
+(sin pooler):
 
 ```bash
-DATABASE_URL="<url-directa-sin-pooler>" pnpm --filter api prisma:deploy
+DATABASE_URL="<url-directa>" pnpm --filter api prisma:deploy
+DATABASE_URL="<url-directa>" pnpm --filter api rbac:sync
+psql "<url-directa>" -f apps/api/prisma/seed-productos.sql
 ```
 
-Y `RBAC_SYNC_ON_BOOT=false`, porque si no se ejecutan ~20 escrituras en cada
-arranque en frío. Tras cada despliegue que cambie el catálogo:
+`rbac:sync` hay que repetirlo tras cada despliegue que cambie el catálogo de
+roles o permisos, porque `RBAC_SYNC_ON_BOOT` está en `false`.
 
-```bash
-pnpm --filter api rbac:sync
-```
+### Sobre el costo de Upstash
+
+BullMQ hace polling con comandos bloqueantes y Upstash cobra por comando. El
+API solo **produce** (un `add()` por foto), así que su consumo es mínimo. El que
+haría polling constante es el worker, y ese no está en Vercel: conviene tenerlo
+cerca del Redis o usar un Redis propio en el mismo host.
 
 ## Qué rompe si se mezcla
 
