@@ -5,6 +5,7 @@ node_modules/
 # Compilados
 dist/
 dist-ssr/
+dev-dist/
 dist-test/
 build/
 *.tsbuildinfo

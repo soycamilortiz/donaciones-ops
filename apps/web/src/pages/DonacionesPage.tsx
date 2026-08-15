@@ -144,7 +144,11 @@ export default function DonacionesPage() {
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-error">
+          {error}
+        </p>
+      ) : null}
 
       {cargando ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -310,6 +310,16 @@ select {
   min-height: 100vh;
 }
 
+/*
+ * Sin esto los hijos de un grid no bajan de su min-content y el ancho de una
+ * tabla o de la navegacion empuja toda la pagina, provocando scroll horizontal
+ * en movil. `min-width: 0` deja que cada columna se encoja y que el desborde lo
+ * gestione quien corresponda (la tabla tiene su propio overflow).
+ */
+.app-shell > * {
+  min-width: 0;
+}
+
 .app-shell aside {
   border-right: 1px solid var(--line);
   padding: 24px 16px;
@@ -323,12 +333,41 @@ select {
   margin-top: 24px;
 }
 
+/*
+ * 44px de alto minimo: la app se usa con el movil en campo, y un enlace de 24px
+ * se falla seguido. El area pulsable se agranda con padding, no con font-size,
+ * para no cambiar la jerarquia visual.
+ */
 .app-shell aside nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  margin: 0 -12px;
+  border-radius: 6px;
   text-decoration: none;
+}
+
+.app-shell aside nav a:hover {
+  background: var(--line);
 }
 
 .app-shell aside nav a.active {
   font-weight: 700;
+  /* Un indicador que no depende solo del peso tipografico, que es sutil. */
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* El foco tiene que verse: es la unica pista para quien navega con teclado. */
+.app-shell aside nav a:focus-visible,
+.linkish:focus-visible,
+.app-shell aside select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app-shell aside select {
+  min-height: 44px;
 }
 
 .app-main {
@@ -395,12 +434,50 @@ td {
   color: var(--accent);
   cursor: pointer;
   font: inherit;
-  padding: 0;
+  /* Mismo minimo tactil que el resto de controles. */
+  min-height: 44px;
+  padding: 0 8px;
 }
 
 @media (max-width: 800px) {
   .app-shell {
     grid-template-columns: 1fr;
+  }
+
+  /*
+   * En movil el sidebar apilado se comia media pantalla antes de llegar al
+   * contenido. La navegacion pasa a una fila desplazable: sigue completa y
+   * accesible, pero deja el alto para lo que importa.
+   */
+  .app-shell aside {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 16px;
+  }
+
+  .app-shell aside nav {
+    flex-direction: row;
+    gap: 4px;
+    margin-top: 12px;
+    overflow-x: auto;
+    /* Sin esto el ultimo enlace queda pegado al borde al desplazar. */
+    padding-bottom: 4px;
+  }
+
+  .app-shell aside nav a {
+    white-space: nowrap;
+  }
+
+  /*
+   * En horizontal, una barra a la izquierda no lee como "seleccionado".
+   * Subrayado inferior, que es la convencion en pestanas.
+   */
+  .app-shell aside nav a.active {
+    box-shadow: inset 0 -3px 0 var(--accent);
+  }
+
+  .app-main {
+    padding: 0 16px 32px;
   }
 }
 

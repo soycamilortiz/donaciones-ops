@@ -100,6 +100,7 @@ export default function NuevaDonacionPage() {
         capture="environment"
         className="sr-only"
         id="foto-producto"
+        aria-label="Tomar foto del producto donado"
         onChange={(event) => void onArchivo(event.target.files?.[0])}
       />
 
@@ -116,14 +117,14 @@ export default function NuevaDonacionPage() {
       ) : null}
 
       {fase === 'subiendo' ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
           <Spinner /> Subiendo la foto…
         </p>
       ) : null}
 
       {fase === 'reconociendo' ? (
         <div className="space-y-2">
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
             <Spinner /> Reconociendo el producto…
           </p>
           <p className="text-xs text-muted-foreground">
@@ -140,7 +141,11 @@ export default function NuevaDonacionPage() {
 
       {fase === 'listo' && imagen ? <Resultado imagen={imagen} /> : null}
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-error">
+          {error}
+        </p>
+      ) : null}
 
       {fase === 'listo' || fase === 'error' ? (
         <div className="flex flex-wrap gap-3">

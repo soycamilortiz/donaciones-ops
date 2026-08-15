@@ -101,7 +101,11 @@ export default function RevisionDonacionesPage() {
         </p>
       </div>
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-error">
+          {error}
+        </p>
+      ) : null}
 
       {cargando ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -150,7 +154,7 @@ export default function RevisionDonacionesPage() {
                   </label>
                   <select
                     id={`producto-${imagen.id}`}
-                    className="rounded border border-border bg-card px-3 py-2 text-sm"
+                    className="min-h-11 cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     defaultValue=""
                     disabled={guardando === imagen.id}
                     onChange={(event) => void asignar(imagen.id, event.target.value)}

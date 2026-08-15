@@ -6,7 +6,7 @@ export function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   caption,
-  emptyMessage = 'No data.',
+  emptyMessage = 'Todavía no hay nada que mostrar.',
   className,
   rowKey,
 }: DataTableProps<T>): ReactElement {
@@ -21,6 +21,7 @@ export function DataTable<T extends Record<string, unknown>>({
             {columns.map((col) => (
               <th
                 key={col.key}
+                scope="col"
                 className={cn(
                   'h-11 px-4 text-left align-middle font-medium text-muted-foreground',
                   col.align === 'right' && 'text-right',
