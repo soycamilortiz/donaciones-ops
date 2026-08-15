@@ -47,9 +47,7 @@ export class MeService {
           nombre: membership.organization.nombre,
           tipo: membership.organization.tipo,
         },
-        permissions: membership.role.rolePermissions.map(
-          (item) => item.permission.slug,
-        ),
+        permissions: membership.role.rolePermissions.map((item) => item.permission.slug),
       })),
     };
   }

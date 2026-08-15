@@ -1,5 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -54,10 +54,7 @@ describe('API (e2e)', () => {
   });
 
   it('GET /api/health es liveness', () => {
-    return request(app.getHttpServer())
-      .get('/api/health')
-      .expect(200)
-      .expect({ status: 'ok' });
+    return request(app.getHttpServer()).get('/api/health').expect(200).expect({ status: 'ok' });
   });
 
   it('GET /api/docs/openapi.json expone OpenAPI 3', () => {

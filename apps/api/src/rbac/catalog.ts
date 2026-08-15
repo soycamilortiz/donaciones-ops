@@ -11,8 +11,7 @@ export const PermissionSlug = {
   RolesWrite: 'roles:write',
 } as const;
 
-export type PermissionSlug =
-  (typeof PermissionSlug)[keyof typeof PermissionSlug];
+export type PermissionSlug = (typeof PermissionSlug)[keyof typeof PermissionSlug];
 
 export const RoleSlug = {
   AdministradorAcopio: 'administrador_acopio',
@@ -100,8 +99,7 @@ export const ROLE_CATALOG: Array<{
   {
     slug: RoleSlug.AdministradorAcopio,
     nombre: 'Administrador de acopio',
-    descripcion:
-      'Quien crea y opera la organización: usuarios, caracterización y bodegas',
+    descripcion: 'Quien crea y opera la organización: usuarios, caracterización y bodegas',
     permissions: ALL_PERMISSIONS,
   },
   {
