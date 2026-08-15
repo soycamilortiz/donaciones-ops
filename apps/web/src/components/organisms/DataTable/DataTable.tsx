@@ -8,6 +8,7 @@ export function DataTable<T extends Record<string, unknown>>({
   caption,
   emptyMessage = 'No data.',
   className,
+  rowKey,
 }: DataTableProps<T>): ReactElement {
   return (
     <div className={cn('w-full overflow-x-auto rounded-lg border border-border', className)}>
@@ -42,7 +43,7 @@ export function DataTable<T extends Record<string, unknown>>({
           ) : (
             data.map((row, index) => (
               <tr
-                key={index}
+                key={rowKey?.(row, index) ?? claveDe(row, index)}
                 className="border-b border-border transition-colors hover:bg-muted/50"
               >
                 {columns.map((col) => (
@@ -65,4 +66,14 @@ export function DataTable<T extends Record<string, unknown>>({
       </table>
     </div>
   );
+}
+
+/**
+ * Si la fila trae un identificador propio se usa ese; si no, se cae al índice.
+ * No es ideal, pero deja la puerta abierta a `rowKey` sin romper a quien ya
+ * pasa datos sin id.
+ */
+function claveDe(row: Record<string, unknown>, index: number): string {
+  const id = row.id;
+  return typeof id === 'string' || typeof id === 'number' ? String(id) : `fila-${index}`;
 }

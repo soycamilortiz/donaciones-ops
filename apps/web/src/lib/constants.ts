@@ -5,6 +5,7 @@ export const ROUTES = {
   app: '/app',
   donaciones: '/app/donaciones',
   nuevaDonacion: '/app/donaciones/nueva',
+  revisionDonaciones: '/app/donaciones/revision',
   signIn: '/sign-in',
   signUp: '/sign-up',
 } as const;

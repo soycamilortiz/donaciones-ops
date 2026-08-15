@@ -106,6 +106,36 @@ services:
       - soschoco
     restart: unless-stopped
 
+  jobs:
+    build:
+      context: .
+      dockerfile: apps/jobs/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      REDIS_URL: redis://redis:6379
+      JOBS_USER: ${JOBS_USER:-admin}
+      JOBS_PASSWORD: ${JOBS_PASSWORD:-cambia-esta-clave}
+      JOBS_BASE_PATH: /jobs
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3100/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - soschoco
+    restart: unless-stopped
+
   web:
     build:
       context: .

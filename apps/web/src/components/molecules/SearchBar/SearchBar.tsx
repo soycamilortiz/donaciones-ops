@@ -10,6 +10,7 @@ export function SearchBar({
   ...props
 }: SearchBarProps): ReactElement {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: role="search" sobre el form es el landmark de mayor compatibilidad; <search> aun no llega a todos los lectores.
     <form role="search" className={cn('relative w-full', className)} {...props}>
       <div className="relative">
         <Icon

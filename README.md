@@ -60,8 +60,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 ```
 apps/api            NestJS + Prisma + PostgreSQL + JWT
-apps/web            Shell React (Vite): login, onboarding, panel
+apps/web            PWA React (Vite): login, onboarding, panel, captura de fotos
 apps/worker         Procesa jobs de reconocimiento de imágenes (BullMQ + Tesseract)
+apps/jobs           Panel de observación de la cola (Bull Board)
 packages/shared     Contratos de dominio (@soschoco/shared)
 ```
 
@@ -118,8 +119,9 @@ La PWA toma la foto de un producto (arroz, agua, crema dental), la sube y el sis
 El recorrido:
 
 ```
-PWA ──1─► API: POST /donaciones/subidas      (autoriza, devuelve token)
-PWA ──2─► Vercel Blob                        (sube el archivo directo)
+PWA ──1─► API: POST /donaciones/subidas/ruta (reserva el pathname)
+PWA ──2─► Vercel Blob                        (upload() negocia el token contra
+                                              /subidas y sube el archivo)
 PWA ──3─► API: POST /donaciones              (registra la URL y encola el job)
                     │
                   Redis
@@ -138,6 +140,8 @@ La imagen **no pasa por el API**: una foto de móvil son varios MB y hacerla via
 | Jobs | `apps/worker/src/jobs` |
 | OCR | `apps/worker/src/ocr` |
 | Emparejamiento con el catálogo | `apps/worker/src/productos` |
+| Pantallas | `apps/web/src/pages/{Donaciones,NuevaDonacion,RevisionDonaciones}Page.tsx` |
+| Cliente del API | `apps/web/src/features/donaciones` |
 
 Para añadir un job nuevo: crea el archivo en `apps/worker/src/jobs` exportando una `DefinicionJob` y súmalo a `registro.ts`. El manager levanta un Worker de BullMQ por cada entrada; no hay que tocar el arranque.
 
@@ -146,3 +150,37 @@ Para añadir un job nuevo: crea el archivo en `apps/worker/src/jobs` exportando 
 El camino que de verdad resuelve el reconocimiento de productos empaquetados es el **código de barras (EAN-13)**, que da identidad exacta y se puede leer en el propio móvil. El modelo ya tiene el campo `ean` en `productos`, y `DefinicionJob` permite enchufar ese motor —o uno de visión— sin tocar la cola ni la persistencia.
 
 Requiere `BLOB_READ_WRITE_TOKEN` (Vercel Blob). Sin él, el módulo responde 503 en vez de tumbar el arranque.
+
+## PWA
+
+`apps/web` es una PWA instalable. La captura usa `<input capture="environment">`, que abre la cámara trasera en móvil y degrada a selector de archivos en escritorio.
+
+El service worker lo genera `vite-plugin-pwa` en `pnpm build` (`dist/sw.js` + `manifest.webmanifest`). Está activo también en `pnpm dev` para poder probar el comportamiento sin señal sin tener que compilar.
+
+Qué se cachea y por qué:
+
+| Recurso | Estrategia | Motivo |
+| --- | --- | --- |
+| Shell (JS, CSS, HTML) | Precache | La app tiene que abrir sin señal |
+| Fotos del Blob | CacheFirst, 30 días | Son inmutables |
+| Lecturas del API | NetworkFirst, 5 s de espera | Los estados cambian; la caché es respaldo |
+
+La actualización es `prompt`, no automática: recargar sola mientras alguien sube una foto en campo perdería el trabajo en curso. El aviso vive en `apps/web/src/components/ActualizacionPWA.tsx`.
+
+## Observar la cola
+
+`apps/jobs` monta [Bull Board](https://github.com/felixmosh/bull-board) en `http://localhost/jobs`. Muestra jobs en espera, activos, completados y fallidos, con su traza de error, y permite reintentar o descartar.
+
+Va detrás de basic auth (`JOBS_USER` / `JOBS_PASSWORD`) porque deja pausar colas y borrar jobs. La comparación de credenciales es de tiempo constante.
+
+Al agregar un job nuevo en `apps/worker/src/jobs`, súmalo también a la lista de colas en `apps/jobs/src/main.ts` para poder observarlo.
+
+## Integración continua
+
+`.github/workflows/ci.yml` corre en cada push y PR:
+
+| Job | Qué verifica |
+| --- | --- |
+| `verificar` | Lint, tipos, build y tests con caché de Turborepo |
+| `migraciones` | Aplica las migraciones a un Postgres real y falla si `schema.prisma` cambió sin su migración |
+| `imagenes` | Construye las cuatro imágenes Docker en paralelo |

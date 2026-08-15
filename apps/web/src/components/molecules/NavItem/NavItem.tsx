@@ -10,7 +10,7 @@ const idleCls = 'text-muted-foreground hover:bg-accent hover:text-accent-foregro
 
 export function NavItem({ href, label, icon, active, className }: NavItemProps): ReactElement {
   const { pathname } = useLocation();
-  const isActive = active ?? (pathname === href || pathname.startsWith(href + '/'));
+  const isActive = active ?? (pathname === href || pathname.startsWith(`${href}/`));
 
   return (
     <Link

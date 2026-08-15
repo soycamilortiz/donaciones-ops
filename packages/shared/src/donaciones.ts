@@ -44,12 +44,15 @@ export type DonacionImagen = {
   createdAt: string;
 };
 
-/** Lo que el API devuelve para que la PWA suba el archivo directo al Blob. */
-export type SubidaAutorizada = {
-  /** Ruta dentro del Blob que la PWA debe usar. */
+/**
+ * Ruta reservada por el API para una foto nueva. La PWA se la pasa a `upload()`
+ * del SDK de Vercel Blob; el token lo negocia el SDK por su cuenta contra
+ * `/subidas`, que implementa el protocolo `handleUpload`.
+ */
+export type RutaSubida = {
   pathname: string;
-  /** Token de subida de un solo uso, emitido por el API. */
-  clientToken: string;
+  tiposAceptados: readonly string[];
+  maxBytes: number;
 };
 
 /**

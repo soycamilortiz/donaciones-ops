@@ -13,10 +13,11 @@ export function Divider({
   ...props
 }: DividerProps): ReactElement {
   return (
-    <div
-      role="separator"
+    // <hr> ya tiene rol de separador. Se anulan borde y margen del navegador
+    // porque el diseño lo dibuja con las utilidades de Tailwind.
+    <hr
       aria-orientation={orientation}
-      className={cn(orientations[orientation], className)}
+      className={cn('m-0 border-0', orientations[orientation], className)}
       {...props}
     />
   );

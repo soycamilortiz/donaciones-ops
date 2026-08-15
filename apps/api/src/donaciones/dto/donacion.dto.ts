@@ -1,42 +1,28 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  DonacionImagenEstado,
-  MAX_IMAGEN_BYTES,
-  type SubidaAutorizada,
-  TIPOS_IMAGEN_ACEPTADOS,
-} from '@soschoco/shared';
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { DonacionImagenEstado, MAX_IMAGEN_BYTES, TIPOS_IMAGEN_ACEPTADOS } from '@soschoco/shared';
+import { IsOptional, IsString, IsUUID } from 'class-validator';
 
-export class AutorizarSubidaDto {
+export class NuevaRutaDto {
   @ApiProperty({
     example: 'colgate-frente.jpg',
     description: 'Nombre original del archivo; solo se usa para conservar la extensión',
   })
   @IsString()
   nombreArchivo: string;
-
-  @ApiProperty({ enum: TIPOS_IMAGEN_ACEPTADOS, example: 'image/jpeg' })
-  @IsIn([...TIPOS_IMAGEN_ACEPTADOS])
-  tipo: string;
-
-  @ApiProperty({ example: 512_000, maximum: MAX_IMAGEN_BYTES })
-  @IsInt()
-  @Min(1)
-  @Max(MAX_IMAGEN_BYTES)
-  tamano: number;
-
-  @ApiPropertyOptional({ description: 'Acopio al que se atribuye la donación' })
-  @IsOptional()
-  @IsUUID()
-  acopioId?: string;
 }
 
-export class SubidaAutorizadaDto implements SubidaAutorizada {
-  @ApiProperty()
+export class RutaSubidaDto {
+  @ApiProperty({
+    example: 'donaciones/<orgId>/9f1c….jpg',
+    description: 'Ruta que la PWA debe pasar a upload() del SDK de Vercel Blob',
+  })
   pathname: string;
 
-  @ApiProperty({ description: 'Token de un solo uso para subir directo a Vercel Blob' })
-  clientToken: string;
+  @ApiProperty({ enum: TIPOS_IMAGEN_ACEPTADOS, isArray: true })
+  tiposAceptados: readonly string[];
+
+  @ApiProperty({ example: MAX_IMAGEN_BYTES })
+  maxBytes: number;
 }
 
 export class RegistrarImagenDto {
