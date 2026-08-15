@@ -61,6 +61,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 apps/api            NestJS + Prisma + PostgreSQL + JWT
 apps/web            Shell React (Vite): login, onboarding, panel
+apps/worker         Procesa jobs de reconocimiento de imágenes (BullMQ + Tesseract)
 packages/shared     Contratos de dominio (@soschoco/shared)
 ```
 
@@ -109,3 +110,39 @@ Dos costuras lo mantienen honesto, ambas en tiempo de compilación:
 Se compila a CommonJS y ESM a la vez (`dist/cjs` y `dist/esm`) porque Nest consume CJS y Vite consume ESM. Turborepo lo construye antes que las apps; no hace falta invocarlo a mano.
 
 Para añadir otro paquete compartido basta crear `packages/<nombre>` con su `package.json`: `pnpm-workspace.yaml` ya incluye `packages/*`.
+
+## Reconocimiento de productos donados
+
+La PWA toma la foto de un producto (arroz, agua, crema dental), la sube y el sistema intenta reconocer de qué producto se trata para dejarlo registrado en la base.
+
+El recorrido:
+
+```
+PWA ──1─► API: POST /donaciones/subidas      (autoriza, devuelve token)
+PWA ──2─► Vercel Blob                        (sube el archivo directo)
+PWA ──3─► API: POST /donaciones              (registra la URL y encola el job)
+                    │
+                  Redis
+                    │
+             apps/worker ──► descarga ──► sharp ──► Tesseract ──► catálogo
+                    │
+                 PostgreSQL: donacion_imagenes.blob_url + producto_id
+```
+
+La imagen **no pasa por el API**: una foto de móvil son varios MB y hacerla viajar dos veces no aporta nada. El API solo firma el permiso de subida y encola.
+
+| Pieza | Dónde |
+| --- | --- |
+| Autorización y encolado | `apps/api/src/donaciones` |
+| Gestor de jobs | `apps/worker/src/manager.ts` |
+| Jobs | `apps/worker/src/jobs` |
+| OCR | `apps/worker/src/ocr` |
+| Emparejamiento con el catálogo | `apps/worker/src/productos` |
+
+Para añadir un job nuevo: crea el archivo en `apps/worker/src/jobs` exportando una `DefinicionJob` y súmalo a `registro.ts`. El manager levanta un Worker de BullMQ por cada entrada; no hay que tocar el arranque.
+
+**Sobre la precisión.** Tesseract lee texto, no reconoce objetos. Sobre un envase real —curvo, con brillo y en ángulo— devuelve texto sucio y falla con frecuencia. Por eso hay dos filtros antes de escribir un producto en la base: la confianza que reporta el OCR (`OCR_CONFIANZA_MINIMA`) y el puntaje de emparejamiento contra el catálogo. Si cualquiera falla, la imagen queda `PROCESADA` **sin producto**, para revisión manual desde `PATCH /donaciones/:id/producto`. Preferimos un hueco a un dato inventado en el inventario.
+
+El camino que de verdad resuelve el reconocimiento de productos empaquetados es el **código de barras (EAN-13)**, que da identidad exacta y se puede leer en el propio móvil. El modelo ya tiene el campo `ean` en `productos`, y `DefinicionJob` permite enchufar ese motor —o uno de visión— sin tocar la cola ni la persistencia.
+
+Requiere `BLOB_READ_WRITE_TOKEN` (Vercel Blob). Sin él, el módulo responde 503 en vez de tumbar el arranque.

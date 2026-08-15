@@ -31,3 +31,14 @@ services:
       - ./apps/web/index.html:/app/apps/web/index.html
       - ./apps/web/vite.config.ts:/app/apps/web/vite.config.ts
     command: ["pnpm", "dev", "--host", "0.0.0.0", "--port", "80"]
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+      target: dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./apps/worker/src:/app/apps/worker/src
+    command: ["pnpm", "dev"]
