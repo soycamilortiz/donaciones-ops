@@ -17,17 +17,17 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import type { AuthUser } from '../auth/auth.types';
 import { PermissionSlug } from '../rbac/catalog';
 import {
   AddMemberDto,
+  CreateOrganizationDto,
   MemberDto,
   OrganizationDto,
   UpdateMemberDto,
   UpdateOrganizationDto,
-  CreateOrganizationDto,
 } from './dto/organization.dto';
 import { OrganizationsService } from './organizations.service';
 
@@ -55,10 +55,7 @@ export class OrganizationsController {
   @RequirePermission(PermissionSlug.OrgRead)
   @ApiOperation({ summary: 'Detalle de una organización' })
   @ApiOkResponse({ type: OrganizationDto })
-  get(
-    @CurrentUser() user: AuthUser,
-    @Param('orgId', ParseUUIDPipe) orgId: string,
-  ) {
+  get(@CurrentUser() user: AuthUser, @Param('orgId', ParseUUIDPipe) orgId: string) {
     return this.organizations.getForUser(user, orgId);
   }
 
@@ -66,10 +63,7 @@ export class OrganizationsController {
   @RequirePermission(PermissionSlug.OrgUpdate)
   @ApiOperation({ summary: 'Actualizar caracterización' })
   @ApiOkResponse({ type: OrganizationDto })
-  update(
-    @Param('orgId', ParseUUIDPipe) orgId: string,
-    @Body() dto: UpdateOrganizationDto,
-  ) {
+  update(@Param('orgId', ParseUUIDPipe) orgId: string, @Body() dto: UpdateOrganizationDto) {
     return this.organizations.update(orgId, dto);
   }
 
@@ -91,10 +85,7 @@ export class OrganizationsController {
   @ApiConflictResponse({
     description: 'El correo no está registrado o ya es miembro',
   })
-  async addMember(
-    @Param('orgId', ParseUUIDPipe) orgId: string,
-    @Body() dto: AddMemberDto,
-  ) {
+  async addMember(@Param('orgId', ParseUUIDPipe) orgId: string, @Body() dto: AddMemberDto) {
     const row = await this.organizations.addMember(orgId, {
       ...dto,
       correo: dto.correo.toLowerCase(),

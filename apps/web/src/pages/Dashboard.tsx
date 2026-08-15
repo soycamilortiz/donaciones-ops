@@ -12,8 +12,7 @@ export default function Dashboard() {
         Tipo {org.tipo} · tu rol es {membership.role.nombre}
       </p>
       <p>
-        {me.nombre} ({me.correo}) puede cambiar de organización si tiene varias
-        membresías.
+        {me.nombre} ({me.correo}) puede cambiar de organización si tiene varias membresías.
       </p>
       <ul className="modules">
         <li>

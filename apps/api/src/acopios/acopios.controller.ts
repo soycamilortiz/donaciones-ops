@@ -39,10 +39,7 @@ export class AcopiosController {
   @RequirePermission(PermissionSlug.AcopiosWrite)
   @ApiOperation({ summary: 'Crear centro de acopio' })
   @ApiCreatedResponse({ type: AcopioDto })
-  create(
-    @Param('orgId', ParseUUIDPipe) orgId: string,
-    @Body() dto: CreateAcopioDto,
-  ) {
+  create(@Param('orgId', ParseUUIDPipe) orgId: string, @Body() dto: CreateAcopioDto) {
     return this.acopios.create(orgId, dto);
   }
 

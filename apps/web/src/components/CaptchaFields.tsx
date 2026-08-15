@@ -21,6 +21,7 @@ export default function CaptchaFields({ refreshKey }: Props) {
     }
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey no se usa dentro del efecto, es el disparador explícito para pedir otro captcha.
   useEffect(() => {
     void load();
   }, [load, refreshKey]);
@@ -32,6 +33,7 @@ export default function CaptchaFields({ refreshKey }: Props) {
         <div
           className="captcha-image"
           aria-hidden="true"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: el SVG lo genera svg-captcha en nuestra propia API, no viene de entrada del usuario.
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       ) : (
@@ -42,12 +44,7 @@ export default function CaptchaFields({ refreshKey }: Props) {
       </button>
       <label className="field">
         Texto del captcha
-        <input
-          name="captchaAnswer"
-          required
-          autoComplete="off"
-          spellCheck={false}
-        />
+        <input name="captchaAnswer" required autoComplete="off" spellCheck={false} />
       </label>
       {error ? <p className="error">{error}</p> : null}
     </div>

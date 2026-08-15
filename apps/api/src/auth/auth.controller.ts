@@ -10,12 +10,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CaptchaService } from './captcha.service';
-import {
-  AuthTokenDto,
-  CaptchaResponseDto,
-  LoginDto,
-  RegisterDto,
-} from './dto/auth.dto';
+import { AuthTokenDto, CaptchaResponseDto, LoginDto, RegisterDto } from './dto/auth.dto';
 import { Public } from './public.decorator';
 
 @ApiTags('auth')

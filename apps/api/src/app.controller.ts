@@ -10,8 +10,7 @@ export class AppController {
   @Get()
   @ApiOperation({
     summary: 'Metadatos del servicio',
-    description:
-      'Identidad del API y enlace a Swagger. No requiere autenticación.',
+    description: 'Identidad del API y enlace a Swagger. No requiere autenticación.',
   })
   @ApiOkResponse({ type: ServiceInfoDto })
   getInfo(): ServiceInfoDto {
