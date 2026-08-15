@@ -16,8 +16,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PermissionSlug } from '@soschoco/shared';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import { PermissionSlug } from '../rbac/catalog';
 import { AcopiosService } from './acopios.service';
 import { AcopioDto, CreateAcopioDto, UpdateAcopioDto } from './dto/acopio.dto';
 

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AcopioFlujo } from '@prisma/client';
+import type { Acopio } from '@soschoco/shared';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
@@ -122,7 +123,7 @@ export class UpdateAcopioDto {
   lng?: number;
 }
 
-export class AcopioDto {
+export class AcopioDto implements Acopio {
   @ApiProperty()
   id: string;
 

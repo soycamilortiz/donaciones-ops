@@ -4,9 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { RoleSlug } from '@soschoco/shared';
 import type { AuthUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
-import { RoleSlug } from '../rbac/catalog';
 import type {
   AddMemberDto,
   CreateOrganizationDto,

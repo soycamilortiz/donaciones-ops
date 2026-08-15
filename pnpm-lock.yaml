@@ -44,6 +44,9 @@ importers:
       '@prisma/client':
         specifier: ^6.13.0
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      '@soschoco/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -120,6 +123,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@soschoco/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       react:
         specifier: ^19.1.1
         version: 19.2.8
@@ -148,6 +154,12 @@ importers:
       vite:
         specifier: ^7.1.5
         version: 7.3.6(@types/node@24.13.3)(jiti@2.7.0)(terser@5.50.0)
+
+  packages/shared:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
 
 packages:
 

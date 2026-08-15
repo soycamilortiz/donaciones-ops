@@ -27,6 +27,7 @@ No usamos Module Federation ni single-spa. Los fronts **no se hablan entre sí**
 | Orquestación local | Docker Compose |
 | Monorepo | pnpm workspaces + Turborepo |
 | Lint y formato | Biome 2 (reemplaza ESLint + Prettier) |
+| Código común | `packages/shared` (`@soschoco/shared`): enums, RBAC y contratos del API |
 
 Traefik usa **provider de archivo** (`infra/traefik/dynamic/routes.yml`), no labels sobre el socket de Docker.
 

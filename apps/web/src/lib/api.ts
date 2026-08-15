@@ -1,84 +1,25 @@
+import type { Captcha } from '@soschoco/shared';
+
 const TOKEN_KEY = 'soschoco.token';
 const ORG_KEY = 'soschoco.orgId';
 
-export type Membership = {
-  id: string;
-  isPrimary: boolean;
-  role: { id: string; slug: string; nombre: string };
-  organization: { id: string; nombre: string; tipo: string };
-  permissions: string[];
-};
-
-export type Me = {
-  id: string;
-  usuario: string;
-  nombre: string;
-  correo: string;
-  memberships: Membership[];
-};
-
-export type AuthUser = {
-  id: string;
-  usuario: string;
-  nombre: string;
-  correo: string;
-};
-
-export type AuthSession = {
-  accessToken: string;
-  user: AuthUser;
-};
-
-export type Member = {
-  membershipId: string;
-  userId: string;
-  usuario: string;
-  nombre: string;
-  correo: string;
-  isPrimary: boolean;
-  roleSlug: string;
-  roleNombre: string;
-};
-
-export type Role = {
-  id: string;
-  slug: string;
-  nombre: string;
-  descripcion?: string | null;
-  permissions: { slug: string; nombre: string; descripcion?: string | null }[];
-};
-
-export type Permission = {
-  slug: string;
-  nombre: string;
-  descripcion?: string | null;
-};
-
-export type Acopio = {
-  id: string;
-  nombre: string;
-  flujo: 'RECIBIR' | 'ENVIAR' | 'AMBOS';
-  telefono?: string | null;
-  descripcion?: string | null;
-  municipio?: string | null;
-  direccion?: string | null;
-  lat?: number | null;
-  lng?: number | null;
-};
-
-export const ACOPIO_FLUJOS = [
-  { value: 'RECIBIR', label: 'Recibir donaciones' },
-  { value: 'ENVIAR', label: 'Enviar donaciones' },
-  { value: 'AMBOS', label: 'Recibir y enviar' },
-] as const;
-
-export const ORGANIZATION_TIPOS = [
-  { value: 'CENTRO_ACOPIO', label: 'Centro de acopio' },
-  { value: 'RESCATE', label: 'Rescate' },
-  { value: 'OLLA_COMUNITARIA', label: 'Olla comunitaria' },
-  { value: 'INSTITUCION', label: 'Institución' },
-  { value: 'OTRO', label: 'Otro' },
-] as const;
+// Los contratos y enums del dominio viven en @soschoco/shared. Se reexportan
+// aquí para no tocar los imports de las pantallas.
+export type {
+  Acopio,
+  AcopioFlujo,
+  AuthSession,
+  AuthUser,
+  Captcha,
+  Me,
+  Member,
+  Membership,
+  Organization,
+  OrganizationTipo,
+  Permission,
+  Role,
+} from '@soschoco/shared';
+export { ACOPIO_FLUJOS, ORGANIZATION_TIPOS, PermissionSlug, RoleSlug } from '@soschoco/shared';
 
 export function readStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -148,6 +89,6 @@ export async function apiRequest<T>(
   return response.json() as Promise<T>;
 }
 
-export async function fetchCaptcha(): Promise<{ captchaId: string; svg: string }> {
+export async function fetchCaptcha(): Promise<Captcha> {
   return apiRequest('/api/v1/auth/captcha', null);
 }

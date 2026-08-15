@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type { Me, Membership } from '@soschoco/shared';
 import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateMeDto {
@@ -32,7 +33,7 @@ export class OrganizationSummaryDto {
   tipo: string;
 }
 
-export class MembershipDto {
+export class MembershipDto implements Membership {
   @ApiProperty()
   id: string;
 
@@ -49,7 +50,7 @@ export class MembershipDto {
   permissions: string[];
 }
 
-export class MeResponseDto {
+export class MeResponseDto implements Me {
   @ApiProperty()
   id: string;
 

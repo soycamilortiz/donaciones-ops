@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type { Permission, Role } from '@soschoco/shared';
 import {
   ArrayUnique,
   IsArray,
@@ -9,7 +10,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class PermissionDto {
+export class PermissionDto implements Permission {
   @ApiProperty()
   slug: string;
 
@@ -20,7 +21,7 @@ export class PermissionDto {
   descripcion?: string | null;
 }
 
-export class RoleDto {
+export class RoleDto implements Role {
   @ApiProperty()
   id: string;
 
