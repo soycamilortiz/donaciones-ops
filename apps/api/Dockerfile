@@ -7,6 +7,13 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci
 
+FROM deps AS dev
+COPY . .
+ENV NODE_ENV=development
+ENV CHOKIDAR_USEPOLLING=true
+EXPOSE 3000
+CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && npm run start:dev"]
+
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

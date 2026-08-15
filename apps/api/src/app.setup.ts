@@ -53,14 +53,23 @@ export function configureApp(app: INestApplication): void {
       [
         'API de logística humanitaria: donaciones, centros de acopio y envíos a zonas remotas.',
         '',
-        'Prefijo global `/api`. Health no lleva versión (`/api/health`). El resto de módulos usará `/api/v1/...`.',
+        'Prefijo global `/api`. Health no lleva versión (`/api/health`). El dominio usa `/api/v1/...`.',
         '',
-        'Hoy solo hay sistema y health. Los recursos de negocio se documentan en el mismo Swagger al agregarse.',
+        'Autenticación propia: JWT Bearer. Registro y login requieren captcha. Las contraseñas se guardan con bcrypt (12 rounds), nunca en texto plano.',
       ].join('\n'),
     )
     .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'jwt',
+    )
     .addTag('sistema', 'Identidad del servicio')
     .addTag('health', 'Liveness y readiness (PostgreSQL)')
+    .addTag('auth', 'Registro, login y captcha')
+    .addTag('me', 'Usuario autenticado y membresías')
+    .addTag('organizations', 'Organizaciones y miembros')
+    .addTag('acopios', 'Centros de acopio (bodegas)')
+    .addTag('roles', 'Catálogo de roles y permisos')
     .addServer('/', 'Mismo origen (Traefik)')
     .addServer('http://localhost:3000', 'Nest en el host')
     .build();

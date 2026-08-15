@@ -6,10 +6,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
+import { Public } from '../auth/public.decorator';
 import { LivenessResponseDto, ReadinessResponseDto } from './dto/health.dto';
 import { PrismaHealthIndicator } from './indicators/prisma.health-indicator';
 
 @ApiTags('health')
+@Public()
 @Controller({ path: 'health', version: VERSION_NEUTRAL })
 export class HealthController {
   constructor(

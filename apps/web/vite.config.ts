@@ -5,9 +5,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
-    port: 5173,
+    port: Number(process.env.PORT) || 5173,
+    watch: {
+      usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
+    },
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': process.env.API_PROXY || 'http://localhost:3000',
     },
   },
 });

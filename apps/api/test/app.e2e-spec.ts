@@ -18,6 +18,21 @@ describe('API (e2e)', () => {
         $connect: jest.fn(),
         $disconnect: jest.fn(),
         $queryRaw: jest.fn().mockResolvedValue([{ ok: 1 }]),
+        permission: {
+          upsert: jest.fn(),
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+        role: {
+          upsert: jest.fn().mockResolvedValue({ id: 'role' }),
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+        rolePermission: {
+          deleteMany: jest.fn(),
+          createMany: jest.fn(),
+        },
+        captchaChallenge: {
+          create: jest.fn(),
+        },
       })
       .compile();
 
@@ -55,6 +70,22 @@ describe('API (e2e)', () => {
         expect(res.body.paths['/api']).toBeDefined();
         expect(res.body.paths['/api/health']).toBeDefined();
         expect(res.body.paths['/api/health/ready']).toBeDefined();
+        expect(res.body.paths['/api/v1/auth/login']).toBeDefined();
+        expect(res.body.paths['/api/v1/auth/register']).toBeDefined();
       });
+  });
+
+  it('GET /api/v1/auth/captcha es público', () => {
+    return request(app.getHttpServer())
+      .get('/api/v1/auth/captcha')
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.captchaId).toEqual(expect.any(String));
+        expect(String(res.body.svg)).toContain('<svg');
+      });
+  });
+
+  it('GET /api/v1/me exige JWT', () => {
+    return request(app.getHttpServer()).get('/api/v1/me').expect(401);
   });
 });

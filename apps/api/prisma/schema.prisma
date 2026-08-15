@@ -7,4 +7,124 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Los modelos de dominio (donaciones, acopio, envíos) se agregan por módulo.
+enum OrganizationTipo {
+  CENTRO_ACOPIO
+  RESCATE
+  OLLA_COMUNITARIA
+  INSTITUCION
+  OTRO
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  usuario      String   @unique
+  correo       String   @unique
+  nombre       String
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  memberships Membership[]
+
+  @@map("users")
+}
+
+model CaptchaChallenge {
+  id         String    @id @default(uuid()) @db.Uuid
+  answerHash String    @map("answer_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("captcha_challenges")
+}
+
+model Organization {
+  id          String            @id @default(uuid()) @db.Uuid
+  nombre      String
+  correo      String
+  telefono    String?
+  descripcion String?
+  tipo        OrganizationTipo
+  tipoDetalle String?           @map("tipo_detalle")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  memberships Membership[]
+  acopios     Acopio[]
+
+  @@map("organizations")
+}
+
+model Acopio {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  nombre         String
+  telefono       String?
+  descripcion    String?
+  municipio      String?
+  direccion      String?
+  lat            Float?
+  lng            Float?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("acopios")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  nombre      String
+  descripcion String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  memberships     Membership[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid()) @db.Uuid
+  slug        String  @unique
+  nombre      String
+  descripcion String?
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Membership {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  roleId         String   @map("role_id") @db.Uuid
+  isPrimary      Boolean  @default(false) @map("is_primary")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@map("memberships")
+}
