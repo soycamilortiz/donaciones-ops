@@ -1,0 +1,28 @@
+http:
+  routers:
+    api:
+      rule: (Host(`localhost`) || Host(`127.0.0.1`) || Host(`soschoco.localhost`)) && PathPrefix(`/api`)
+      entryPoints:
+        - web
+      priority: 100
+      service: api
+
+    web:
+      rule: Host(`localhost`) || Host(`127.0.0.1`) || Host(`soschoco.localhost`)
+      entryPoints:
+        - web
+      priority: 1
+      service: web
+
+  services:
+    api:
+      loadBalancer:
+        servers:
+          - url: http://api:3000
+        passHostHeader: true
+
+    web:
+      loadBalancer:
+        servers:
+          - url: http://web:80
+        passHostHeader: true
