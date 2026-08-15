@@ -146,6 +146,9 @@ export class MemberDto {
   isPrimary: boolean;
 
   @ApiProperty()
+  isActive: boolean;
+
+  @ApiProperty()
   roleSlug: string;
 
   @ApiProperty()

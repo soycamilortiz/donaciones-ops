@@ -60,7 +60,10 @@ export default function RolesPage() {
     }
   }
 
-  async function patchRole(roleId: string, body: { nombre?: string; descripcion?: string }) {
+  async function patchRole(
+    roleId: string,
+    body: { nombre?: string; descripcion?: string; isActive?: boolean },
+  ) {
     if (!writable) {
       return;
     }
@@ -135,7 +138,7 @@ export default function RolesPage() {
       await request(`/api/v1/organizations/${orgId}/roles/${role.id}`, {
         method: 'DELETE',
       });
-      setRoles((current) => current.filter((item) => item.id !== role.id));
+      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo eliminar');
     }
@@ -183,13 +186,23 @@ export default function RolesPage() {
                         }}
                       />
                       {role.slug !== 'administrador_acopio' ? (
-                        <button
-                          type="button"
-                          className="linkish"
-                          onClick={() => void onDelete(role)}
-                        >
-                          Eliminar
-                        </button>
+                        role.isActive === false ? (
+                          <button
+                            type="button"
+                            className="linkish"
+                            onClick={() => void patchRole(role.id, { isActive: true })}
+                          >
+                            Reactivar
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="linkish"
+                            onClick={() => void onDelete(role)}
+                          >
+                            Dar de baja
+                          </button>
+                        )
                       ) : null}
                     </div>
                   ) : (

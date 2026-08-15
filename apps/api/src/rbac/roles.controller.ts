@@ -24,6 +24,7 @@ export class RolesController {
       slug: role.slug,
       nombre: role.nombre,
       descripcion: role.descripcion,
+      isActive: role.isActive,
       permissions: role.rolePermissions.map((item) => ({
         slug: item.permission.slug,
         nombre: item.permission.nombre,

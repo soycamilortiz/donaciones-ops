@@ -59,12 +59,18 @@ export class AuthService {
     if (!ok) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
+    if (!user.isActive) {
+      throw new UnauthorizedException('La cuenta está dada de baja');
+    }
     return this.issueToken(this.toAuthUser(user));
   }
 
   async findAuthUser(id: string): Promise<AuthUser | null> {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    return user ? this.toAuthUser(user) : null;
+    if (!user?.isActive) {
+      return null;
+    }
+    return this.toAuthUser(user);
   }
 
   private issueToken(user: AuthUser) {

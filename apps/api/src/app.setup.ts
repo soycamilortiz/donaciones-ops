@@ -69,6 +69,7 @@ export function configureApp(app: INestApplication): void {
     .addTag('me', 'Usuario autenticado y membresías')
     .addTag('organizations', 'Organizaciones y miembros')
     .addTag('acopios', 'Centros de acopio (bodegas)')
+    .addTag('inventory', 'Inventario por centro de acopio')
     .addTag('roles', 'Catálogo de roles y permisos')
     .addServer('/', 'Mismo origen (Traefik)')
     .addServer('http://localhost:3000', 'Nest en el host')

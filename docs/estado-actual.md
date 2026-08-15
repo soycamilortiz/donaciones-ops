@@ -2,6 +2,10 @@
 
 Logística humanitaria para donaciones, centros de acopio y envíos a zonas remotas. Un dominio, varios contenedores, un API NestJS y un shell React.
 
+## Changesets
+
+Desde ahora **todo cambio de producto** (API, web, Prisma, Traefik, env) lleva un changeset. Guía: [docs/changesets.md](changesets.md). Comando: `npm run changeset` en la raíz (paquete `soschoco`). No hay workspaces npm: cada app conserva su `package-lock` para Docker. El agente tiene la misma regla en `AGENTS.md` y `.cursor/rules/changesets.mdc`.
+
 ## Decisión de arquitectura
 
 Cada solución (pantalla o app) es un **contenedor Docker propio**. El usuario entra a un solo origen (`http://localhost` en local). **Traefik** mira el path y reenvía:
@@ -82,7 +86,9 @@ Invitar personas: quien se suma **ya tiene que estar registrada** con ese correo
 
 Roles semilla: administrador de acopio, auxiliar administrativo, líder de zona, finanzas, transportador, voluntario. Quien crea la org queda como administrador de acopio. El alta por defecto es voluntario. La matriz se edita en `/app/roles` (permiso `roles:write`). Los permisos nuevos de código aparecen como filas; no se pisan los tildes ya guardados.
 
-Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`.
+Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `inventory:read/write`.
+
+Inventario: por centro de acopio. Dashboard en `/app/inventario`. Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol e ítem. Dar de baja no bloquea un alta nueva (el producto siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
 
 ## API NestJS
 
@@ -95,6 +101,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Organizaciones | `/api/v1/organizations` |
 | Miembros | `/api/v1/organizations/:orgId/members` |
 | Acopios | `/api/v1/organizations/:orgId/acopios` |
+| Inventario | `/api/v1/organizations/:orgId/acopios/:acopioId/inventory` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
 
@@ -115,7 +122,7 @@ En Docker, `DATABASE_URL` apunta al servicio `postgres`. Cambiá `JWT_SECRET` an
 
 ## Shell (`apps/web`)
 
-Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`.
+Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio.
 
 ## Qué falta
 

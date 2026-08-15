@@ -21,6 +21,7 @@ model User {
   correo       String   @unique
   nombre       String
   passwordHash String   @map("password_hash")
+  isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -48,6 +49,7 @@ model Organization {
   descripcion String?
   tipo        OrganizationTipo
   tipoDetalle String?           @map("tipo_detalle")
+  isActive    Boolean           @default(true) @map("is_active")
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
 
@@ -74,10 +76,12 @@ model Acopio {
   direccion      String?
   lat            Float?
   lng            Float?
+  isActive       Boolean      @default(true) @map("is_active")
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  inventoryItems InventoryItem[]
 
   @@index([organizationId])
   @@map("acopios")
@@ -88,6 +92,7 @@ model Role {
   slug        String   @unique
   nombre      String
   descripcion String?
+  isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
 
   memberships     Membership[]
@@ -124,14 +129,101 @@ model Membership {
   organizationId String   @map("organization_id") @db.Uuid
   roleId         String   @map("role_id") @db.Uuid
   isPrimary      Boolean  @default(false) @map("is_primary")
+  isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   role         Role         @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
   @@unique([userId, organizationId])
   @@index([organizationId])
   @@map("memberships")
+}
+
+enum InventoryCategoria {
+  ALIMENTOS_NO_PERECEDEROS
+  AGUA
+  ASEO_HIGIENE
+  PANALES_BEBE
+  MEDICAMENTOS
+  ROPA_CALZADO
+  COLCHONETAS_COBIJAS
+  ALIMENTO_MASCOTAS
+  MEDICAMENTO_MASCOTAS
+  LOGISTICA_RESCATE
+  MENAJE_COCINA
+  DESECHABLES
+  OTRO
+}
+
+enum InventoryUnidad {
+  UNIDAD
+  LIBRA
+  KILO
+  LITRO
+  BOTELLA
+  LATA
+  PAQUETE
+  CAJA
+  GALON
+  FRASCO
+  TABLETA
+  DOCENA
+  OTRO
+}
+
+enum InventoryEstado {
+  NUEVO
+  BUEN_ESTADO
+  USADO
+  PROXIMO_A_VENCER
+  VENCIDO
+  NO_APLICA
+}
+
+enum InventoryDestinatario {
+  NO_APLICA
+  UNISEX
+  MUJER
+  HOMBRE
+  NINO
+  NINA
+  BEBE
+  MASCOTA
+}
+
+model InventoryItem {
+  id                String               @id @default(uuid()) @db.Uuid
+  acopioId          String               @map("acopio_id") @db.Uuid
+  nombre            String
+  categoria         InventoryCategoria
+  categoriaDetalle  String?              @map("categoria_detalle")
+  sku               String?
+  marca             String?
+  presentacion      String?
+  talla             String?
+  destinatario      InventoryDestinatario @default(NO_APLICA)
+  cantidad          Decimal              @db.Decimal(14, 3)
+  unidad            InventoryUnidad
+  unidadDetalle     String?              @map("unidad_detalle")
+  vencimiento       DateTime?            @db.Date
+  estado            InventoryEstado      @default(BUEN_ESTADO)
+  loteCodigo        String?              @map("lote_codigo")
+  ubicacionInterna  String?              @map("ubicacion_interna")
+  donanteNombre     String?              @map("donante_nombre")
+  donanteContacto   String?              @map("donante_contacto")
+  observaciones     String?
+  isActive          Boolean              @default(true) @map("is_active")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+
+  acopio Acopio @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+
+  @@index([acopioId])
+  @@index([acopioId, categoria])
+  @@index([acopioId, nombre])
+  @@index([acopioId, isActive])
+  @@map("inventory_items")
 }

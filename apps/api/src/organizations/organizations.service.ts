@@ -20,14 +20,21 @@ export class OrganizationsService {
 
   listForUser(user: AuthUser) {
     return this.prisma.organization.findMany({
-      where: { memberships: { some: { userId: user.id } } },
+      where: {
+        isActive: true,
+        memberships: { some: { userId: user.id, isActive: true } },
+      },
       orderBy: { nombre: 'asc' },
     });
   }
 
   async getForUser(user: AuthUser, orgId: string) {
     const org = await this.prisma.organization.findFirst({
-      where: { id: orgId, memberships: { some: { userId: user.id } } },
+      where: {
+        id: orgId,
+        isActive: true,
+        memberships: { some: { userId: user.id, isActive: true } },
+      },
     });
     if (!org) {
       throw new NotFoundException('Organización no encontrada');
@@ -44,7 +51,7 @@ export class OrganizationsService {
     }
 
     const hasPrimary = await this.prisma.membership.findFirst({
-      where: { userId: user.id, isPrimary: true },
+      where: { userId: user.id, isPrimary: true, isActive: true },
     });
 
     return this.prisma.$transaction(async (tx) => {
@@ -98,17 +105,28 @@ export class OrganizationsService {
         'El usuario debe registrarse primero con ese correo',
       );
     }
+    if (!user.isActive) {
+      throw new ConflictException('Esa cuenta está dada de baja');
+    }
 
     const existing = await this.prisma.membership.findUnique({
       where: {
         userId_organizationId: { userId: user.id, organizationId: orgId },
       },
     });
-    if (existing) {
+    if (existing?.isActive) {
       throw new ConflictException('Esa persona ya pertenece a la organización');
     }
 
     const role = await this.findRole(dto.roleSlug ?? RoleSlug.Voluntario);
+
+    if (existing) {
+      return this.prisma.membership.update({
+        where: { id: existing.id },
+        data: { isActive: true, roleId: role.id },
+        include: { user: true, role: true },
+      });
+    }
 
     return this.prisma.membership.create({
       data: {
@@ -116,6 +134,7 @@ export class OrganizationsService {
         organizationId: orgId,
         roleId: role.id,
         isPrimary: false,
+        isActive: true,
       },
       include: { user: true, role: true },
     });
@@ -144,21 +163,26 @@ export class OrganizationsService {
     if (membership.role.slug === RoleSlug.AdministradorAcopio) {
       await this.assertNotLastAdminAcopio(orgId);
     }
-    await this.prisma.membership.delete({ where: { id: membership.id } });
+    await this.prisma.membership.update({
+      where: { id: membership.id },
+      data: { isActive: false },
+    });
   }
 
   private async ensureOrg(orgId: string) {
     const org = await this.prisma.organization.findUnique({
       where: { id: orgId },
     });
-    if (!org) {
+    if (!org?.isActive) {
       throw new NotFoundException('Organización no encontrada');
     }
     return org;
   }
 
   private async findRole(slug: string) {
-    const role = await this.prisma.role.findUnique({ where: { slug } });
+    const role = await this.prisma.role.findFirst({
+      where: { slug, isActive: true },
+    });
     if (!role) {
       throw new NotFoundException(`Rol no existe: ${slug}`);
     }
@@ -172,7 +196,7 @@ export class OrganizationsService {
       },
       include: { role: true, user: true },
     });
-    if (!membership) {
+    if (!membership?.isActive) {
       throw new NotFoundException('El usuario no pertenece a la organización');
     }
     return membership;
@@ -182,6 +206,7 @@ export class OrganizationsService {
     const admins = await this.prisma.membership.count({
       where: {
         organizationId: orgId,
+        isActive: true,
         role: { slug: RoleSlug.AdministradorAcopio },
       },
     });

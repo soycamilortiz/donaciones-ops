@@ -61,7 +61,7 @@ export class AcopiosController {
   @Delete(':acopioId')
   @HttpCode(204)
   @RequirePermission(PermissionSlug.AcopiosWrite)
-  @ApiOperation({ summary: 'Eliminar centro de acopio' })
+  @ApiOperation({ summary: 'Dar de baja un centro de acopio (no borra)' })
   remove(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('acopioId', ParseUUIDPipe) acopioId: string,

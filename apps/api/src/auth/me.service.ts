@@ -12,6 +12,11 @@ export class MeService {
       where: { id: user.id },
       include: {
         memberships: {
+          where: {
+            isActive: true,
+            organization: { isActive: true },
+            role: { isActive: true },
+          },
           include: {
             organization: true,
             role: {

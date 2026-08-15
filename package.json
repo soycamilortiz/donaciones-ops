@@ -1,0 +1,13 @@
+{
+  "name": "soschoco",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SOS Chocó — logística de donaciones, acopios y envíos",
+  "scripts": {
+    "changeset": "changeset",
+    "changeset:version": "changeset version"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8"
+  }
+}

@@ -78,7 +78,7 @@ export class OrgRolesController {
   @Delete('roles/:roleId')
   @HttpCode(204)
   @RequirePermission(PermissionSlug.RolesWrite)
-  @ApiOperation({ summary: 'Eliminar un rol sin personas asignadas' })
+  @ApiOperation({ summary: 'Dar de baja un rol sin personas activas (no borra)' })
   @ApiNoContentResponse()
   async remove(
     @Param('orgId', ParseUUIDPipe) _orgId: string,
@@ -105,6 +105,7 @@ export class OrgRolesController {
       slug: role.slug,
       nombre: role.nombre,
       descripcion: role.descripcion,
+      isActive: role.isActive,
       permissions: role.rolePermissions.map((item) => ({
         slug: item.permission.slug,
         nombre: item.permission.nombre,

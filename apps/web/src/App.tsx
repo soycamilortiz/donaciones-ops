@@ -6,6 +6,7 @@ import PendingShell from './components/PendingShell';
 import RequireAuth from './components/RequireAuth';
 import AcopiosPage from './pages/AcopiosPage';
 import Dashboard from './pages/Dashboard';
+import InventoryPage from './pages/InventoryPage';
 import Landing from './pages/Landing';
 import Onboarding from './pages/Onboarding';
 import RolesPage from './pages/RolesPage';
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/app/usuarios" element={<UsersPage />} />
             <Route path="/app/roles" element={<RolesPage />} />
             <Route path="/app/acopios" element={<AcopiosPage />} />
+            <Route path="/app/inventario" element={<InventoryPage />} />
           </Route>
         </Route>
       </Route>
