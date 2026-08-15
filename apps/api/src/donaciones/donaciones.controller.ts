@@ -8,18 +8,24 @@ import {
   ApiServiceUnavailableResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { DonacionImagenEstado, PermissionSlug } from '@soschoco/shared';
+import {
+  DonacionImagenEstado,
+  MAX_IMAGEN_BYTES,
+  PermissionSlug,
+  TIPOS_IMAGEN_ACEPTADOS,
+} from '@soschoco/shared';
+import type { HandleUploadBody } from '@vercel/blob/client';
 import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { DonacionesService } from './donaciones.service';
 import {
-  AutorizarSubidaDto,
   CorregirProductoDto,
   DonacionImagenDto,
+  NuevaRutaDto,
   ProductoDto,
   RegistrarImagenDto,
-  SubidaAutorizadaDto,
+  RutaSubidaDto,
 } from './dto/donacion.dto';
 
 @ApiTags('donaciones')
@@ -28,17 +34,35 @@ import {
 export class DonacionesController {
   constructor(private readonly donaciones: DonacionesService) {}
 
+  @Post('subidas/ruta')
+  @RequirePermission(PermissionSlug.DonacionesWrite)
+  @ApiOperation({
+    summary: 'Reservar la ruta para una foto nueva',
+    description:
+      'Devuelve el pathname que la PWA debe pasarle a upload(). El API la genera para que nadie escriba fuera del prefijo de su organización.',
+  })
+  @ApiCreatedResponse({ type: RutaSubidaDto })
+  reservarRuta(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Body() dto: NuevaRutaDto,
+  ): RutaSubidaDto {
+    return {
+      pathname: this.donaciones.rutaParaSubida(orgId, dto.nombreArchivo),
+      tiposAceptados: TIPOS_IMAGEN_ACEPTADOS,
+      maxBytes: MAX_IMAGEN_BYTES,
+    };
+  }
+
   @Post('subidas')
   @RequirePermission(PermissionSlug.DonacionesWrite)
   @ApiOperation({
-    summary: 'Autorizar la subida de una foto',
+    summary: 'Emitir el token de subida (protocolo handleUpload de Vercel Blob)',
     description:
-      'Devuelve un token para que la PWA suba el archivo directo a Vercel Blob. La imagen no pasa por el API.',
+      'Lo llama el SDK del navegador, no la aplicación directamente. La imagen no pasa por el API.',
   })
-  @ApiCreatedResponse({ type: SubidaAutorizadaDto })
   @ApiServiceUnavailableResponse({ description: 'Falta configurar BLOB_READ_WRITE_TOKEN' })
-  autorizarSubida(@Param('orgId', ParseUUIDPipe) orgId: string, @Body() dto: AutorizarSubidaDto) {
-    return this.donaciones.autorizarSubida(orgId, dto);
+  autorizarSubida(@Param('orgId', ParseUUIDPipe) orgId: string, @Body() body: HandleUploadBody) {
+    return this.donaciones.autorizarSubida(orgId, body);
   }
 
   @Post()

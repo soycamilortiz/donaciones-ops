@@ -31,6 +31,9 @@ No usamos Module Federation ni single-spa. Los fronts **no se hablan entre sí**
 | Cola de jobs | BullMQ sobre Redis 7 |
 | Worker | `apps/worker`: Tesseract (binario nativo) + sharp |
 | Almacenamiento de imágenes | Vercel Blob (subida directa desde la PWA) |
+| PWA | vite-plugin-pwa (manifest + service worker con Workbox) |
+| Observabilidad de la cola | `apps/jobs`: Bull Board tras basic auth |
+| CI | GitHub Actions: lint, tipos, build, tests, migraciones e imágenes |
 
 Traefik usa **provider de archivo** (`infra/traefik/dynamic/routes.yml`), no labels sobre el socket de Docker.
 
@@ -52,6 +55,7 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 | http://localhost/api/health | Liveness |
 | http://localhost/api/health/ready | Readiness (PostgreSQL) |
 | http://localhost/api/docs | Swagger UI |
+| http://localhost/jobs | Panel de la cola de jobs (basic auth) |
 | http://localhost:8080 | Dashboard Traefik |
 | localhost:5432 | Postgres (`soschoco` / `soschoco`) |
 
@@ -129,7 +133,6 @@ Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. 
 ## Qué falta
 
 - Módulo de envíos (contenedor + API).
-- Pantalla de donaciones en el front: hoy el flujo existe solo en el API y el worker.
 - Lectura de código de barras en la PWA, que es lo que de verdad resuelve el reconocimiento de producto empaquetado.
 - Cookie httpOnly en lugar de `localStorage` si se endurece XSS.
 - Rate limit explícito en login (hoy el captcha cubre brute-force básico).
@@ -151,3 +154,9 @@ Estados de una imagen: `PENDIENTE` → `PROCESANDO` → `PROCESADA` o `FALLIDA`.
 **Limitación conocida.** Tesseract es OCR, no reconocimiento de objetos: sobre envases reales acierta poco. Cuando la confianza o el emparejamiento no alcanzan el umbral, la imagen queda `PROCESADA` sin producto para que alguien lo corrija a mano, en vez de escribir un producto equivocado en el inventario. El campo `productos.ean` está listo para migrar a lectura de código de barras, que es lo que resuelve bien este caso.
 
 El job es idempotente por `imagenId` y BullMQ reintenta con backoff exponencial; solo al agotar los reintentos la imagen pasa a `FALLIDA`.
+
+### Pendiente para que la característica quede usable
+
+El catálogo `productos` está vacío y sin él nada se reconoce: `emparejar()` contra una tabla vacía siempre devuelve `null`. Cargar los productos que realmente se donan (arroz, agua, aceite, panela, jabón, crema dental) con sus alias es lo más barato y lo que más cambia el resultado.
+
+Falta también aplicar la migración contra un Postgres real y configurar `BLOB_READ_WRITE_TOKEN`.

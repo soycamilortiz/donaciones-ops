@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+
+concurrency:
+  # Un push nuevo sobre la misma rama cancela la corrida anterior.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Lint, tipos, build y tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Turborepo compara contra el commit anterior para acotar el trabajo.
+          fetch-depth: 2
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalar dependencias
+        # --frozen-lockfile falla si alguien tocó un package.json sin
+        # regenerar el lockfile, que es justo lo que queremos detectar.
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint y formato
+        run: pnpm lint
+
+      - name: Tipos
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Tests
+        run: pnpm test
+
+  migraciones:
+    name: Migraciones de Prisma
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: soschoco
+          POSTGRES_PASSWORD: soschoco
+          POSTGRES_DB: soschoco
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U soschoco"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      # Aplica las migraciones contra un Postgres real: detecta SQL invalido
+      # o migraciones que no se pueden aplicar en orden.
+      - name: Aplicar migraciones
+        run: pnpm db:deploy
+        env:
+          DATABASE_URL: postgresql://soschoco:soschoco@localhost:5432/soschoco
+
+      # `migrate diff` contra la base ya migrada tiene que dar vacio: si no,
+      # el schema.prisma cambio sin su migracion.
+      - name: Verificar que no falten migraciones
+        run: |
+          DIFF=$(pnpm --filter api exec prisma migrate diff \
+            --from-url "$DATABASE_URL" \
+            --to-schema-datamodel prisma/schema.prisma \
+            --script)
+          if [ -n "$(echo "$DIFF" | grep -v '^--' | tr -d '[:space:]')" ]; then
+            echo "El schema.prisma tiene cambios sin migracion:"
+            echo "$DIFF"
+            exit 1
+          fi
+          echo "Sin diferencias entre schema.prisma y las migraciones."
+        env:
+          DATABASE_URL: postgresql://soschoco:soschoco@localhost:5432/soschoco
+
+  imagenes:
+    name: Build de imagenes Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [api, web, worker, jobs]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Solo construye: publicar es otra decision y otro workflow.
+      - name: Construir ${{ matrix.app }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: false
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}

@@ -10,6 +10,7 @@ import DonacionesPage from './pages/DonacionesPage';
 import Landing from './pages/Landing';
 import NuevaDonacionPage from './pages/NuevaDonacionPage';
 import Onboarding from './pages/Onboarding';
+import RevisionDonacionesPage from './pages/RevisionDonacionesPage';
 import RolesPage from './pages/RolesPage';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/app/acopios" element={<AcopiosPage />} />
             <Route path="/app/donaciones" element={<DonacionesPage />} />
             <Route path="/app/donaciones/nueva" element={<NuevaDonacionPage />} />
+            <Route path="/app/donaciones/revision" element={<RevisionDonacionesPage />} />
           </Route>
         </Route>
       </Route>

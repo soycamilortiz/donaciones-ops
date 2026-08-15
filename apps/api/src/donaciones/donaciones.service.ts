@@ -1,17 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DonacionImagenEstado, type SubidaAutorizada } from '@soschoco/shared';
-import { generateClientTokenFromReadWriteToken } from '@vercel/blob/client';
+import { DonacionImagenEstado, MAX_IMAGEN_BYTES, TIPOS_IMAGEN_ACEPTADOS } from '@soschoco/shared';
+import { type HandleUploadBody, handleUpload } from '@vercel/blob/client';
 import type { Env } from '../config/env.schema';
 import { PrismaService } from '../prisma/prisma.service';
 import { ColaService } from './cola.service';
-import type { AutorizarSubidaDto, RegistrarImagenDto } from './dto/donacion.dto';
+import type { RegistrarImagenDto } from './dto/donacion.dto';
 
 const IMAGEN_CON_PRODUCTO = {
   producto: {
@@ -28,16 +29,18 @@ export class DonacionesService {
   ) {}
 
   /**
-   * Emite un token para que la PWA suba el archivo directo a Vercel Blob.
+   * Implementa el protocolo `handleUpload` de Vercel Blob: el SDK del navegador
+   * pide aquí un token y luego sube el archivo directo al Blob.
    *
    * La imagen nunca pasa por el API: una foto de móvil son varios MB y hacerla
    * viajar dos veces no aporta nada. El API solo decide si se puede subir y con
    * qué ruta.
+   *
+   * No se usa `onUploadCompleted`: ese callback lo invocan los servidores de
+   * Vercel por webhook y no llega a un entorno local. El registro en base lo
+   * dispara la PWA con `POST /donaciones` en cuanto termina la subida.
    */
-  async autorizarSubida(
-    organizationId: string,
-    dto: AutorizarSubidaDto,
-  ): Promise<SubidaAutorizada> {
+  async autorizarSubida(organizationId: string, body: HandleUploadBody) {
     const token = this.config.get('BLOB_READ_WRITE_TOKEN', { infer: true });
     if (!token) {
       throw new ServiceUnavailableException(
@@ -45,20 +48,31 @@ export class DonacionesService {
       );
     }
 
-    const extension = extensionDe(dto.nombreArchivo);
-    const pathname = `donaciones/${organizationId}/${randomUUID()}${extension}`;
-
-    const clientToken = await generateClientTokenFromReadWriteToken({
+    return handleUpload({
       token,
-      pathname,
-      allowedContentTypes: [dto.tipo],
-      maximumSizeInBytes: dto.tamano,
-      // El token caduca pronto: solo tiene que durar lo que tarda una subida.
-      validUntil: Date.now() + 5 * 60 * 1000,
-      addRandomSuffix: false,
+      body,
+      // El SDK lo usa solo para derivar la URL del callback, que aquí no aplica.
+      request: { headers: {} } as never,
+      onBeforeGenerateToken: async (pathname) => {
+        // El cliente propone la ruta, pero el API la valida: nadie debe poder
+        // escribir fuera del prefijo de su organización.
+        if (!perteneceA(pathname, organizationId)) {
+          throw new ForbiddenException('La ruta no corresponde a esta organización');
+        }
+        return {
+          allowedContentTypes: [...TIPOS_IMAGEN_ACEPTADOS],
+          maximumSizeInBytes: MAX_IMAGEN_BYTES,
+          addRandomSuffix: false,
+          // El token solo tiene que durar lo que tarda una subida.
+          validUntil: Date.now() + 5 * 60 * 1000,
+        };
+      },
     });
+  }
 
-    return { pathname, clientToken };
+  /** Ruta que la PWA debe pedir para una foto nueva. */
+  rutaParaSubida(organizationId: string, nombreArchivo: string): string {
+    return `donaciones/${organizationId}/${randomUUID()}${extensionDe(nombreArchivo)}`;
   }
 
   /**
@@ -66,8 +80,8 @@ export class DonacionesService {
    * PWA cuando el Blob confirma la subida.
    */
   async registrarImagen(organizationId: string, usuarioId: string, dto: RegistrarImagenDto) {
-    if (!dto.pathname.startsWith(`donaciones/${organizationId}/`)) {
-      throw new ConflictException('El pathname no corresponde a esta organización');
+    if (!perteneceA(dto.pathname, organizationId)) {
+      throw new ForbiddenException('La ruta no corresponde a esta organización');
     }
 
     if (dto.acopioId) {
@@ -159,6 +173,11 @@ export class DonacionesService {
       throw new NotFoundException('Acopio no encontrado en esta organización');
     }
   }
+}
+
+/** Evita que una organización escriba (o registre) blobs de otra. */
+function perteneceA(pathname: string, organizationId: string): boolean {
+  return pathname.startsWith(`donaciones/${organizationId}/`) && !pathname.includes('..');
 }
 
 function extensionDe(nombre: string): string {

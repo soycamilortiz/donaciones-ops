@@ -1,0 +1,31 @@
+{
+  "name": "jobs",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Panel de observación de la cola de jobs (Bull Board)",
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput & node --watch dist/main.js",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@bull-board/api": "^6.5.0",
+    "@bull-board/express": "^6.5.0",
+    "@soschoco/shared": "workspace:*",
+    "bullmq": "^5.34.0",
+    "express": "^5.0.0",
+    "ioredis": "^5.4.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.2"
+  }
+}

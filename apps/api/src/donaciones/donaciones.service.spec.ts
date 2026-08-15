@@ -1,0 +1,208 @@
+import { ConfigService } from '@nestjs/config';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { DonacionImagenEstado } from '@soschoco/shared';
+import { PrismaService } from '../prisma/prisma.service';
+import { ColaService } from './cola.service';
+import { DonacionesService } from './donaciones.service';
+
+const ORG = '11111111-1111-4111-8111-111111111111';
+const OTRA_ORG = '22222222-2222-4222-8222-222222222222';
+const USUARIO = '33333333-3333-4333-8333-333333333333';
+
+describe('DonacionesService', () => {
+  let service: DonacionesService;
+  let prisma: {
+    donacionImagen: Record<string, jest.Mock>;
+    producto: Record<string, jest.Mock>;
+    acopio: Record<string, jest.Mock>;
+  };
+  let cola: { encolarReconocimiento: jest.Mock };
+  let config: { get: jest.Mock };
+
+  beforeEach(async () => {
+    prisma = {
+      donacionImagen: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockImplementation(({ data }) => ({ id: 'img-1', ...data })),
+        update: jest.fn().mockImplementation(({ data }) => ({ id: 'img-1', ...data })),
+      },
+      producto: { findUnique: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      acopio: { findFirst: jest.fn().mockResolvedValue({ id: 'acopio-1' }) },
+    };
+    cola = { encolarReconocimiento: jest.fn().mockResolvedValue(undefined) };
+    config = { get: jest.fn().mockReturnValue(undefined) };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        DonacionesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ColaService, useValue: cola },
+        { provide: ConfigService, useValue: config },
+      ],
+    }).compile();
+
+    service = module.get(DonacionesService);
+  });
+
+  describe('rutaParaSubida', () => {
+    it('encierra la ruta dentro del prefijo de la organización', () => {
+      const ruta = service.rutaParaSubida(ORG, 'foto.jpg');
+      expect(ruta.startsWith(`donaciones/${ORG}/`)).toBe(true);
+    });
+
+    it('conserva la extensión del archivo', () => {
+      expect(service.rutaParaSubida(ORG, 'colgate.png')).toMatch(/\.png$/);
+    });
+
+    it('descarta extensiones que no lo parecen, para no heredar basura del cliente', () => {
+      expect(service.rutaParaSubida(ORG, 'raro.eyJhbGciOiJIUzI1')).not.toContain('.eyJ');
+      expect(service.rutaParaSubida(ORG, 'sin-extension')).toMatch(/[0-9a-f-]{36}$/);
+    });
+
+    it('no reutiliza la misma ruta entre fotos', () => {
+      expect(service.rutaParaSubida(ORG, 'a.jpg')).not.toEqual(
+        service.rutaParaSubida(ORG, 'a.jpg'),
+      );
+    });
+  });
+
+  describe('autorizarSubida', () => {
+    it('responde 503 en vez de tumbar el arranque si falta el token del Blob', async () => {
+      await expect(service.autorizarSubida(ORG, {} as never)).rejects.toThrow(
+        /BLOB_READ_WRITE_TOKEN/,
+      );
+    });
+  });
+
+  describe('registrarImagen', () => {
+    const dto = {
+      pathname: `donaciones/${ORG}/abc.jpg`,
+      blobUrl: 'https://blob.example/abc.jpg',
+    };
+
+    it('crea la fila en PENDIENTE y encola el reconocimiento', async () => {
+      const imagen = await service.registrarImagen(ORG, USUARIO, dto);
+
+      expect(prisma.donacionImagen.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            organizationId: ORG,
+            subidaPorId: USUARIO,
+            blobUrl: dto.blobUrl,
+            estado: DonacionImagenEstado.Pendiente,
+          }),
+        }),
+      );
+      expect(cola.encolarReconocimiento).toHaveBeenCalledWith(imagen.id);
+    });
+
+    it('rechaza una ruta de otra organización', async () => {
+      const ajena = { ...dto, pathname: `donaciones/${OTRA_ORG}/abc.jpg` };
+
+      await expect(service.registrarImagen(ORG, USUARIO, ajena)).rejects.toThrow(
+        /no corresponde a esta organización/,
+      );
+      expect(cola.encolarReconocimiento).not.toHaveBeenCalled();
+    });
+
+    it('rechaza rutas con salto de directorio', async () => {
+      const conSalto = { ...dto, pathname: `donaciones/${ORG}/../${OTRA_ORG}/abc.jpg` };
+
+      await expect(service.registrarImagen(ORG, USUARIO, conSalto)).rejects.toThrow(
+        /no corresponde a esta organización/,
+      );
+    });
+
+    it('no registra la misma foto dos veces', async () => {
+      prisma.donacionImagen.findUnique.mockResolvedValue({ id: 'ya-existe' });
+
+      await expect(service.registrarImagen(ORG, USUARIO, dto)).rejects.toThrow(
+        /ya está registrada/,
+      );
+      expect(cola.encolarReconocimiento).not.toHaveBeenCalled();
+    });
+
+    it('rechaza un acopio que no es de la organización', async () => {
+      prisma.acopio.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.registrarImagen(ORG, USUARIO, { ...dto, acopioId: 'acopio-ajeno' }),
+      ).rejects.toThrow(/Acopio no encontrado/);
+    });
+  });
+
+  describe('corregirProducto', () => {
+    beforeEach(() => {
+      prisma.donacionImagen.findFirst.mockResolvedValue({ id: 'img-1', organizationId: ORG });
+    });
+
+    it('asigna el producto y deja la imagen como procesada', async () => {
+      prisma.producto.findUnique.mockResolvedValue({ id: 'prod-1' });
+
+      await service.corregirProducto(ORG, 'img-1', 'prod-1');
+
+      expect(prisma.donacionImagen.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            productoId: 'prod-1',
+            estado: DonacionImagenEstado.Procesada,
+            error: null,
+          }),
+        }),
+      );
+    });
+
+    it('no acepta un producto inexistente', async () => {
+      prisma.producto.findUnique.mockResolvedValue(null);
+
+      await expect(service.corregirProducto(ORG, 'img-1', 'fantasma')).rejects.toThrow(
+        /Producto no encontrado/,
+      );
+    });
+
+    it('no deja tocar una imagen de otra organización', async () => {
+      prisma.donacionImagen.findFirst.mockResolvedValue(null);
+
+      await expect(service.corregirProducto(ORG, 'ajena', 'prod-1')).rejects.toThrow(
+        /Imagen no encontrada/,
+      );
+    });
+  });
+
+  describe('reprocesar', () => {
+    it('devuelve la imagen a PENDIENTE, limpia el error y vuelve a encolar', async () => {
+      prisma.donacionImagen.findFirst.mockResolvedValue({ id: 'img-1', organizationId: ORG });
+
+      await service.reprocesar(ORG, 'img-1');
+
+      expect(prisma.donacionImagen.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { estado: DonacionImagenEstado.Pendiente, error: null },
+        }),
+      );
+      expect(cola.encolarReconocimiento).toHaveBeenCalledWith('img-1');
+    });
+  });
+
+  describe('listar', () => {
+    it('acota siempre por organización', async () => {
+      await service.listar(ORG);
+
+      expect(prisma.donacionImagen.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ organizationId: ORG }) }),
+      );
+    });
+
+    it('filtra por estado cuando se pide', async () => {
+      await service.listar(ORG, DonacionImagenEstado.Fallida);
+
+      expect(prisma.donacionImagen.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ estado: DonacionImagenEstado.Fallida }),
+        }),
+      );
+    });
+  });
+});
