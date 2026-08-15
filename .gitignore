@@ -9,3 +9,10 @@ coverage/
 Thumbs.db
 .idea/
 *.tsbuildinfo
+
+# turborepo
+.turbo/
+
+# lockfiles de otros gestores — este monorepo usa pnpm
+package-lock.json
+yarn.lock

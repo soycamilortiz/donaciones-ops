@@ -25,6 +25,8 @@ No usamos Module Federation ni single-spa. Los fronts **no se hablan entre sí**
 | Base de datos | PostgreSQL 16 |
 | Auth | JWT propio, bcrypt (12 rounds), captcha SVG |
 | Orquestación local | Docker Compose |
+| Monorepo | pnpm workspaces + Turborepo |
+| Lint y formato | Biome 2 (reemplaza ESLint + Prettier) |
 
 Traefik usa **provider de archivo** (`infra/traefik/dynamic/routes.yml`), no labels sobre el socket de Docker.
 
@@ -53,8 +55,8 @@ Desarrollo sin rebuild de imagen:
 
 ```bash
 docker compose up postgres -d
-cd apps/api && npm install && npm run start:dev   # http://localhost:3000/api
-cd apps/web && npm install && npm run dev         # http://localhost:5173
+pnpm install                # una vez, desde la raíz
+pnpm dev                    # API en :3000/api y front en :5173
 ```
 
 Vite proxea `/api` a Nest en el puerto 3000.
