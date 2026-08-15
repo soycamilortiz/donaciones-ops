@@ -15,6 +15,7 @@
       "!**/.turbo",
       "!**/prisma/migrations",
       "!apps/web/public",
+      "!apps/api/api",
       "!pnpm-lock.yaml",
       "!apps/web/src/styles/design-system.css"
     ]
