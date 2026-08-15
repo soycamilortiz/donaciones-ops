@@ -53,7 +53,11 @@ export default function SignInPage() {
           />
         </label>
         <CaptchaFields refreshKey={refreshKey} />
-        {error ? <p className="error">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        ) : null}
         <button className="button" type="submit">
           Entrar
         </button>

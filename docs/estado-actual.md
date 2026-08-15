@@ -179,6 +179,19 @@ Dos límites que conviene tener presentes:
   enmascara credenciales de URLs, JWT, hashes bcrypt, correos y los valores literales de las
   variables sensibles. Para cerrarla, definí `LOGS_TOKEN` en Vercel.
 
+## Accesibilidad
+
+Reglas que el front sostiene y conviene no romper al añadir pantallas:
+
+| Regla | Por qué |
+| --- | --- |
+| Controles de 44px mínimo | Se usa con el móvil en la mano, en campo. A 24px se falla seguido |
+| Errores con `role="alert"` | Si no, el lector de pantalla no los anuncia y el fallo pasa desapercibido |
+| Acciones destructivas confirmadas | `ConfirmDialog` enfoca *Cancelar*, cierra con Escape y devuelve el foco |
+| Foco visible siempre | Es la única pista de ubicación para quien navega con teclado |
+| `prefers-reduced-motion` | Con excepción del spinner: es información, no decoración |
+| Etiquetas visibles o `sr-only` | El placeholder desaparece al escribir, así que no es una etiqueta |
+
 ## Shell (`apps/web`)
 
 Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio.

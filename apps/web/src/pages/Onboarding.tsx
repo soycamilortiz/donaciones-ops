@@ -81,7 +81,11 @@ export default function Onboarding() {
           Descripción
           <textarea name="descripcion" rows={3} />
         </label>
-        {error ? <p className="error">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        ) : null}
         <button className="button" type="submit">
           Crear organización
         </button>

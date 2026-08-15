@@ -332,7 +332,11 @@ export default function InventoryPage() {
         </label>
       </div>
 
-      {error ? <p className="error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      ) : null}
 
       <div className="table-wrap dash-table">
         <table>
@@ -498,6 +502,7 @@ export default function InventoryPage() {
                     type="number"
                     min={0}
                     step="any"
+                    inputMode="decimal"
                     required
                     defaultValue={editing?.cantidad ?? ''}
                   />
