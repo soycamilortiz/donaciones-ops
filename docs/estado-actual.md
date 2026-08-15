@@ -123,8 +123,23 @@ Variables del API:
 | `JWT_EXPIRES_IN` | Default `8h` |
 | `REDIS_URL` | Cola de reconocimiento. Default `redis://localhost:6379` |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob. Sin él, donaciones responde 503 |
+| `RBAC_SYNC_ON_BOOT` | Sincroniza roles y permisos al arrancar. `false` en serverless |
+| `SWAGGER_ENABLED` | Construir el documento de Swagger es caro en cada arranque en frío |
 
 En Docker, `DATABASE_URL` apunta al servicio `postgres`. Cambiá `JWT_SECRET` antes de un entorno real.
+
+Las URL de conexión **no se escriben a mano**: en Docker el compose las deriva de los nombres de servicio de la red `soschoco`. El detalle de las tres topologías (compose, apps en el host, serverless) está en [variables-de-entorno.md](variables-de-entorno.md).
+
+### Dos formas de arrancar el API
+
+| Entrada | Para qué |
+| --- | --- |
+| `src/main.ts` → `dist/main.js` | Proceso de larga vida (Docker, Traefik). `app.listen()` |
+| `src/serverless.ts` → `api/index.js` | Función serverless (Vercel). `app.init()` y devuelve el handler |
+
+`main.ts` no sirve en serverless: `app.listen()` nunca devuelve el control y la función termina en `FUNCTION_INVOCATION_FAILED`. El entry `api/index.js` es JavaScript a propósito, porque Vercel compila los entrypoints con esbuild y no emite metadata de decoradores, sin la cual falla la inyección de dependencias de Nest.
+
+Cada app se despliega como un proyecto propio de Vercel apuntando al mismo repo, cambiando el Root Directory. `apps/worker` no puede: es un proceso residente.
 
 ## Shell (`apps/web`)
 
@@ -155,8 +170,14 @@ Estados de una imagen: `PENDIENTE` → `PROCESANDO` → `PROCESADA` o `FALLIDA`.
 
 El job es idempotente por `imagenId` y BullMQ reintenta con backoff exponencial; solo al agotar los reintentos la imagen pasa a `FALLIDA`.
 
-### Pendiente para que la característica quede usable
+### Puesta en marcha
 
-El catálogo `productos` está vacío y sin él nada se reconoce: `emparejar()` contra una tabla vacía siempre devuelve `null`. Cargar los productos que realmente se donan (arroz, agua, aceite, panela, jabón, crema dental) con sus alias es lo más barato y lo que más cambia el resultado.
+El catálogo `productos` no puede quedar vacío: `emparejar()` contra una tabla sin filas siempre devuelve `null` y toda foto termina en revisión manual. Hay una siembra inicial con 20 productos de la zona:
 
-Falta también aplicar la migración contra un Postgres real y configurar `BLOB_READ_WRITE_TOKEN`.
+```bash
+psql "$DATABASE_URL" -f apps/api/prisma/seed-productos.sql
+```
+
+Verificado contra un PostgreSQL real: las 5 migraciones aplican limpio, `rbac:sync` deja 12 permisos y 6 roles, y un job encolado recorre la cola hasta escribir su resultado en `donacion_imagenes`.
+
+Falta configurar `BLOB_READ_WRITE_TOKEN` y tener el worker corriendo en algún host: sin él las fotos se suben pero se quedan en `PENDIENTE`.
