@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  HealthIndicatorResult,
-  HealthIndicatorService,
-} from '@nestjs/terminus';
+import { HealthIndicatorResult, HealthIndicatorService } from '@nestjs/terminus';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -19,8 +16,7 @@ export class PrismaHealthIndicator {
       await this.prisma.$queryRaw`SELECT 1`;
       return indicator.up();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Error desconocido';
+      const message = error instanceof Error ? error.message : 'Error desconocido';
       return indicator.down({ message });
     }
   }

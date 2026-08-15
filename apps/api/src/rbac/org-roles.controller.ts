@@ -18,8 +18,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PermissionSlug } from '@soschoco/shared';
 import { RequirePermission } from '../auth/require-permission.decorator';
-import { PermissionSlug } from './catalog';
 import {
   CreateRoleDto,
   PermissionDto,
@@ -41,10 +41,7 @@ export class OrgRolesController {
   @ApiOperation({ summary: 'Crear un rol' })
   @ApiCreatedResponse({ type: RoleDto })
   @ApiConflictResponse({ description: 'Slug duplicado' })
-  async create(
-    @Param('orgId', ParseUUIDPipe) _orgId: string,
-    @Body() dto: CreateRoleDto,
-  ) {
+  async create(@Param('orgId', ParseUUIDPipe) _orgId: string, @Body() dto: CreateRoleDto) {
     const role = await this.rbac.createRole(dto);
     return this.toRole(role);
   }
@@ -70,9 +67,7 @@ export class OrgRolesController {
     @Param('roleId', ParseUUIDPipe) roleId: string,
     @Body() dto: UpdateRolePermissionsDto,
   ) {
-    return this.toRole(
-      await this.rbac.setRolePermissions(roleId, dto.permissionSlugs),
-    );
+    return this.toRole(await this.rbac.setRolePermissions(roleId, dto.permissionSlugs));
   }
 
   @Delete('roles/:roleId')

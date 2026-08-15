@@ -2,12 +2,35 @@
   "name": "soschoco",
   "version": "0.1.0",
   "private": true,
-  "description": "SOS Chocó — logística de donaciones, acopios y envíos",
+  "description": "SOS Chocó — logística humanitaria (monorepo)",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "pnpm --filter api prisma:migrate",
+    "db:deploy": "pnpm --filter api prisma:deploy",
+    "db:studio": "pnpm --filter api prisma:studio",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
     "changeset": "changeset",
     "changeset:version": "changeset version"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.8"
+    "@biomejs/biome": "^2.3.5",
+    "@changesets/cli": "^2.29.8",
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.2"
   }
 }

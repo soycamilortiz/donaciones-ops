@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type { Permission, Role } from '@soschoco/shared';
 import { Transform } from 'class-transformer';
 import {
   ArrayUnique,
@@ -12,7 +13,7 @@ import {
 } from 'class-validator';
 import { toOptionalBoolean } from '../../common/soft-delete';
 
-export class PermissionDto {
+export class PermissionDto implements Permission {
   @ApiProperty()
   slug: string;
 
@@ -23,7 +24,7 @@ export class PermissionDto {
   descripcion?: string | null;
 }
 
-export class RoleDto {
+export class RoleDto implements Role {
   @ApiProperty()
   id: string;
 

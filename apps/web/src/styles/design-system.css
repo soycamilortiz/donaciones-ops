@@ -1,0 +1,59 @@
+/*
+ * Design system styles — Tailwind v4 WITHOUT Preflight.
+ * The developer's existing styles.css is pulled into a low-priority `app-base`
+ * cascade layer so:
+ *   - their existing pages render EXACTLY as before (nothing competes with their rules), and
+ *   - our design-system utilities win on our own components (utilities layer > app-base).
+ * No global reset (Preflight) is imported, so bare elements on existing pages are untouched.
+ * Tokens adopt the SOS Chocó palette so new UI matches the current look.
+ */
+@layer app-base, theme, base, components, utilities;
+
+@import "../styles.css" layer(app-base);
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --color-background: #f3efe6;
+  --color-foreground: #1c241c;
+  --color-card: #fffdf8;
+  --color-card-foreground: #1c241c;
+  --color-popover: #fffdf8;
+  --color-popover-foreground: #1c241c;
+  --color-muted: #eae3d4;
+  --color-muted-foreground: #5c6759;
+
+  --color-primary: #1f4d3a;
+  --color-primary-foreground: #fffdf8;
+  --color-secondary: #eae3d4;
+  --color-secondary-foreground: #1c241c;
+  --color-accent: #e4dcca;
+  --color-accent-foreground: #1c241c;
+
+  --color-success: #2f7d4a;
+  --color-success-foreground: #fffdf8;
+  --color-warning: #8a7a3a;
+  --color-warning-foreground: #1c241c;
+  --color-error: #a33b2b;
+  --color-error-foreground: #fffdf8;
+  --color-info: #35688f;
+  --color-info-foreground: #fffdf8;
+
+  --color-border: #d9d2c3;
+  --color-input: #d9d2c3;
+  --color-ring: #1f4d3a;
+
+  --font-sans: "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
+
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+
+  --shadow-xs: 0 1px 2px 0 rgb(28 36 28 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(28 36 28 / 0.08), 0 1px 2px -1px rgb(28 36 28 / 0.08);
+  --shadow-md: 0 4px 6px -1px rgb(28 36 28 / 0.08), 0 2px 4px -2px rgb(28 36 28 / 0.08);
+  --shadow-lg: 0 10px 15px -3px rgb(28 36 28 / 0.08), 0 4px 6px -4px rgb(28 36 28 / 0.08);
+  --shadow-xl: 0 20px 25px -5px rgb(28 36 28 / 0.1);
+}

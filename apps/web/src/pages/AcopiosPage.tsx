@@ -14,6 +14,7 @@ export default function AcopiosPage() {
     setRows(await request<Acopio[]>(`/api/v1/organizations/${orgId}/acopios`));
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void load().catch((err: unknown) => {
       setError(err instanceof Error ? err.message : 'Error al cargar');
@@ -39,10 +40,10 @@ export default function AcopiosPage() {
     };
     try {
       if (editing) {
-        await request(
-          `/api/v1/organizations/${orgId}/acopios/${editing.id}`,
-          { method: 'PATCH', body: JSON.stringify(payload) },
-        );
+        await request(`/api/v1/organizations/${orgId}/acopios/${editing.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(payload),
+        });
       } else {
         await request(`/api/v1/organizations/${orgId}/acopios`, {
           method: 'POST',
@@ -86,8 +87,8 @@ export default function AcopiosPage() {
     <section className="panel">
       <h1>Centros de acopio</h1>
       <p className="muted">
-        Acá se registran las bodegas: si reciben donaciones, si las envían a
-        zona, o ambas. No se crean al armar la organización.
+        Acá se registran las bodegas: si reciben donaciones, si las envían a zona, o ambas. No se
+        crean al armar la organización.
       </p>
       {error ? <p className="error">{error}</p> : null}
       <ul className="stack-list">
@@ -101,9 +102,8 @@ export default function AcopiosPage() {
               <p className="muted">
                 {ACOPIO_FLUJOS.find((item) => item.value === row.flujo)?.label}
                 {' · '}
-                {[row.municipio, row.direccion, row.telefono]
-                  .filter(Boolean)
-                  .join(' · ') || 'Sin datos de ubicación'}
+                {[row.municipio, row.direccion, row.telefono].filter(Boolean).join(' · ') ||
+                  'Sin datos de ubicación'}
               </p>
             </div>
             {can('acopios:write') ? (

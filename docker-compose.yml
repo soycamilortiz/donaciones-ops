@@ -38,7 +38,8 @@ services:
 
   api:
     build:
-      context: ./apps/api
+      context: .
+      dockerfile: apps/api/Dockerfile
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -67,7 +68,8 @@ services:
 
   web:
     build:
-      context: ./apps/web
+      context: .
+      dockerfile: apps/web/Dockerfile
     depends_on:
       - api
     networks:

@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
-import { ORGANIZATION_TIPOS, storeOrgId, type Me } from '../lib/api';
+import { type Me, ORGANIZATION_TIPOS, storeOrgId } from '../lib/api';
 import { useApi } from '../lib/useApi';
 
 type OutletCtx = { me: Me; refresh: () => Promise<void> };
@@ -45,9 +45,8 @@ export default function Onboarding() {
       </p>
       <h1>Crear organización</h1>
       <p className="lede">
-        Solo caracterización (quiénes son y cómo contactarlos). Los centros de
-        acopio —recibir o enviar donaciones— se cargan en Acopios, ya dentro
-        del panel.
+        Solo caracterización (quiénes son y cómo contactarlos). Los centros de acopio —recibir o
+        enviar donaciones— se cargan en Acopios, ya dentro del panel.
       </p>
       <form className="form" onSubmit={(event) => void onSubmit(event)}>
         <label className="field">
@@ -56,12 +55,7 @@ export default function Onboarding() {
         </label>
         <label className="field">
           Correo
-          <input
-            name="correo"
-            type="email"
-            required
-            defaultValue={me.correo}
-          />
+          <input name="correo" type="email" required defaultValue={me.correo} />
         </label>
         <label className="field">
           Tipo

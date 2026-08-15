@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AcopioFlujo } from '@prisma/client';
-import { Type, Transform } from 'class-transformer';
+import type { Acopio } from '@soschoco/shared';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -130,7 +131,7 @@ export class UpdateAcopioDto {
   isActive?: boolean;
 }
 
-export class AcopioDto {
+export class AcopioDto implements Acopio {
   @ApiProperty()
   id: string;
 

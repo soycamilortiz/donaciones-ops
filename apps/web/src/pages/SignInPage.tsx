@@ -1,11 +1,8 @@
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import CaptchaFields, {
-  readCaptcha,
-  useCaptchaRefresh,
-} from '../components/CaptchaFields';
-import { apiRequest, type AuthSession } from '../lib/api';
+import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
 import { useSession } from '../lib/AuthProvider';
+import { type AuthSession, apiRequest } from '../lib/api';
 
 export default function SignInPage() {
   const { setSession } = useSession();

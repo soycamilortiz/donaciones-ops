@@ -6,18 +6,9 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import { PERMISSION_CATALOG, PermissionSlug, ROLE_CATALOG, RoleSlug } from '@soschoco/shared';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  PERMISSION_CATALOG,
-  PermissionSlug,
-  ROLE_CATALOG,
-  RoleSlug,
-} from './catalog';
-import type {
-  CreateRoleDto,
-  UpdatePermissionDto,
-  UpdateRoleDto,
-} from './dto/rbac.dto';
+import type { CreateRoleDto, UpdatePermissionDto, UpdateRoleDto } from './dto/rbac.dto';
 
 const roleInclude = {
   rolePermissions: { include: { permission: true } },
@@ -131,9 +122,7 @@ export class RbacService implements OnModuleInit {
     const roles = await this.prisma.role.findMany({
       include: roleInclude,
     });
-    const order = new Map<string, number>(
-      ROLE_CATALOG.map((role, index) => [role.slug, index]),
-    );
+    const order = new Map<string, number>(ROLE_CATALOG.map((role, index) => [role.slug, index]));
     return roles.sort((a, b) => {
       const left = order.get(a.slug) ?? 1000;
       const right = order.get(b.slug) ?? 1000;
@@ -207,10 +196,7 @@ export class RbacService implements OnModuleInit {
     }
 
     const next = new Set(unique);
-    if (
-      role.slug === RoleSlug.AdministradorAcopio &&
-      !next.has(PermissionSlug.RolesWrite)
-    ) {
+    if (role.slug === RoleSlug.AdministradorAcopio && !next.has(PermissionSlug.RolesWrite)) {
       throw new ForbiddenException(
         'El administrador de acopio debe conservar el permiso de editar roles',
       );
@@ -232,9 +218,7 @@ export class RbacService implements OnModuleInit {
   async deleteRole(roleId: string) {
     const role = await this.requireRole(roleId);
     if (role.slug === RoleSlug.AdministradorAcopio) {
-      throw new ForbiddenException(
-        'No se puede eliminar el rol administrador de acopio',
-      );
+      throw new ForbiddenException('No se puede eliminar el rol administrador de acopio');
     }
     const members = await this.prisma.membership.count({
       where: { roleId, isActive: true },
@@ -261,9 +245,7 @@ export class RbacService implements OnModuleInit {
       where: { slug },
       data: {
         ...(dto.nombre ? { nombre: dto.nombre.trim() } : {}),
-        ...(dto.descripcion !== undefined
-          ? { descripcion: dto.descripcion.trim() || null }
-          : {}),
+        ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion.trim() || null } : {}),
       },
     });
   }

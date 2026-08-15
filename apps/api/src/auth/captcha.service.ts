@@ -1,8 +1,5 @@
-import { createHash, randomUUID } from 'crypto';
-import {
-  Injectable,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { createHash, randomUUID } from 'node:crypto';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import svgCaptcha from 'svg-captcha';
 import { PrismaService } from '../prisma/prisma.service';
 

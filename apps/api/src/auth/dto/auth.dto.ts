@@ -1,13 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsEmail,
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import type { AuthSession, AuthUser, Captcha } from '@soschoco/shared';
+import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
-export class CaptchaResponseDto {
+export class CaptchaResponseDto implements Captcha {
   @ApiProperty()
   captchaId: string;
 
@@ -75,7 +70,7 @@ export class LoginDto {
   captchaAnswer: string;
 }
 
-export class AuthUserDto {
+export class AuthUserDto implements AuthUser {
   @ApiProperty()
   id: string;
 
@@ -89,7 +84,7 @@ export class AuthUserDto {
   correo: string;
 }
 
-export class AuthTokenDto {
+export class AuthTokenDto implements AuthSession {
   @ApiProperty()
   accessToken: string;
 

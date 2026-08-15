@@ -12,10 +12,7 @@ export default function AppShell() {
         <p className="brand">SOS Chocó</p>
         <label className="field">
           Organización
-          <select
-            value={orgId}
-            onChange={(event) => setOrgId(event.target.value)}
-          >
+          <select value={orgId} onChange={(event) => setOrgId(event.target.value)}>
             {me.memberships.map((item) => (
               <option key={item.organization.id} value={item.organization.id}>
                 {item.organization.nombre}
@@ -32,6 +29,7 @@ export default function AppShell() {
           <NavLink to="/app/roles">Roles</NavLink>
           <NavLink to="/app/acopios">Acopios</NavLink>
           <NavLink to="/app/inventario">Inventario</NavLink>
+          <NavLink to="/app/donaciones">Donaciones</NavLink>
         </nav>
       </aside>
       <div className="app-main">
