@@ -23,6 +23,7 @@ import {
   CorregirProductoDto,
   DonacionImagenDto,
   NuevaRutaDto,
+  PaginaDonacionImagenDto,
   ProductoDto,
   RegistrarImagenDto,
   RutaSubidaDto,
@@ -83,9 +84,24 @@ export class DonacionesController {
   @RequirePermission(PermissionSlug.DonacionesRead)
   @ApiOperation({ summary: 'Listar fotos de productos donados' })
   @ApiQuery({ name: 'estado', required: false, enum: Object.values(DonacionImagenEstado) })
-  @ApiOkResponse({ type: [DonacionImagenDto] })
-  listar(@Param('orgId', ParseUUIDPipe) orgId: string, @Query('estado') estado?: string) {
-    return this.donaciones.listar(orgId, estado);
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    description: 'Id de la última fila de la página anterior',
+  })
+  @ApiQuery({ name: 'limite', required: false, description: 'Entre 1 y 200. Default 50' })
+  @ApiOkResponse({ type: PaginaDonacionImagenDto })
+  listar(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Query('estado') estado?: string,
+    @Query('cursor') cursor?: string,
+    @Query('limite') limite?: string,
+  ) {
+    return this.donaciones.listar(orgId, {
+      estado,
+      cursor,
+      limite: limite ? Number.parseInt(limite, 10) : undefined,
+    });
   }
 
   @Get('productos')

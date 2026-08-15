@@ -32,10 +32,12 @@ export default function RevisionDonacionesPage() {
 
   const cargar = useCallback(async () => {
     try {
-      const [imagenes, catalogo] = await Promise.all([
-        listarImagenes(request, orgId),
+      const [pagina, catalogo] = await Promise.all([
+        // 200 es el tope del API; la cola de revisión rara vez pasa de ahí.
+        listarImagenes(request, orgId, { limite: 200 }),
         listarProductos(request, orgId),
       ]);
+      const imagenes = pagina.items;
       // Necesitan mano humana: procesadas sin producto, o fallidas.
       setPendientes(
         imagenes.filter(

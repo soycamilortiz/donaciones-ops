@@ -107,7 +107,9 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Acopios | `/api/v1/organizations/:orgId/acopios` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
-| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
+| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas`, `/subidas/ruta`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
+
+`GET /donaciones` está **paginado por cursor**, no por offset: las fotos se insertan sin parar desde el campo y con `OFFSET` una fila nueva desplaza la ventana, haciendo que se repitan o se salten registros entre páginas. Devuelve `{ items, siguienteCursor }`; `siguienteCursor` es `null` cuando ya no hay más. Acepta `?estado=`, `?cursor=` y `?limite=` (1–200, default 50).
 
 Guards: `JwtAuthGuard` global + `@RequirePermission` por membresía.
 
@@ -165,6 +167,8 @@ La PWA fotografía un producto donado y el sistema intenta identificarlo para de
 | `productos` | Catálogo contra el que se resuelve el texto del OCR |
 
 Estados de una imagen: `PENDIENTE` → `PROCESANDO` → `PROCESADA` o `FALLIDA`.
+
+Cada foto se atribuye a un centro de acopio. La pantalla de captura recuerda el último elegido por organización: en campo se registran muchas fotos seguidas en el mismo sitio y volver a elegirlo cada vez es fricción pura.
 
 **Limitación conocida.** Tesseract es OCR, no reconocimiento de objetos: sobre envases reales acierta poco. Cuando la confianza o el emparejamiento no alcanzan el umbral, la imagen queda `PROCESADA` sin producto para que alguien lo corrija a mano, en vez de escribir un producto equivocado en el inventario. El campo `productos.ean` está listo para migrar a lectura de código de barras, que es lo que resuelve bien este caso.
 

@@ -33,6 +33,7 @@ export type DonacionImagen = {
   id: string;
   organizationId: string;
   acopioId?: string | null;
+  acopio?: { id: string; nombre: string; municipio?: string | null } | null;
   blobUrl: string;
   estado: DonacionImagenEstado;
   intentos: number;
@@ -78,3 +79,10 @@ export const TIPOS_IMAGEN_ACEPTADOS = [
 ] as const;
 
 export type TipoImagenAceptado = (typeof TIPOS_IMAGEN_ACEPTADOS)[number];
+
+/** Respuesta paginada por cursor. */
+export type Pagina<T> = {
+  items: T[];
+  /** `null` cuando ya no hay más. */
+  siguienteCursor: string | null;
+};

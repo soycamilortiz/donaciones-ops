@@ -14,10 +14,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ColaService } from './cola.service';
 import type { RegistrarImagenDto } from './dto/donacion.dto';
 
+export type OpcionesListado = {
+  estado?: string;
+  cursor?: string;
+  limite?: number;
+};
+
 const IMAGEN_CON_PRODUCTO = {
   producto: {
     select: { id: true, nombre: true, marca: true, categoria: true, ean: true, alias: true },
   },
+  // Sin el nombre, el acopioId no sirve para mostrar nada en pantalla.
+  acopio: { select: { id: true, nombre: true, municipio: true } },
 } as const;
 
 @Injectable()
@@ -111,13 +119,40 @@ export class DonacionesService {
     return imagen;
   }
 
-  async listar(organizationId: string, estado?: string) {
-    return this.prisma.donacionImagen.findMany({
-      where: { organizationId, ...(estado ? { estado: estado as DonacionImagenEstado } : {}) },
+  /**
+   * Listado paginado por cursor y no por offset: las fotos se insertan sin parar
+   * desde el campo, y con OFFSET una fila nueva desplaza la ventana y hace que
+   * se repitan o se salten registros entre paginas.
+   */
+  async listar(organizationId: string, opciones: OpcionesListado = {}) {
+    // El limite llega de la query string, asi que puede ser NaN ('?limite=abc')
+    // o absurdo. Cualquier valor no utilizable cae al default en vez de
+    // propagarse a Prisma.
+    const pedido = opciones.limite;
+    const limite =
+      typeof pedido === 'number' && Number.isFinite(pedido) && pedido >= 1
+        ? Math.min(Math.trunc(pedido), 200)
+        : 50;
+
+    const filas = await this.prisma.donacionImagen.findMany({
+      where: {
+        organizationId,
+        ...(opciones.estado ? { estado: opciones.estado as DonacionImagenEstado } : {}),
+      },
       include: IMAGEN_CON_PRODUCTO,
-      orderBy: { createdAt: 'desc' },
-      take: 200,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      // Se pide uno de mas para saber si hay pagina siguiente sin un count().
+      take: limite + 1,
+      ...(opciones.cursor ? { cursor: { id: opciones.cursor }, skip: 1 } : {}),
     });
+
+    const hayMas = filas.length > limite;
+    const items = hayMas ? filas.slice(0, limite) : filas;
+
+    return {
+      items,
+      siguienteCursor: hayMas ? (items.at(-1)?.id ?? null) : null,
+    };
   }
 
   async obtener(organizationId: string, id: string) {
