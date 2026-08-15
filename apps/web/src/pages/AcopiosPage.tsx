@@ -58,6 +58,19 @@ export default function AcopiosPage() {
     }
   }
 
+  async function onReactivate(id: string) {
+    setError(null);
+    try {
+      await request(`/api/v1/organizations/${orgId}/acopios/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isActive: true }),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo reactivar');
+    }
+  }
+
   async function onRemove(id: string) {
     setError(null);
     try {
@@ -80,9 +93,12 @@ export default function AcopiosPage() {
       {error ? <p className="error">{error}</p> : null}
       <ul className="stack-list">
         {rows.map((row) => (
-          <li key={row.id}>
+          <li key={row.id} className={row.isActive === false ? 'is-inactive' : undefined}>
             <div>
               <strong>{row.nombre}</strong>
+              {row.isActive === false ? (
+                <span className="badge-baja"> Baja</span>
+              ) : null}
               <p className="muted">
                 {ACOPIO_FLUJOS.find((item) => item.value === row.flujo)?.label}
                 {' · '}
@@ -95,9 +111,23 @@ export default function AcopiosPage() {
                 <button type="button" className="linkish" onClick={() => setEditing(row)}>
                   Editar
                 </button>
-                <button type="button" className="linkish" onClick={() => void onRemove(row.id)}>
-                  Eliminar
-                </button>
+                {row.isActive === false ? (
+                  <button
+                    type="button"
+                    className="linkish"
+                    onClick={() => void onReactivate(row.id)}
+                  >
+                    Reactivar
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="linkish"
+                    onClick={() => void onRemove(row.id)}
+                  >
+                    Dar de baja
+                  </button>
+                )}
               </div>
             ) : null}
           </li>

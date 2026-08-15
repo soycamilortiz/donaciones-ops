@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.schema';
 import { DonacionesModule } from './donaciones/donaciones.module';
 import { HealthModule } from './health/health.module';
+import { InventoryModule } from './inventory/inventory.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RbacModule } from './rbac/rbac.module';
@@ -23,6 +24,7 @@ import { RbacModule } from './rbac/rbac.module';
     RbacModule,
     OrganizationsModule,
     AcopiosModule,
+    InventoryModule,
     DonacionesModule,
   ],
   controllers: [AppController],

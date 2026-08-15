@@ -6,6 +6,7 @@ import PendingShell from './components/PendingShell';
 import RequireAuth from './components/RequireAuth';
 import AcopiosPage from './pages/AcopiosPage';
 import Dashboard from './pages/Dashboard';
+import InventoryPage from './pages/InventoryPage';
 import DonacionesPage from './pages/DonacionesPage';
 import Landing from './pages/Landing';
 import NuevaDonacionPage from './pages/NuevaDonacionPage';
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/app/usuarios" element={<UsersPage />} />
             <Route path="/app/roles" element={<RolesPage />} />
             <Route path="/app/acopios" element={<AcopiosPage />} />
+            <Route path="/app/inventario" element={<InventoryPage />} />
             <Route path="/app/donaciones" element={<DonacionesPage />} />
             <Route path="/app/donaciones/nueva" element={<NuevaDonacionPage />} />
             <Route path="/app/donaciones/revision" element={<RevisionDonacionesPage />} />

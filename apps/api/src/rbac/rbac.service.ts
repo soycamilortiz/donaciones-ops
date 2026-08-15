@@ -63,19 +63,56 @@ export class RbacService implements OnModuleInit {
 
     const admin = existingBySlug.get(RoleSlug.AdministradorAcopio);
     if (admin) {
-      const write = await this.prisma.permission.findUnique({
-        where: { slug: PermissionSlug.RolesWrite },
-      });
-      if (write) {
+      for (const slug of [
+        PermissionSlug.RolesWrite,
+        PermissionSlug.InventoryRead,
+        PermissionSlug.InventoryWrite,
+        PermissionSlug.DonacionesRead,
+        PermissionSlug.DonacionesWrite,
+      ]) {
+        const permission = await this.prisma.permission.findUnique({
+          where: { slug },
+        });
+        if (!permission) {
+          continue;
+        }
         await this.prisma.rolePermission.upsert({
           where: {
             roleId_permissionId: {
               roleId: admin.id,
-              permissionId: write.id,
+              permissionId: permission.id,
             },
           },
           update: {},
-          create: { roleId: admin.id, permissionId: write.id },
+          create: { roleId: admin.id, permissionId: permission.id },
+        });
+      }
+    }
+
+    for (const role of ROLE_CATALOG) {
+      const record = existingBySlug.get(role.slug);
+      if (!record) {
+        continue;
+      }
+      for (const slug of role.permissions) {
+        if (!slug.startsWith('inventory:') && !slug.startsWith('donaciones:')) {
+          continue;
+        }
+        const permission = await this.prisma.permission.findUnique({
+          where: { slug },
+        });
+        if (!permission) {
+          continue;
+        }
+        await this.prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: {
+              roleId: record.id,
+              permissionId: permission.id,
+            },
+          },
+          update: {},
+          create: { roleId: record.id, permissionId: permission.id },
         });
       }
     }
@@ -110,14 +147,26 @@ export class RbacService implements OnModuleInit {
       throw new ConflictException('No se pudo generar un slug para el rol');
     }
     const taken = await this.prisma.role.findUnique({ where: { slug } });
-    if (taken) {
+    if (taken?.isActive) {
       throw new ConflictException(`Ya existe un rol con slug ${slug}`);
+    }
+    if (taken) {
+      return this.prisma.role.update({
+        where: { id: taken.id },
+        data: {
+          isActive: true,
+          nombre: dto.nombre.trim(),
+          descripcion: dto.descripcion?.trim() || null,
+        },
+        include: roleInclude,
+      });
     }
     return this.prisma.role.create({
       data: {
         slug,
         nombre: dto.nombre.trim(),
         descripcion: dto.descripcion?.trim() || null,
+        isActive: true,
       },
       include: roleInclude,
     });
@@ -129,7 +178,10 @@ export class RbacService implements OnModuleInit {
       where: { id: roleId },
       data: {
         ...(dto.nombre ? { nombre: dto.nombre.trim() } : {}),
-        ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion.trim() || null } : {}),
+        ...(dto.descripcion !== undefined
+          ? { descripcion: dto.descripcion.trim() || null }
+          : {}),
+        ...(typeof dto.isActive === 'boolean' ? { isActive: dto.isActive } : {}),
       },
       include: roleInclude,
     });
@@ -171,12 +223,17 @@ export class RbacService implements OnModuleInit {
       throw new ForbiddenException('No se puede eliminar el rol administrador de acopio');
     }
     const members = await this.prisma.membership.count({
-      where: { roleId },
+      where: { roleId, isActive: true },
     });
     if (members > 0) {
-      throw new ConflictException('Hay personas con este rol. Reasignalas antes de eliminarlo');
+      throw new ConflictException(
+        'Hay personas con este rol. Reasignalas antes de darlo de baja',
+      );
     }
-    await this.prisma.role.delete({ where: { id: roleId } });
+    await this.prisma.role.update({
+      where: { id: roleId },
+      data: { isActive: false },
+    });
   }
 
   async updatePermission(slug: string, dto: UpdatePermissionDto) {

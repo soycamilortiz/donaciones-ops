@@ -9,6 +9,8 @@ export const PermissionSlug = {
   AcopiosWrite: 'acopios:write',
   RolesRead: 'roles:read',
   RolesWrite: 'roles:write',
+  InventoryRead: 'inventory:read',
+  InventoryWrite: 'inventory:write',
   DonacionesRead: 'donaciones:read',
   DonacionesWrite: 'donaciones:write',
 } as const;
@@ -82,6 +84,16 @@ export const PERMISSION_CATALOG: Array<{
     descripcion: 'Crear roles y cambiar la matriz de permisos',
   },
   {
+    slug: PermissionSlug.InventoryRead,
+    nombre: 'Ver inventario',
+    descripcion: 'Consultar existencias por centro de acopio',
+  },
+  {
+    slug: PermissionSlug.InventoryWrite,
+    nombre: 'Gestionar inventario',
+    descripcion: 'Cargar, editar y dar de baja productos en bodega',
+  },
+  {
     slug: PermissionSlug.DonacionesRead,
     nombre: 'Ver donaciones',
     descripcion: 'Consultar las imagenes de productos donados y su reconocimiento',
@@ -100,6 +112,7 @@ const LECTURA = [
   PermissionSlug.AcopiosRead,
   PermissionSlug.MembersRead,
   PermissionSlug.RolesRead,
+  PermissionSlug.InventoryRead,
   PermissionSlug.DonacionesRead,
 ] as const;
 
@@ -129,6 +142,10 @@ export const ROLE_CATALOG: Array<{
       PermissionSlug.AcopiosRead,
       PermissionSlug.RolesRead,
       PermissionSlug.RolesWrite,
+      PermissionSlug.InventoryRead,
+      PermissionSlug.InventoryWrite,
+      PermissionSlug.DonacionesRead,
+      PermissionSlug.DonacionesWrite,
     ],
   },
   {
@@ -141,6 +158,8 @@ export const ROLE_CATALOG: Array<{
       PermissionSlug.AcopiosRead,
       PermissionSlug.AcopiosWrite,
       PermissionSlug.RolesRead,
+      PermissionSlug.InventoryRead,
+      PermissionSlug.InventoryWrite,
       PermissionSlug.DonacionesRead,
       PermissionSlug.DonacionesWrite,
     ],
@@ -155,15 +174,21 @@ export const ROLE_CATALOG: Array<{
     slug: RoleSlug.Transportador,
     nombre: 'Transportador',
     descripcion: 'Consulta acopios para retiro y despacho',
-    permissions: [PermissionSlug.OrgRead, PermissionSlug.AcopiosRead],
+    permissions: [
+      PermissionSlug.OrgRead,
+      PermissionSlug.AcopiosRead,
+      PermissionSlug.InventoryRead,
+      PermissionSlug.DonacionesRead,
+    ],
   },
   {
     slug: RoleSlug.Voluntario,
     nombre: 'Voluntario',
-    descripcion: 'Apoyo en campo: consulta y registro de donaciones',
+    descripcion: 'Apoyo en campo: consulta de inventario y registro de donaciones',
     permissions: [
       PermissionSlug.OrgRead,
       PermissionSlug.AcopiosRead,
+      PermissionSlug.InventoryRead,
       PermissionSlug.DonacionesRead,
       PermissionSlug.DonacionesWrite,
     ],

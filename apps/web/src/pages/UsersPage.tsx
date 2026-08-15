@@ -59,6 +59,22 @@ export default function UsersPage() {
     }
   }
 
+  async function onReactivate(member: Member) {
+    setError(null);
+    try {
+      await request(`/api/v1/organizations/${orgId}/members`, {
+        method: 'POST',
+        body: JSON.stringify({
+          correo: member.correo,
+          roleSlug: member.roleSlug,
+        }),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo reactivar');
+    }
+  }
+
   async function onRemove(userId: string) {
     setError(null);
     try {
@@ -67,7 +83,7 @@ export default function UsersPage() {
       });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo quitar');
+      setError(err instanceof Error ? err.message : 'No se pudo dar de baja');
     }
   }
 
@@ -78,7 +94,9 @@ export default function UsersPage() {
         <form className="inline-form" onSubmit={(event) => void onInvite(event)}>
           <input name="correo" type="email" placeholder="correo@org.org" required />
           <select name="roleSlug" defaultValue="voluntario">
-            {roles.map((role) => (
+            {roles
+              .filter((role) => role.isActive !== false)
+              .map((role) => (
               <option key={role.slug} value={role.slug}>
                 {role.nombre}
               </option>
@@ -102,17 +120,27 @@ export default function UsersPage() {
         </thead>
         <tbody>
           {members.map((member) => (
-            <tr key={member.userId}>
-              <td>{member.nombre}</td>
+            <tr
+              key={member.userId}
+              className={member.isActive === false ? 'is-inactive' : undefined}
+            >
+              <td>
+                {member.nombre}
+                {member.isActive === false ? (
+                  <div className="badge-baja">Baja</div>
+                ) : null}
+              </td>
               <td>{member.usuario}</td>
               <td>{member.correo}</td>
               <td>
-                {can('members:role') ? (
+                {can('members:role') && member.isActive !== false ? (
                   <select
                     value={member.roleSlug}
                     onChange={(event) => void onRole(member.userId, event.target.value)}
                   >
-                    {roles.map((role) => (
+                    {roles
+                      .filter((role) => role.isActive !== false)
+                      .map((role) => (
                       <option key={role.slug} value={role.slug}>
                         {role.nombre}
                       </option>
@@ -124,13 +152,25 @@ export default function UsersPage() {
               </td>
               <td>
                 {can('members:remove') ? (
-                  <button
-                    type="button"
-                    className="linkish"
-                    onClick={() => void onRemove(member.userId)}
-                  >
-                    Quitar
-                  </button>
+                  member.isActive === false ? (
+                    can('members:invite') ? (
+                      <button
+                        type="button"
+                        className="linkish"
+                        onClick={() => void onReactivate(member)}
+                      >
+                        Reactivar
+                      </button>
+                    ) : null
+                  ) : (
+                    <button
+                      type="button"
+                      className="linkish"
+                      onClick={() => void onRemove(member.userId)}
+                    >
+                      Dar de baja
+                    </button>
+                  )
                 ) : null}
               </td>
             </tr>

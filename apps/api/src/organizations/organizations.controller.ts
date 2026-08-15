@@ -109,7 +109,7 @@ export class OrganizationsController {
   @Delete(':orgId/members/:userId')
   @HttpCode(204)
   @RequirePermission(PermissionSlug.MembersRemove)
-  @ApiOperation({ summary: 'Quitar miembro' })
+  @ApiOperation({ summary: 'Dar de baja un miembro (no borra la membresía)' })
   async removeMember(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -120,6 +120,7 @@ export class OrganizationsController {
   private toMember(row: {
     id: string;
     isPrimary: boolean;
+    isActive: boolean;
     user: { id: string; usuario: string; nombre: string; correo: string };
     role: { slug: string; nombre: string };
   }): MemberDto {
@@ -130,6 +131,7 @@ export class OrganizationsController {
       nombre: row.user.nombre,
       correo: row.user.correo,
       isPrimary: row.isPrimary,
+      isActive: row.isActive,
       roleSlug: row.role.slug,
       roleNombre: row.role.nombre,
     };

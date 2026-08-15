@@ -4,6 +4,8 @@ Logística de donaciones, centros de acopio y envíos. Un dominio, varios conten
 
 Documentación de lo que hay hoy: [docs/estado-actual.md](docs/estado-actual.md).
 
+Los cambios de producto se registran con **Changesets** ([guía](docs/changesets.md)). En la raíz: `npm install` una vez, después `npm run changeset`.
+
 ## Arranque
 
 ```bash

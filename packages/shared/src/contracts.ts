@@ -36,6 +36,7 @@ export type Role = {
   slug: string;
   nombre: string;
   descripcion?: string | null;
+  isActive: boolean;
   permissions: Permission[];
 };
 
@@ -62,6 +63,7 @@ export type Member = {
   nombre: string;
   correo: string;
   isPrimary: boolean;
+  isActive: boolean;
   roleSlug: string;
   roleNombre: string;
 };
@@ -86,6 +88,31 @@ export type Acopio = {
   direccion?: string | null;
   lat?: number | null;
   lng?: number | null;
+  isActive: boolean;
+};
+
+export type InventoryItem = {
+  id: string;
+  acopioId: string;
+  nombre: string;
+  categoria: string;
+  categoriaDetalle?: string | null;
+  sku?: string | null;
+  marca?: string | null;
+  presentacion?: string | null;
+  talla?: string | null;
+  destinatario: string;
+  cantidad: number;
+  unidad: string;
+  unidadDetalle?: string | null;
+  vencimiento?: string | null;
+  estado: string;
+  loteCodigo?: string | null;
+  ubicacionInterna?: string | null;
+  donanteNombre?: string | null;
+  donanteContacto?: string | null;
+  observaciones?: string | null;
+  isActive: boolean;
 };
 
 /** Un permiso conocido del catálogo, o cualquier slug que llegue del servidor. */

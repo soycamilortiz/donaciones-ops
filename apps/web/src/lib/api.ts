@@ -11,6 +11,7 @@ export type {
   AuthSession,
   AuthUser,
   Captcha,
+  InventoryItem,
   Me,
   Member,
   Membership,
@@ -19,7 +20,16 @@ export type {
   Permission,
   Role,
 } from '@soschoco/shared';
-export { ACOPIO_FLUJOS, ORGANIZATION_TIPOS, PermissionSlug, RoleSlug } from '@soschoco/shared';
+export {
+  ACOPIO_FLUJOS,
+  INVENTORY_CATEGORIAS,
+  INVENTORY_DESTINATARIOS,
+  INVENTORY_ESTADOS,
+  INVENTORY_UNIDADES,
+  ORGANIZATION_TIPOS,
+  PermissionSlug,
+  RoleSlug,
+} from '@soschoco/shared';
 
 export function readStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);

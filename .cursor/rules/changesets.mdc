@@ -1,0 +1,48 @@
+---
+description: Todo cambio de producto lleva un changeset
+alwaysApply: true
+---
+
+# Changesets
+
+SOS Chocó versiona el producto con [Changesets](https://github.com/changesets/changesets). Un solo paquete: `soschoco` (raíz). No hay workspaces npm: `apps/api` y `apps/web` siguen con su propio `package-lock` para Docker.
+
+## Obligatorio
+
+Después de un cambio que el usuario va a usar o desplegar (feature, fix, migración, ruta Traefik, env), **creá un changeset** en la misma sesión. No esperes al commit.
+
+```bash
+npm run changeset
+```
+
+Si el CLI es interactivo y no se puede usar, escribí a mano `.changeset/<id-corto>.md`:
+
+```md
+---
+"soschoco": minor
+---
+
+Inventario por centro de acopio: el operador carga existencias en el panel.
+```
+
+## Bump
+
+| Tipo | Cuándo |
+| --- | --- |
+| `patch` | Bugfix, copy, ajuste interno sin contrato nuevo |
+| `minor` | Feature o endpoint/pantalla nueva (semver 0.x: igual, feature = minor) |
+| `major` | Rotura de API, auth o rutas públicas |
+
+El texto del changeset es el **porqué** en español (1–3 frases). No listes archivos.
+
+## No hace falta changeset
+
+Typos en docs de agente, reglas Cursor, o WIP que el usuario pidió revertir. README/estado-actual **sí** si documentan un cambio de producto ya hecho.
+
+## Commits
+
+No commitees a menos que el usuario lo pida. Si pide commit, el changeset tiene que estar en el mismo commit que el código.
+
+## Baja lógica
+
+No uses `delete` en usuarios, orgs, acopios, membresías, roles ni inventario. `isActive: false`. En inventario el **create siempre** pone `isActive: true` y no toma el flag del body.
