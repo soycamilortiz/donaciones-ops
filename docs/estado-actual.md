@@ -62,11 +62,12 @@ Abre [http://localhost](http://localhost). En Windows, `soschoco.localhost` no s
 | http://localhost/jobs | Panel de la cola de jobs (basic auth) |
 | http://localhost:8080 | Dashboard Traefik |
 | localhost:5432 | Postgres (`soschoco` / `soschoco`) |
+| localhost:6379 | Redis (cola BullMQ) |
 
 Desarrollo sin rebuild de imagen:
 
 ```bash
-docker compose up postgres -d
+docker compose up postgres redis -d
 pnpm install                # una vez, desde la raíz
 pnpm dev                    # API en :3000/api y front en :5173
 ```
