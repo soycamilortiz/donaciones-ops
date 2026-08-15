@@ -12,7 +12,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src"]
 }
