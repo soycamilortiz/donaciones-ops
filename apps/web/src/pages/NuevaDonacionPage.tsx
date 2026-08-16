@@ -33,6 +33,7 @@ export default function NuevaDonacionPage() {
   const [acopios, setAcopios] = useState<Acopio[]>([]);
   const [acopioId, setAcopioId] = useState<string>(() => leerAcopioRecordado(orgId));
   const [lectura, setLectura] = useState<InterpretacionDonacion | null>(null);
+  const [eanManual, setEanManual] = useState('');
   const entradaRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -66,7 +67,10 @@ export default function NuevaDonacionPage() {
         });
         setImagenId(creada.id);
         setFase('reconociendo');
-        const ean = await leerEanDeFoto(archivo);
+        const tipado = eanManual.replace(/\D/g, '');
+        const ean =
+          (tipado.length >= 8 && tipado.length <= 14 ? tipado : null) ??
+          (await leerEanDeFoto(archivo));
         const r = await interpretarImagen(request, orgId, creada.id, {
           ean: ean ?? undefined,
           acopioId: acopioId || undefined,
@@ -78,7 +82,7 @@ export default function NuevaDonacionPage() {
         setFase('error');
       }
     },
-    [request, orgId, acopioId, t],
+    [request, orgId, acopioId, eanManual, t],
   );
 
   const reiniciar = () => {
@@ -87,6 +91,7 @@ export default function NuevaDonacionPage() {
     setError(null);
     setVistaPrevia(null);
     setLectura(null);
+    setEanManual('');
     if (entradaRef.current) {
       entradaRef.current.value = '';
     }
@@ -124,6 +129,18 @@ export default function NuevaDonacionPage() {
           </select>
         </label>
       ) : null}
+
+      <label className="block space-y-1">
+        <span className="text-sm font-medium text-foreground">{t('newDonation.eanOptional')}</span>
+        <Input
+          inputMode="numeric"
+          value={eanManual}
+          onChange={(e) => setEanManual(e.target.value)}
+          placeholder="3017620422003"
+          disabled={fase !== 'inicio'}
+        />
+        <span className="text-xs text-muted-foreground">{t('newDonation.eanOptionalHint')}</span>
+      </label>
 
       <input
         ref={entradaRef}
@@ -249,6 +266,8 @@ function Resultado({
         <Badge variant="warning">{t('newDonation.result.needsConfirm')}</Badge>
         <p className="text-sm text-muted-foreground">
           {t(`newDonation.via.${lectura?.via ?? 'manual'}`)}
+          {lectura?.ean ? ` · EAN ${lectura.ean}` : ''}
+          {lectura?.fuenteEan ? ` · ${t(`newDonation.eanSource.${lectura.fuenteEan}`)}` : ''}
         </p>
       </div>
       {lectura?.coincidencias.length ? (

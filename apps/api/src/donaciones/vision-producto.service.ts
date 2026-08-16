@@ -26,7 +26,7 @@ export class VisionProductoService {
       model: config.get('VISION_MODEL', { infer: true }),
       timeoutMs: config.get('VISION_TIMEOUT_MS', { infer: true }),
       logger: {
-        warn: (message) => this.log.warn(message),
+        warn: (message: string) => this.log.warn(message),
       },
     });
   }

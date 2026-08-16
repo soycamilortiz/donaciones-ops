@@ -70,6 +70,13 @@
     "viewDonations": "View donations",
     "uploadError": "Could not upload the photo",
     "noPermission": "You do not have permission to register donations.",
+    "eanOptional": "Barcode (optional)",
+    "eanOptionalHint": "If the photo is not read automatically, type the EAN so we hit the catalogue / Open Food Facts instead of the AI.",
+    "eanSource": {
+      "local": "our catalogue",
+      "openfoodfacts": "Open Food Facts",
+      "ninguna": "EAN with no match"
+    },
     "via": {
       "ean": "Resolved from the barcode (catalogue or Open Food Facts).",
       "vision": "The vision model read the product photo. Check name and quantity.",
