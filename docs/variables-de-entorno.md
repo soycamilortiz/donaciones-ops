@@ -171,6 +171,33 @@ API solo **produce** (un `add()` por foto), así que su consumo es mínimo. El q
 haría polling constante es el worker, y ese no está en Vercel: conviene tenerlo
 cerca del Redis o usar un Redis propio en el mismo host.
 
+## Defaults que ya no hay que configurar
+
+`RBAC_SYNC_ON_BOOT` y `SWAGGER_ENABLED` detectan el entorno: si existe `VERCEL=1`
+valen `false` por defecto, que es lo correcto en serverless. Solo hay que
+tocarlos para forzar lo contrario.
+
+`DATABASE_URL` y `REDIS_URL` **no pueden tener un default útil**. No es que el
+valor esté mal escrito: la base tiene que existir en una dirección alcanzable
+desde donde corre la app. `localhost` en una función de Vercel es el propio
+contenedor efímero, no tu máquina.
+
+## La API no se cae si la base no responde
+
+`PrismaService` registra el fallo de conexión y deja la aplicación en pie. Antes
+propagaba el error, Nest moría en el arranque y **todas** las rutas devolvían
+500 — incluidas las de salud, que son las que sirven para diagnosticar.
+
+| Ruta | Con la base caída |
+| --- | --- |
+| `/api/health` | 200 (el proceso está vivo) |
+| `/api` | 200 |
+| `/api/health/ready` | 503 con el motivo exacto |
+| Rutas con datos | Fallan una a una, con su error |
+
+La sincronización de RBAC al arrancar tampoco tumba el proceso: si la base no
+responde lo registra y sigue.
+
 ## Qué rompe si se mezcla
 
 | Síntoma | Causa |
