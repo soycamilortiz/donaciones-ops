@@ -175,11 +175,6 @@ h2 {
   margin: 0;
 }
 
-.choice-grid .button {
-  align-self: flex-start;
-  margin-top: auto;
-}
-
 @media (max-width: 720px) {
   .status,
   .modules,
@@ -225,6 +220,12 @@ a {
   text-decoration: none;
   font: inherit;
   cursor: pointer;
+}
+
+/* Va después de `.button` para que su mayor especificidad tenga efecto. */
+.choice-grid .button {
+  align-self: flex-start;
+  margin-top: auto;
 }
 
 .auth-page {
@@ -288,17 +289,28 @@ a {
 }
 
 /*
- * Los controles de estos formularios median entre 21px y 42px. Se usan desde el
- * movil, en campo, y por debajo de 44px se falla el toque con frecuencia.
- * El minimo va aqui y no en cada pantalla para que aplique tambien a las que
- * se anadan despues.
+ * Form controls measured between 21px and 42px. The app is used one-handed on a
+ * phone in the field, and below 44px taps miss often. The minimum lives here
+ * rather than per screen so it also covers screens added later.
+ *
+ * The bare `select` is declared first on purpose: it is less specific than
+ * `.field select`, and a lower-specificity rule placed after a higher one never
+ * applies where they overlap.
  */
+select {
+  min-height: 44px;
+  font: inherit;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: inherit;
+}
+
 .field input,
 .field select,
 .field textarea,
 .inline-form input,
-.inline-form select,
-select {
+.inline-form select {
   min-height: 44px;
   font: inherit;
   padding: 8px;

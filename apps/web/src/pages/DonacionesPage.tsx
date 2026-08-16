@@ -1,6 +1,7 @@
 import type { DonacionImagen } from '@soschoco/shared';
 import { DonacionImagenEstado } from '@soschoco/shared';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Badge, type BadgeVariant } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
@@ -12,11 +13,12 @@ import { listarImagenes } from '@/features/donaciones/donaciones-service';
 import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
 
-const ESTADO: Record<string, { label: string; variant: BadgeVariant }> = {
-  [DonacionImagenEstado.Pendiente]: { label: 'En cola', variant: 'secondary' },
-  [DonacionImagenEstado.Procesando]: { label: 'Procesando', variant: 'info' },
-  [DonacionImagenEstado.Procesada]: { label: 'Procesada', variant: 'success' },
-  [DonacionImagenEstado.Fallida]: { label: 'Fallida', variant: 'error' },
+/** Solo el color: la etiqueta sale del catálogo de traducciones. */
+const ESTADO_VARIANTE: Record<string, BadgeVariant> = {
+  [DonacionImagenEstado.Pendiente]: 'secondary',
+  [DonacionImagenEstado.Procesando]: 'info',
+  [DonacionImagenEstado.Procesada]: 'success',
+  [DonacionImagenEstado.Fallida]: 'error',
 };
 
 type Fila = DonacionImagen & Record<string, unknown>;
@@ -25,6 +27,7 @@ export default function DonacionesPage() {
   const navigate = useNavigate();
   const request = useApi();
   const { orgId, can } = useOrg();
+  const { t } = useTranslation();
 
   const [imagenes, setImagenes] = useState<Fila[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -39,11 +42,11 @@ export default function DonacionesPage() {
       setCursor(pagina.siguienteCursor);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las donaciones');
+      setError(err instanceof Error ? err.message : t('donations.loadError'));
     } finally {
       setCargando(false);
     }
-  }, [request, orgId]);
+  }, [request, orgId, t]);
 
   const cargarMas = useCallback(async () => {
     if (!cursor) {
@@ -55,11 +58,11 @@ export default function DonacionesPage() {
       setImagenes((previas) => [...previas, ...(pagina.items as Fila[])]);
       setCursor(pagina.siguienteCursor);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar más donaciones');
+      setError(err instanceof Error ? err.message : t('donations.loadMoreError'));
     } finally {
       setCargandoMas(false);
     }
-  }, [request, orgId, cursor]);
+  }, [request, orgId, cursor, t]);
 
   useEffect(() => {
     void cargar();
@@ -82,11 +85,11 @@ export default function DonacionesPage() {
   const columns: DataTableColumn<Fila>[] = [
     {
       key: 'blobUrl',
-      header: 'Foto',
+      header: t('donations.columns.photo'),
       render: (fila) => (
         <img
           src={fila.blobUrl}
-          alt="Producto donado"
+          alt={t('donations.columns.photo')}
           loading="lazy"
           className="h-12 w-12 rounded object-cover"
         />
@@ -94,17 +97,17 @@ export default function DonacionesPage() {
     },
     {
       key: 'producto',
-      header: 'Producto',
+      header: t('donations.columns.product'),
       render: (fila) =>
         fila.producto ? (
           <span className="font-medium">{fila.producto.nombre}</span>
         ) : (
-          <span className="text-muted-foreground">Sin identificar</span>
+          <span className="text-muted-foreground">{t('donations.unidentified')}</span>
         ),
     },
     {
       key: 'acopio',
-      header: 'Acopio',
+      header: t('donations.columns.acopio'),
       render: (fila) =>
         fila.acopio ? (
           fila.acopio.nombre
@@ -114,23 +117,25 @@ export default function DonacionesPage() {
     },
     {
       key: 'confianza',
-      header: 'Certeza',
+      header: t('donations.columns.confidence'),
       align: 'right',
       render: (fila) =>
         typeof fila.confianza === 'number' ? `${Math.round(fila.confianza * 100)}%` : '—',
     },
     {
       key: 'estado',
-      header: 'Estado',
+      header: t('donations.columns.status'),
       render: (fila) => (
-        <Badge variant={ESTADO[fila.estado]?.variant ?? 'default'}>
-          {ESTADO[fila.estado]?.label ?? fila.estado}
+        <Badge variant={ESTADO_VARIANTE[fila.estado] ?? 'default'}>
+          {t(`donations.status.${fila.estado}` as 'donations.status.PENDIENTE', {
+            defaultValue: fila.estado,
+          })}
         </Badge>
       ),
     },
     {
       key: 'createdAt',
-      header: 'Fecha',
+      header: t('donations.columns.date'),
       align: 'right',
       render: (fila) => new Date(fila.createdAt).toLocaleDateString('es-CO'),
     },
@@ -145,27 +150,37 @@ export default function DonacionesPage() {
     <div className="space-y-6 py-2">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-foreground">Donaciones</h1>
-          <p className="text-sm text-muted-foreground">
-            Productos donados, reconocidos a partir de la foto.
-          </p>
+          <h1 className="text-2xl font-semibold text-foreground">{t('donations.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('donations.subtitle')}</p>
         </div>
         {can('donaciones:write') ? (
-          <Button onClick={() => navigate(ROUTES.nuevaDonacion)}>Registrar producto</Button>
+          <Button onClick={() => navigate(ROUTES.nuevaDonacion)}>{t('donations.register')}</Button>
         ) : null}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Fotos registradas" value={String(imagenes.length)} icon="heart" />
-        <StatCard label="Reconocidas" value={String(procesadas.length - porRevisar)} icon="check" />
-        <StatCard label="Por revisar" value={String(porRevisar)} icon="info" />
-        <StatCard label="En cola" value={String(Math.max(enCola, 0))} icon="settings" />
+        <StatCard
+          label={t('donations.stats.photos')}
+          value={String(imagenes.length)}
+          icon="heart"
+        />
+        <StatCard
+          label={t('donations.stats.recognized')}
+          value={String(procesadas.length - porRevisar)}
+          icon="check"
+        />
+        <StatCard label={t('donations.stats.toReview')} value={String(porRevisar)} icon="info" />
+        <StatCard
+          label={t('donations.stats.queued')}
+          value={String(Math.max(enCola, 0))}
+          icon="settings"
+        />
       </div>
 
       {porRevisar > 0 && can('donaciones:write') ? (
         <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
           <p className="text-sm text-foreground">
-            Hay {porRevisar} {porRevisar === 1 ? 'foto' : 'fotos'} sin producto identificado.
+            {t('donations.pendingReview', { count: porRevisar })}
           </p>
           <Button variant="outline" onClick={() => navigate(ROUTES.revisionDonaciones)}>
             Revisar
@@ -188,13 +203,13 @@ export default function DonacionesPage() {
           <DataTable
             columns={columns}
             data={imagenes}
-            caption="Fotos de productos donados"
-            emptyMessage="Todavía no se ha registrado ninguna foto. Usá «Registrar producto» para tomar la primera."
+            caption={t('donations.tableCaption')}
+            emptyMessage={t('donations.emptyTable')}
           />
           {cursor ? (
             <div className="flex justify-center">
               <Button variant="outline" disabled={cargandoMas} onClick={() => void cargarMas()}>
-                {cargandoMas ? 'Cargando…' : 'Cargar más'}
+                {cargandoMas ? t('common.loading') : t('donations.loadMore')}
               </Button>
             </div>
           ) : null}
