@@ -1,0 +1,116 @@
+{
+  "common": {
+    "loading": "Cargando…",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "retry": "Reintentar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "empty": "Todavía no hay nada que mostrar.",
+    "unspecified": "Sin especificar",
+    "signOut": "Salir",
+    "organization": "Organización",
+    "language": "Idioma"
+  },
+  "nav": {
+    "dashboard": "Resumen",
+    "users": "Usuarios",
+    "roles": "Roles",
+    "acopios": "Acopios",
+    "inventory": "Inventario",
+    "donations": "Donaciones"
+  },
+  "donations": {
+    "title": "Donaciones",
+    "subtitle": "Productos donados, reconocidos a partir de la foto.",
+    "register": "Registrar producto",
+    "stats": {
+      "photos": "Fotos registradas",
+      "recognized": "Reconocidas",
+      "toReview": "Por revisar",
+      "queued": "En cola"
+    },
+    "columns": {
+      "photo": "Foto",
+      "product": "Producto",
+      "acopio": "Acopio",
+      "confidence": "Certeza",
+      "status": "Estado",
+      "date": "Fecha"
+    },
+    "status": {
+      "PENDIENTE": "En cola",
+      "PROCESANDO": "Procesando",
+      "PROCESADA": "Procesada",
+      "FALLIDA": "Fallida"
+    },
+    "unidentified": "Sin identificar",
+    "pendingReview_one": "Hay {{count}} foto sin producto identificado.",
+    "pendingReview_other": "Hay {{count}} fotos sin producto identificado.",
+    "reviewAction": "Revisar",
+    "loadMore": "Cargar más",
+    "loadError": "No se pudieron cargar las donaciones",
+    "loadMoreError": "No se pudieron cargar más donaciones",
+    "tableCaption": "Fotos de productos donados",
+    "emptyTable": "Todavía no se ha registrado ninguna foto. Usá «Registrar producto» para tomar la primera."
+  },
+  "newDonation": {
+    "title": "Registrar producto donado",
+    "subtitle": "Toma una foto del producto. El reconocimiento corre en segundo plano.",
+    "acopioLabel": "¿En qué acopio se recibió?",
+    "takePhoto": "Tomar foto",
+    "photoAlt": "Foto tomada del producto",
+    "cameraLabel": "Tomar foto del producto donado",
+    "uploading": "Subiendo la foto…",
+    "recognizing": "Reconociendo el producto…",
+    "canLeave": "Puedes salir de esta pantalla: el proceso sigue y el resultado queda en la lista.",
+    "takingLong": "Está tardando más de lo normal. El resultado va a aparecer en la lista de donaciones.",
+    "registerAnother": "Registrar otro",
+    "viewDonations": "Ver donaciones",
+    "uploadError": "No se pudo subir la foto",
+    "noPermission": "No tienes permiso para registrar donaciones.",
+    "result": {
+      "failed": "No se pudo procesar",
+      "failedHint": "La foto quedó guardada. Puedes reintentarla desde la lista de donaciones.",
+      "unidentified": "Sin identificar",
+      "unidentifiedHint": "No se reconoció el producto con suficiente certeza. Queda pendiente de revisión para que alguien lo confirme a mano.",
+      "recognized": "Reconocido"
+    }
+  },
+  "review": {
+    "title": "Revisión de donaciones",
+    "subtitle": "Fotos que el reconocimiento no resolvió con suficiente certeza.",
+    "noPermission": "No tienes permiso para revisar donaciones.",
+    "emptyTitle": "No hay nada pendiente de revisar.",
+    "emptyHint": "Todas las fotos se reconocieron con suficiente certeza. Vuelven a aparecer aquí si alguna queda sin identificar.",
+    "photoAlt": "Producto por identificar",
+    "failed": "Falló el procesamiento",
+    "unidentified": "Sin identificar",
+    "ocrText": "Texto leído:",
+    "noText": "No se leyó texto en la foto.",
+    "chooseProduct": "Elegir producto…",
+    "correctProduct": "Producto correcto",
+    "retryRecognition": "Reintentar reconocimiento",
+    "emptyCatalog": "El catálogo de productos está vacío: sin productos cargados no hay nada que asignar ni el reconocimiento puede acertar.",
+    "loadError": "No se pudo cargar la revisión",
+    "saveError": "No se pudo guardar la corrección",
+    "retryError": "No se pudo reintentar"
+  },
+  "confirm": {
+    "deleteAcopioTitle": "Eliminar este centro de acopio",
+    "deleteAcopioDescription": "Se borra de forma permanente. Las donaciones ya registradas en él quedan sin acopio asignado.",
+    "removeMemberTitle": "Dar de baja a esta persona",
+    "removeMemberDescription": "Pierde el acceso a la organización. Se puede reactivar después, pero deja de ver los datos de inmediato.",
+    "removeMemberAction": "Dar de baja",
+    "deleteRoleTitle": "Eliminar el rol «{{name}}»",
+    "deleteRoleDescription": "Quien lo tenga asignado se queda sin permisos hasta que se le asigne otro rol.",
+    "processing": "Procesando…"
+  },
+  "pwa": {
+    "updateAvailable": "Hay una versión nueva disponible.",
+    "offlineReady": "La app ya funciona sin conexión.",
+    "update": "Actualizar"
+  }
+}

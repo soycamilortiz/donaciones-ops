@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import ActualizacionPWA from './components/ActualizacionPWA';
 import { AuthProvider } from './lib/AuthProvider';
+import './i18n';
 import './styles/design-system.css';
 
 const root = document.getElementById('root');

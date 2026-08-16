@@ -1,0 +1,116 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "retry": "Retry",
+    "close": "Close",
+    "search": "Search",
+    "empty": "Nothing to show yet.",
+    "unspecified": "Not specified",
+    "signOut": "Sign out",
+    "organization": "Organization",
+    "language": "Language"
+  },
+  "nav": {
+    "dashboard": "Overview",
+    "users": "Users",
+    "roles": "Roles",
+    "acopios": "Collection centres",
+    "inventory": "Inventory",
+    "donations": "Donations"
+  },
+  "donations": {
+    "title": "Donations",
+    "subtitle": "Donated products, recognised from the photo.",
+    "register": "Register product",
+    "stats": {
+      "photos": "Photos registered",
+      "recognized": "Recognised",
+      "toReview": "To review",
+      "queued": "Queued"
+    },
+    "columns": {
+      "photo": "Photo",
+      "product": "Product",
+      "acopio": "Collection centre",
+      "confidence": "Confidence",
+      "status": "Status",
+      "date": "Date"
+    },
+    "status": {
+      "PENDIENTE": "Queued",
+      "PROCESANDO": "Processing",
+      "PROCESADA": "Processed",
+      "FALLIDA": "Failed"
+    },
+    "unidentified": "Unidentified",
+    "pendingReview_one": "{{count}} photo has no product identified.",
+    "pendingReview_other": "{{count}} photos have no product identified.",
+    "reviewAction": "Review",
+    "loadMore": "Load more",
+    "loadError": "Could not load donations",
+    "loadMoreError": "Could not load more donations",
+    "tableCaption": "Photos of donated products",
+    "emptyTable": "No photo registered yet. Use “Register product” to take the first one."
+  },
+  "newDonation": {
+    "title": "Register donated product",
+    "subtitle": "Take a photo of the product. Recognition runs in the background.",
+    "acopioLabel": "Which collection centre received it?",
+    "takePhoto": "Take photo",
+    "photoAlt": "Photo taken of the product",
+    "cameraLabel": "Take a photo of the donated product",
+    "uploading": "Uploading the photo…",
+    "recognizing": "Recognising the product…",
+    "canLeave": "You can leave this screen: the process continues and the result stays in the list.",
+    "takingLong": "This is taking longer than usual. The result will show up in the donations list.",
+    "registerAnother": "Register another",
+    "viewDonations": "View donations",
+    "uploadError": "Could not upload the photo",
+    "noPermission": "You do not have permission to register donations.",
+    "result": {
+      "failed": "Could not be processed",
+      "failedHint": "The photo was saved. You can retry it from the donations list.",
+      "unidentified": "Unidentified",
+      "unidentifiedHint": "The product was not recognised with enough confidence. It stays pending review so someone can confirm it by hand.",
+      "recognized": "Recognised"
+    }
+  },
+  "review": {
+    "title": "Donation review",
+    "subtitle": "Photos that recognition could not resolve with enough confidence.",
+    "noPermission": "You do not have permission to review donations.",
+    "emptyTitle": "Nothing pending review.",
+    "emptyHint": "All photos were recognised with enough confidence. They show up here again if any is left unidentified.",
+    "photoAlt": "Product to identify",
+    "failed": "Processing failed",
+    "unidentified": "Unidentified",
+    "ocrText": "Text read:",
+    "noText": "No text was read in the photo.",
+    "chooseProduct": "Choose a product…",
+    "correctProduct": "Correct product",
+    "retryRecognition": "Retry recognition",
+    "emptyCatalog": "The product catalogue is empty: with no products loaded there is nothing to assign and recognition cannot succeed.",
+    "loadError": "Could not load the review queue",
+    "saveError": "Could not save the correction",
+    "retryError": "Could not retry"
+  },
+  "confirm": {
+    "deleteAcopioTitle": "Delete this collection centre",
+    "deleteAcopioDescription": "It is permanently removed. Donations already registered there are left with no centre assigned.",
+    "removeMemberTitle": "Remove this person",
+    "removeMemberDescription": "They lose access to the organisation. They can be reactivated later, but stop seeing the data immediately.",
+    "removeMemberAction": "Remove",
+    "deleteRoleTitle": "Delete the role “{{name}}”",
+    "deleteRoleDescription": "Anyone assigned to it is left with no permissions until another role is assigned.",
+    "processing": "Processing…"
+  },
+  "pwa": {
+    "updateAvailable": "A new version is available.",
+    "offlineReady": "The app now works offline.",
+    "update": "Update"
+  }
+}
