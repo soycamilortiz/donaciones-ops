@@ -32,6 +32,7 @@ No usamos Module Federation ni single-spa. Los fronts **no se hablan entre sí**
 | Monorepo | pnpm workspaces + Turborepo |
 | Lint y formato | Biome 2 (reemplaza ESLint + Prettier) |
 | Código común | `packages/shared` (`@soschoco/shared`): enums, RBAC y contratos del API |
+| Visión | `packages/vision` (`@soschoco/vision`): adapters de IA para leer envases |
 | Cola de jobs | BullMQ sobre Redis 7 |
 | Worker | `apps/worker`: Tesseract (binario nativo) + sharp |
 | Almacenamiento de imágenes | Cloudflare R2 (S3). Health: `/api/health/storage` |
@@ -116,7 +117,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Inventario | `/api/v1/organizations/:orgId/acopios/:acopioId/inventory` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
-| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas/ruta`, `/productos`, `/:id/producto`, `/:id/reprocesar`) |
+| Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas/ruta`, `/productos`, `/ean/:codigo`, `/:id/interpretar`, `/:id/confirmar`) |
 
 `GET /donaciones` está **paginado por cursor**, no por offset: las fotos se insertan sin parar desde el campo y con `OFFSET` una fila nueva desplaza la ventana, haciendo que se repitan o se salten registros entre páginas. Devuelve `{ items, siguienteCursor }`; `siguienteCursor` es `null` cuando ya no hay más. Acepta `?estado=`, `?cursor=` y `?limite=` (1–200, default 50).
 
@@ -139,6 +140,15 @@ Variables del API:
 | `R2_BUCKET` | Bucket. Default `sos-choco` |
 | `R2_ENDPOINT` | `https://<accountid>.r2.cloudflarestorage.com` (sin el bucket) |
 | `R2_PUBLIC_BASE_URL` | Dominio público de las fotos (custom domain o `*.r2.dev`) |
+| `OPEN_FOOD_FACTS_ENABLED` | Default `true`. Apaga el lookup externo de EAN |
+| `OPEN_FOOD_FACTS_BASE_URL` | Default `https://world.openfoodfacts.org`. Staging: `https://world.openfoodfacts.net` |
+| `OPEN_FOOD_FACTS_USER_AGENT` | Obligatorio para OFF (`App/Version (contacto)`). No es API key |
+| `OPEN_FOOD_FACTS_TIMEOUT_MS` | Default `8000` |
+| `VISION_PROVIDER` | Adapter: `openai` (default) o `noop`. Paquete `@soschoco/vision` |
+| `VISION_API_KEY` | Clave del proveedor. Sin ella cae a noop (formulario a mano) |
+| `VISION_BASE_URL` | Default `https://api.openai.com/v1` |
+| `VISION_MODEL` | Default `gpt-4o-mini` |
+| `VISION_TIMEOUT_MS` | Default `45000` |
 | `RBAC_SYNC_ON_BOOT` | Default `true`. Ponelo en `false` en serverless |
 | `SWAGGER_ENABLED` | Default `true`. Ponelo en `false` en serverless |
 | `LOGS_TOKEN` | Opcional. Si está, `/logs` exige `?token=…` |
@@ -217,14 +227,19 @@ Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. 
 ## Qué falta
 
 - Módulo de envíos (contenedor + API).
-- Lectura de código de barras en la PWA, que es lo que de verdad resuelve el reconocimiento de producto empaquetado.
 - Cookie httpOnly en lugar de `localStorage` si se endurece XSS.
 - Rate limit explícito en login (hoy el captcha cubre brute-force básico).
 - Contenedores de front por módulo, con `base path` y ruta Traefik.
 
 ## Reconocimiento de productos donados
 
-La PWA fotografía un producto donado y el sistema intenta identificarlo para dejarlo registrado. El detalle del flujo y de los comandos está en el [README](../README.md#reconocimiento-de-productos-donados).
+Un solo camino: **subir una foto** (envase o código de barras).
+
+1. La PWA intenta leer un EAN con `BarcodeDetector`. Si hay código: catálogo `productos.ean` y, si no, Open Food Facts. Si nadie lo conoce, el operador completa a mano.
+2. Si no hay EAN: el API baja la foto de R2 y llama a `@soschoco/vision` (adapter por `VISION_PROVIDER`). El operador confirma.
+3. Al confirmar, el inventario **fusiona** nombres parecidos en el mismo acopio (“Agua Brisa” vs “botella de agua brisa”) y muestra candidatos para que no nazcan 10 filas del mismo SKU. El EAN, cuando existe, es la clave canónica.
+
+Tesseract sigue en el worker para `reprocesar` fotos viejas; las altas nuevas no encolan OCR.
 
 | Pieza | Responsabilidad |
 | --- | --- |
@@ -237,7 +252,7 @@ Estados de una imagen: `PENDIENTE` → `PROCESANDO` → `PROCESADA` o `FALLIDA`.
 
 Cada foto se atribuye a un centro de acopio. La pantalla de captura recuerda el último elegido por organización: en campo se registran muchas fotos seguidas en el mismo sitio y volver a elegirlo cada vez es fricción pura.
 
-**Limitación conocida.** Tesseract es OCR, no reconocimiento de objetos: sobre envases reales acierta poco. Cuando la confianza o el emparejamiento no alcanzan el umbral, la imagen queda `PROCESADA` sin producto para que alguien lo corrija a mano, en vez de escribir un producto equivocado en el inventario. El campo `productos.ean` está listo para migrar a lectura de código de barras, que es lo que resuelve bien este caso.
+**Limitación conocida.** Tesseract es OCR, no reconocimiento de objetos: sobre envases reales acierta poco. El camino de código de barras (catálogo + Open Food Facts) es el que resuelve bien el producto empaquetado. Cuando la confianza del OCR no alcanza el umbral, la imagen queda `PROCESADA` sin producto para revisión.
 
 El job es idempotente por `imagenId` y BullMQ reintenta con backoff exponencial; solo al agotar los reintentos la imagen pasa a `FALLIDA`.
 

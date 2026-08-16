@@ -40,6 +40,10 @@ export type DonacionImagen = {
   error?: string | null;
   textoOcr?: string | null;
   confianza?: number | null;
+  nombreDetectado?: string | null;
+  cantidadDetectada?: number | null;
+  confirmadaEn?: string | null;
+  inventoryItemId?: string | null;
   producto?: Producto | null;
   procesadaEn?: string | null;
   createdAt: string;
@@ -63,12 +67,11 @@ export type RutaSubida = {
  * forma sirve igual para un lector de código de barras o un modelo de visión.
  */
 export type Reconocimiento = {
-  /** Texto crudo, si el motor produce alguno. */
   texto: string | null;
-  /** 0..1. Null si el motor no reporta confianza. */
   confianza: number | null;
-  /** Id del producto del catálogo, si se pudo resolver. */
   productoId: string | null;
+  nombreDetectado: string | null;
+  cantidadDetectada: number | null;
 };
 
 export const MAX_IMAGEN_BYTES = 10 * 1024 * 1024;
@@ -136,4 +139,45 @@ export type Pagina<T> = {
   items: T[];
   /** `null` cuando ya no hay más. */
   siguienteCursor: string | null;
+};
+
+/** De dónde salió el nombre al resolver un EAN. */
+export const FuenteCatalogo = {
+  Local: 'local',
+  OpenFoodFacts: 'openfoodfacts',
+  Ninguna: 'ninguna',
+} as const;
+
+export type FuenteCatalogo = (typeof FuenteCatalogo)[keyof typeof FuenteCatalogo];
+
+export type ConsultaEan = {
+  fuente: FuenteCatalogo;
+  ean: string;
+  nombre: string | null;
+  marca: string | null;
+  imagenUrl: string | null;
+  productoId: string | null;
+};
+
+export type EntradaDonacion = {
+  inventoryItemId: string;
+  nombre: string;
+  cantidad: number;
+  ean: string | null;
+};
+
+export type InterpretacionDonacion = {
+  via: 'ean' | 'vision' | 'manual';
+  fuenteEan: FuenteCatalogo | null;
+  ean: string | null;
+  nombre: string | null;
+  marca: string | null;
+  cantidad: number | null;
+  coincidencias: Array<{
+    id: string;
+    nombre: string;
+    marca: string | null;
+    cantidad: number;
+    score: number;
+  }>;
 };

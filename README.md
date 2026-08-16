@@ -71,6 +71,7 @@ apps/web            PWA React (Vite): login, onboarding, panel, captura de fotos
 apps/worker         Procesa jobs de reconocimiento de imágenes (BullMQ + Tesseract)
 apps/jobs           Panel de observación de la cola (Bull Board)
 packages/shared     Contratos de dominio (@soschoco/shared)
+packages/vision     Lectura de productos por IA (@soschoco/vision, adapters)
 ```
 
 Los siguientes fronts se enganchan en Traefik con `PathPrefix` (`/donaciones`, `/acopio`, `/envios`).
@@ -119,22 +120,32 @@ Se compila a CommonJS y ESM a la vez (`dist/cjs` y `dist/esm`) porque Nest consu
 
 Para añadir otro paquete compartido basta crear `packages/<nombre>` con su `package.json`: `pnpm-workspace.yaml` ya incluye `packages/*`.
 
+### `packages/vision`
+
+Lectura de envases por IA, desacoplada del Nest. El API solo elige el adapter con `VISION_PROVIDER`.
+
+| Pieza | Rol |
+| --- | --- |
+| `VisionAdapter` | Contrato: `leerProducto(imagen) → LecturaProducto` |
+| `OpenAiCompatibleAdapter` | Chat Completions con `image_url` (OpenAI, Azure, Groq, …) |
+| `NoopVisionAdapter` | Sin clave: el operador completa a mano |
+| `createVisionClient` | Factory; también acepta un `adapter` custom |
+
+Para un proveedor nuevo: implementá `VisionAdapter`, registralo en `createVisionClient`, y listo.
+
 ## Reconocimiento de productos donados
 
-La PWA toma la foto de un producto (arroz, agua, crema dental), la sube y el sistema intenta reconocer de qué producto se trata para dejarlo registrado en la base.
-
-El recorrido:
+La PWA sube **una sola foto** (envase o código de barras). Primero se intenta leer el EAN; si no hay código, `@soschoco/vision` sugiere el producto. El operador confirma y el inventario fusiona nombres parecidos.
 
 ```
 PWA ──1─► API: POST /donaciones/subidas/ruta (pathname + PUT firmado a R2)
 PWA ──2─► Cloudflare R2                      (PUT directo al bucket)
-PWA ──3─► API: POST /donaciones              (registra la URL pública y encola)
-                    │
-                  Redis
-                    │
-             apps/worker ──► descarga ──► sharp ──► Tesseract ──► catálogo
-                    │
-                 PostgreSQL: donacion_imagenes.blob_url + producto_id
+PWA ──3─► API: POST /donaciones              (registra la foto)
+PWA ──4─► lee EAN en el dispositivo (si puede)
+PWA ──5─► API: POST /donaciones/:id/interpretar
+              ├─ EAN → catálogo / Open Food Facts
+              └─ si no → @soschoco/vision (VISION_PROVIDER)
+PWA ──6─► confirma → inventario (fusiona duplicados por nombre)
 ```
 
 La imagen **no pasa por el API**: una foto de móvil son varios MB y hacerla viajar dos veces no aporta nada. El API solo firma el permiso de subida y encola.

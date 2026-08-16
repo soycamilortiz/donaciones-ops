@@ -1,9 +1,12 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { DonacionImagenEstado } from '@soschoco/shared';
+import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
 import { DonacionesService } from './donaciones.service';
+import { OpenFoodFactsService } from './open-food-facts.service';
+import { VisionProductoService } from './vision-producto.service';
 
 const ORG = '11111111-1111-4111-8111-111111111111';
 const OTRA_ORG = '22222222-2222-4222-8222-222222222222';
@@ -16,6 +19,8 @@ describe('DonacionesService', () => {
     producto: Record<string, jest.Mock>;
     acopio: Record<string, jest.Mock>;
   };
+  let inventario: { aplicarDonacionConfirmada: jest.Mock; coincidencias: jest.Mock };
+  let off: { buscarPorEan: jest.Mock };
   let cola: { encolarReconocimiento: jest.Mock };
   let r2: {
     isConfigured: jest.Mock;
@@ -23,6 +28,9 @@ describe('DonacionesService', () => {
     hasPublicBase: jest.Mock;
     presignPut: jest.Mock;
     publicUrlFor: jest.Mock;
+    urlParaMostrar: jest.Mock;
+    getObjectBytes: jest.Mock;
+    bucket: string;
   };
 
   beforeEach(async () => {
@@ -34,16 +42,31 @@ describe('DonacionesService', () => {
         create: jest.fn().mockImplementation(({ data }) => ({ id: 'img-1', ...data })),
         update: jest.fn().mockImplementation(({ data }) => ({ id: 'img-1', ...data })),
       },
-      producto: { findUnique: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      producto: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn(),
+      },
       acopio: { findFirst: jest.fn().mockResolvedValue({ id: 'acopio-1' }) },
     };
     cola = { encolarReconocimiento: jest.fn().mockResolvedValue(undefined) };
+    inventario = {
+      aplicarDonacionConfirmada: jest.fn().mockResolvedValue({ id: 'inv-1' }),
+      coincidencias: jest.fn().mockResolvedValue([]),
+    };
+    off = { buscarPorEan: jest.fn().mockResolvedValue(null) };
     r2 = {
       isConfigured: jest.fn().mockReturnValue(true),
       missingConfig: jest.fn().mockReturnValue([]),
       hasPublicBase: jest.fn().mockReturnValue(true),
       presignPut: jest.fn().mockResolvedValue('https://r2.example/signed'),
+      urlParaMostrar: jest
+        .fn()
+        .mockImplementation((key: string) => Promise.resolve(`https://pub.example/${key}`)),
       publicUrlFor: jest.fn().mockImplementation((key: string) => `https://pub.example/${key}`),
+      getObjectBytes: jest.fn(),
+      bucket: 'sos-choco',
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -52,6 +75,9 @@ describe('DonacionesService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: ColaService, useValue: cola },
         { provide: R2StorageService, useValue: r2 },
+        { provide: InventoryService, useValue: inventario },
+        { provide: OpenFoodFactsService, useValue: off },
+        { provide: VisionProductoService, useValue: { leerImagen: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
 
@@ -90,14 +116,6 @@ describe('DonacionesService', () => {
       );
     });
 
-    it('responde 503 si falta la URL pública', async () => {
-      r2.hasPublicBase.mockReturnValue(false);
-
-      await expect(service.reservarSubida(ORG, 'foto.jpg', 'image/jpeg')).rejects.toThrow(
-        /R2_PUBLIC_BASE_URL/,
-      );
-    });
-
     it('firma un PUT y devuelve la URL pública', async () => {
       const ruta = await service.reservarSubida(ORG, 'foto.jpg', 'image/jpeg');
 
@@ -115,7 +133,7 @@ describe('DonacionesService', () => {
       blobUrl: 'https://blob.example/abc.jpg',
     };
 
-    it('crea la fila en PENDIENTE y encola el reconocimiento', async () => {
+    it('crea la fila en PENDIENTE sin encolar Tesseract', async () => {
       const imagen = await service.registrarImagen(ORG, USUARIO, dto);
 
       expect(prisma.donacionImagen.create).toHaveBeenCalledWith(
@@ -128,7 +146,8 @@ describe('DonacionesService', () => {
           }),
         }),
       );
-      expect(cola.encolarReconocimiento).toHaveBeenCalledWith(imagen.id);
+      expect(cola.encolarReconocimiento).not.toHaveBeenCalled();
+      expect(imagen.id).toBeDefined();
     });
 
     it('rechaza una ruta de otra organización', async () => {
@@ -284,6 +303,65 @@ describe('DonacionesService', () => {
           where: expect.objectContaining({ estado: DonacionImagenEstado.Fallida }),
         }),
       );
+    });
+  });
+
+  describe('consultarEan', () => {
+    it('devuelve el catálogo local si el EAN ya existe', async () => {
+      prisma.producto.findFirst.mockResolvedValue({
+        id: 'prod-1',
+        nombre: 'Arroz Diana',
+        marca: 'Diana',
+        ean: '7702006400011',
+      });
+
+      const r = await service.consultarEan('7702006400011');
+
+      expect(r.fuente).toBe('local');
+      expect(r.nombre).toBe('Arroz Diana');
+      expect(off.buscarPorEan).not.toHaveBeenCalled();
+    });
+
+    it('consulta Open Food Facts si no está en la base y lo guarda', async () => {
+      off.buscarPorEan.mockResolvedValue({
+        ean: '3017620422003',
+        nombre: 'Nutella',
+        marca: 'Ferrero',
+        imagenUrl: 'https://images.openfoodfacts.org/n.jpg',
+      });
+      prisma.producto.create.mockResolvedValue({ id: 'prod-off' });
+
+      const r = await service.consultarEan('3017620422003');
+
+      expect(r.fuente).toBe('openfoodfacts');
+      expect(r.nombre).toBe('Nutella');
+      expect(prisma.producto.create).toHaveBeenCalled();
+    });
+
+    it('deja el formulario vacío si nadie conoce el código', async () => {
+      const r = await service.consultarEan('0000000000000');
+      expect(r.fuente).toBe('ninguna');
+      expect(r.nombre).toBeNull();
+    });
+
+    it('rechaza un código que no parece EAN', async () => {
+      await expect(service.consultarEan('abc')).rejects.toThrow(/8 y 14/);
+    });
+  });
+
+  describe('registrarEntrada', () => {
+    it('suma inventario sin encolar OCR', async () => {
+      const r = await service.registrarEntrada(ORG, {
+        nombre: 'Arroz',
+        cantidad: 3,
+        acopioId: 'acopio-1',
+        ean: '7702006400011',
+      });
+
+      expect(inventario.aplicarDonacionConfirmada).toHaveBeenCalled();
+      expect(cola.encolarReconocimiento).not.toHaveBeenCalled();
+      expect(r.inventoryItemId).toBe('inv-1');
+      expect(prisma.producto.create).toHaveBeenCalled();
     });
   });
 });

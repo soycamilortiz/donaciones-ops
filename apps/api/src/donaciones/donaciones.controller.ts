@@ -14,11 +14,17 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { DonacionesService } from './donaciones.service';
 import {
+  ConfirmarDonacionDto,
+  ConsultaEanDto,
   CorregirProductoDto,
   DonacionImagenDto,
+  EntradaDonacionDto,
+  InterpretarImagenDto,
+  InterpretacionDto,
   NuevaRutaDto,
   PaginaDonacionImagenDto,
   ProductoDto,
+  RegistrarEntradaDto,
   RegistrarImagenDto,
   RutaSubidaDto,
 } from './dto/donacion.dto';
@@ -47,7 +53,7 @@ export class DonacionesController {
   @Post()
   @RequirePermission(PermissionSlug.DonacionesWrite)
   @ApiOperation({
-    summary: 'Registrar una foto ya subida y encolar su reconocimiento',
+    summary: 'Registrar una foto ya subida. El reconocimiento (EAN o visión) lo pide la PWA después.',
   })
   @ApiCreatedResponse({ type: DonacionImagenDto })
   registrar(
@@ -90,12 +96,49 @@ export class DonacionesController {
     return this.donaciones.listarProductos();
   }
 
+  @Get('ean/:codigo')
+  @RequirePermission(PermissionSlug.DonacionesRead)
+  @ApiOperation({
+    summary: 'Resolver un EAN: catálogo local, luego Open Food Facts',
+  })
+  @ApiOkResponse({ type: ConsultaEanDto })
+  consultarEan(@Param('codigo') codigo: string) {
+    return this.donaciones.consultarEan(codigo);
+  }
+
+  @Post('entradas')
+  @RequirePermission(PermissionSlug.DonacionesWrite)
+  @ApiOperation({
+    summary: 'Registrar donación sin foto (manual o código de barras) y sumar inventario',
+  })
+  @ApiCreatedResponse({ type: EntradaDonacionDto })
+  registrarEntrada(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Body() dto: RegistrarEntradaDto,
+  ) {
+    return this.donaciones.registrarEntrada(orgId, dto);
+  }
+
   @Get(':id')
   @RequirePermission(PermissionSlug.DonacionesRead)
   @ApiOperation({ summary: 'Ver una foto y su reconocimiento' })
   @ApiOkResponse({ type: DonacionImagenDto })
   obtener(@Param('orgId', ParseUUIDPipe) orgId: string, @Param('id', ParseUUIDPipe) id: string) {
     return this.donaciones.obtener(orgId, id);
+  }
+
+  @Post(':id/interpretar')
+  @RequirePermission(PermissionSlug.DonacionesWrite)
+  @ApiOperation({
+    summary: 'Resolver la foto: EAN (BD/OFF) o visión, más coincidencias de inventario',
+  })
+  @ApiOkResponse({ type: InterpretacionDto })
+  interpretar(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: InterpretarImagenDto,
+  ) {
+    return this.donaciones.interpretarImagen(orgId, id, dto);
   }
 
   @Patch(':id/producto')
@@ -108,6 +151,20 @@ export class DonacionesController {
     @Body() dto: CorregirProductoDto,
   ) {
     return this.donaciones.corregirProducto(orgId, id, dto.productoId);
+  }
+
+  @Post(':id/confirmar')
+  @RequirePermission(PermissionSlug.DonacionesWrite)
+  @ApiOperation({
+    summary: 'Confirmar lo que leyó el OCR y cargarlo al inventario del acopio',
+  })
+  @ApiOkResponse({ type: DonacionImagenDto })
+  confirmar(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConfirmarDonacionDto,
+  ) {
+    return this.donaciones.confirmarDonacion(orgId, id, dto);
   }
 
   @Post(':id/reprocesar')

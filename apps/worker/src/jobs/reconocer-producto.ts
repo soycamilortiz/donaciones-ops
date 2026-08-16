@@ -5,12 +5,12 @@ import {
   type Producto,
   type ReconocerProductoJob,
   type Reconocimiento,
-  TIPOS_IMAGEN_ACEPTADOS,
-  type TipoImagenAceptado,
 } from '@soschoco/shared';
 import type { Env } from '../config/env.js';
+import { parsearEtiqueta } from '../ocr/etiqueta.js';
 import { ejecutarTesseract, preprocesar } from '../ocr/tesseract.js';
 import { emparejar } from '../productos/emparejar.js';
+import { descargarObjetoR2 } from '../r2.js';
 import type { ContextoJob, DefinicionJob } from './tipos.js';
 
 /** Umbral de emparejamiento contra el catálogo, aparte de la confianza del OCR. */
@@ -21,14 +21,14 @@ const UMBRAL_EMPAREJAMIENTO = 0.75;
  * flujo completo sin red ni binario de Tesseract.
  */
 export type Efectos = {
-  descargar: (url: string) => Promise<Buffer>;
+  descargar: (url: string, pathname?: string) => Promise<Buffer>;
   reconocerTexto: (imagen: Buffer) => Promise<{ texto: string; confianza: number }>;
 };
 
 /** Los efectos reales, construidos a partir de la configuración del proceso. */
 export function crearEfectos(env: Env): Efectos {
   return {
-    descargar,
+    descargar: (_url, pathname) => descargar(env, pathname),
     reconocerTexto: (imagen) => reconocerTexto(imagen, env),
   };
 }
@@ -62,7 +62,7 @@ export async function procesarImagen(
   contexto: ContextoJob,
   efectos: Efectos,
 ): Promise<void> {
-  const { prisma, env, log } = contexto;
+  const { prisma, log } = contexto;
 
   const imagen = await prisma.donacionImagen.findUnique({ where: { id: imagenId } });
   if (!imagen) {
@@ -83,16 +83,15 @@ export async function procesarImagen(
     },
   });
 
-  const archivo = await efectos.descargar(imagen.blobUrl);
+  const archivo = await efectos.descargar(imagen.blobUrl, imagen.blobPathname);
   if (archivo.byteLength > MAX_IMAGEN_BYTES) {
     throw new Error(`La imagen pesa ${archivo.byteLength} bytes, por encima del máximo permitido`);
   }
 
   const { texto, confianza } = await efectos.reconocerTexto(archivo);
+  const etiqueta = parsearEtiqueta(texto);
   const resultado = await resolver(texto, confianza, contexto);
 
-  // Aquí queda la relación: la fila conserva la URL pública de R2 y apunta al
-  // producto del catálogo que se reconoció.
   await prisma.donacionImagen.update({
     where: { id: imagenId },
     data: {
@@ -100,16 +99,19 @@ export async function procesarImagen(
       textoOcr: resultado.texto,
       confianza: resultado.confianza,
       productoId: resultado.productoId,
+      nombreDetectado: etiqueta.nombre,
+      cantidadDetectada: etiqueta.cantidad,
       procesadaEn: new Date(),
       error: null,
     },
   });
 
-  log(resultado.productoId ? 'producto reconocido' : 'sin producto, queda para revisión', {
+  log('ocr listo, espera confirmación', {
     imagenId,
     confianza: resultado.confianza,
+    nombreDetectado: etiqueta.nombre,
+    cantidadDetectada: etiqueta.cantidad,
     productoId: resultado.productoId,
-    umbral: env.OCR_CONFIANZA_MINIMA,
   });
 }
 
@@ -125,38 +127,36 @@ async function resolver(
   confianza: number,
   { prisma, env }: ContextoJob,
 ): Promise<Reconocimiento> {
-  if (texto.trim() === '' || confianza < env.OCR_CONFIANZA_MINIMA) {
-    return { texto: texto || null, confianza, productoId: null };
+  if (texto.trim() === '') {
+    return { texto: texto || null, confianza, productoId: null, nombreDetectado: null, cantidadDetectada: null };
   }
 
   const productos = (await prisma.producto.findMany({
     select: { id: true, nombre: true, marca: true, categoria: true, ean: true, alias: true },
   })) as Producto[];
 
-  const encontrado = emparejar(texto, productos, UMBRAL_EMPAREJAMIENTO);
-  return { texto, confianza, productoId: encontrado?.producto.id ?? null };
+  const encontrado =
+    confianza >= env.OCR_CONFIANZA_MINIMA
+      ? emparejar(texto, productos, UMBRAL_EMPAREJAMIENTO)
+      : null;
+  return {
+    texto,
+    confianza,
+    productoId: encontrado?.producto.id ?? null,
+    nombreDetectado: null,
+    cantidadDetectada: null,
+  };
 }
 
 /**
- * Descarga desde la URL pública de R2. El worker no necesita las keys S3 si
- * el bucket tiene custom domain o Public development URL.
+ * Descarga el objeto por S3 (keys del worker). Un GET a
+ * `*.r2.cloudflarestorage.com` sin firma responde 400 y Tesseract nunca corre.
  */
-async function descargar(url: string): Promise<Buffer> {
-  const respuesta = await fetch(url);
-  if (!respuesta.ok) {
-    throw new Error(`No se pudo descargar la imagen (HTTP ${respuesta.status})`);
+async function descargar(env: Env, pathname: string | undefined): Promise<Buffer> {
+  if (!pathname) {
+    throw new Error('La imagen no tiene pathname en R2');
   }
-
-  const tipo = respuesta.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
-  if (
-    tipo &&
-    tipo !== 'application/octet-stream' &&
-    !TIPOS_IMAGEN_ACEPTADOS.includes(tipo as TipoImagenAceptado)
-  ) {
-    throw new Error(`Tipo de archivo no aceptado: ${tipo}`);
-  }
-
-  return Buffer.from(await respuesta.arrayBuffer());
+  return descargarObjetoR2(env, pathname);
 }
 
 async function reconocerTexto(

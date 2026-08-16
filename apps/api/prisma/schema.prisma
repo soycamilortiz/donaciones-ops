@@ -222,7 +222,8 @@ model InventoryItem {
   createdAt         DateTime             @default(now()) @map("created_at")
   updatedAt         DateTime             @updatedAt @map("updated_at")
 
-  acopio Acopio @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  acopio     Acopio            @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  donaciones DonacionImagen[]
 
   @@index([acopioId])
   @@index([acopioId, categoria])
@@ -276,7 +277,12 @@ model DonacionImagen {
   textoOcr   String? @map("texto_ocr")
   /// Confianza del reconocimiento, 0..1.
   confianza  Float?
-  /// Null si no se pudo identificar: queda para revisión manual.
+  /// Sugerencia para que el operador confirme (no entra al inventario sola).
+  nombreDetectado    String?   @map("nombre_detectado")
+  cantidadDetectada  Decimal?  @map("cantidad_detectada") @db.Decimal(14, 3)
+  confirmadaEn       DateTime? @map("confirmada_en")
+  inventoryItemId    String?   @map("inventory_item_id") @db.Uuid
+  /// Null si no se pudo identificar contra el catálogo legado.
   productoId String? @map("producto_id") @db.Uuid
 
   procesadaEn DateTime? @map("procesada_en")
@@ -286,7 +292,8 @@ model DonacionImagen {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   acopio       Acopio?      @relation(fields: [acopioId], references: [id], onDelete: SetNull)
   subidaPor    User         @relation(fields: [subidaPorId], references: [id], onDelete: Restrict)
-  producto     Producto?    @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  producto      Producto?      @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, estado])
   @@index([estado])
