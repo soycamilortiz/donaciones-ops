@@ -1,6 +1,7 @@
 import type { DonacionImagen, Producto } from '@soschoco/shared';
 import { DonacionImagenEstado } from '@soschoco/shared';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Spinner } from '@/components/atoms/Spinner';
@@ -23,6 +24,7 @@ import { useApi } from '@/lib/useApi';
 export default function RevisionDonacionesPage() {
   const request = useApi();
   const { orgId, can } = useOrg();
+  const { t } = useTranslation();
 
   const [pendientes, setPendientes] = useState<DonacionImagen[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -49,11 +51,11 @@ export default function RevisionDonacionesPage() {
       setProductos(catalogo);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cargar la revisión');
+      setError(err instanceof Error ? err.message : t('review.loadError'));
     } finally {
       setCargando(false);
     }
-  }, [request, orgId]);
+  }, [request, orgId, t]);
 
   useEffect(() => {
     void cargar();
@@ -68,7 +70,7 @@ export default function RevisionDonacionesPage() {
       await corregirProducto(request, orgId, imagenId, productoId);
       setPendientes((actuales) => actuales.filter((imagen) => imagen.id !== imagenId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar la corrección');
+      setError(err instanceof Error ? err.message : t('review.saveError'));
     } finally {
       setGuardando(null);
     }
@@ -80,27 +82,21 @@ export default function RevisionDonacionesPage() {
       await reprocesar(request, orgId, imagenId);
       setPendientes((actuales) => actuales.filter((imagen) => imagen.id !== imagenId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo reintentar');
+      setError(err instanceof Error ? err.message : t('review.retryError'));
     } finally {
       setGuardando(null);
     }
   };
 
   if (!can('donaciones:write')) {
-    return (
-      <p className="py-8 text-sm text-muted-foreground">
-        No tienes permiso para revisar donaciones.
-      </p>
-    );
+    return <p className="py-8 text-sm text-muted-foreground">{t('review.noPermission')}</p>;
   }
 
   return (
     <div className="space-y-6 py-2">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">Revisión de donaciones</h1>
-        <p className="text-sm text-muted-foreground">
-          Fotos que el reconocimiento no resolvió con suficiente certeza.
-        </p>
+        <h1 className="text-2xl font-semibold text-foreground">{t('review.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('review.subtitle')}</p>
       </div>
 
       {error ? (
@@ -111,15 +107,12 @@ export default function RevisionDonacionesPage() {
 
       {cargando ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner /> Cargando…
+          <Spinner /> {t('common.loading')}
         </p>
       ) : pendientes.length === 0 ? (
         <div className="space-y-1 rounded-lg border border-border p-6 text-center">
-          <p className="text-sm font-medium text-foreground">No hay nada pendiente de revisar.</p>
-          <p className="text-sm text-muted-foreground">
-            Todas las fotos se reconocieron con suficiente certeza. Vuelven a aparecer aquí si
-            alguna queda sin identificar.
-          </p>
+          <p className="text-sm font-medium text-foreground">{t('review.emptyTitle')}</p>
+          <p className="text-sm text-muted-foreground">{t('review.emptyHint')}</p>
         </div>
       ) : (
         <ul className="space-y-4">
@@ -130,7 +123,7 @@ export default function RevisionDonacionesPage() {
             >
               <img
                 src={imagen.blobUrl}
-                alt="Producto por identificar"
+                alt={t('review.photoAlt')}
                 loading="lazy"
                 className="h-32 w-32 shrink-0 rounded object-cover"
               />
@@ -138,27 +131,27 @@ export default function RevisionDonacionesPage() {
               <div className="flex-1 space-y-3">
                 {imagen.estado === DonacionImagenEstado.Fallida ? (
                   <div className="space-y-1">
-                    <Badge variant="error">Falló el procesamiento</Badge>
+                    <Badge variant="error">{t('review.failed')}</Badge>
                     {imagen.error ? (
                       <p className="text-xs text-muted-foreground">{imagen.error}</p>
                     ) : null}
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    <Badge variant="warning">Sin identificar</Badge>
+                    <Badge variant="warning">{t('review.unidentified')}</Badge>
                     {imagen.textoOcr ? (
                       <p className="text-xs text-muted-foreground">
-                        Texto leído: <span className="font-mono">{imagen.textoOcr}</span>
+                        {t('review.ocrText')} <span className="font-mono">{imagen.textoOcr}</span>
                       </p>
                     ) : (
-                      <p className="text-xs text-muted-foreground">No se leyó texto en la foto.</p>
+                      <p className="text-xs text-muted-foreground">{t('review.noText')}</p>
                     )}
                   </div>
                 )}
 
                 <div className="flex flex-wrap items-center gap-3">
                   <label className="sr-only" htmlFor={`producto-${imagen.id}`}>
-                    Producto correcto
+                    {t('review.correctProduct')}
                   </label>
                   <select
                     id={`producto-${imagen.id}`}
@@ -167,7 +160,7 @@ export default function RevisionDonacionesPage() {
                     disabled={guardando === imagen.id}
                     onChange={(event) => void asignar(imagen.id, event.target.value)}
                   >
-                    <option value="">Elegir producto…</option>
+                    <option value="">{t('review.chooseProduct')}</option>
                     {productos.map((producto) => (
                       <option key={producto.id} value={producto.id}>
                         {producto.nombre}
@@ -188,10 +181,7 @@ export default function RevisionDonacionesPage() {
                 </div>
 
                 {productos.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    El catálogo de productos está vacío: sin productos cargados no hay nada que
-                    asignar ni el reconocimiento puede acertar.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t('review.emptyCatalog')}</p>
                 ) : null}
               </div>
             </li>

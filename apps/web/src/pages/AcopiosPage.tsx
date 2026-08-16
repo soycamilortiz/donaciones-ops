@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SkeletonList } from '../components/atoms/Skeleton';
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
@@ -7,6 +8,7 @@ import { useApi } from '../lib/useApi';
 
 export default function AcopiosPage() {
   const { orgId, can } = useOrg();
+  const { t } = useTranslation();
   const request = useApi();
   const [rows, setRows] = useState<Acopio[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export default function AcopiosPage() {
       });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo eliminar');
+      setError(err instanceof Error ? err.message : t('acopios.deleteError'));
     } finally {
       setEliminando(false);
       setPorConfirmar(null);
@@ -101,30 +103,25 @@ export default function AcopiosPage() {
 
   return (
     <section className="panel">
-      <h1>Centros de acopio</h1>
-      <p className="muted">
-        Acá se registran las bodegas: si reciben donaciones, si las envían a zona, o ambas. No se
-        crean al armar la organización.
-      </p>
+      <h1>{t('acopios.title')}</h1>
+      <p className="muted">{t('acopios.subtitle')}</p>
       {error ? (
         <p role="alert" className="error">
           {error}
         </p>
       ) : null}
-      {cargando ? <SkeletonList filas={3} etiqueta="Cargando centros de acopio…" /> : null}
+      {cargando ? <SkeletonList filas={3} etiqueta={t('common.loading')} /> : null}
 
-      {!cargando && rows.length === 0 ? (
-        <p className="muted">
-          Todavía no hay centros de acopio. Creá el primero con el formulario de abajo.
-        </p>
-      ) : null}
+      {!cargando && rows.length === 0 ? <p className="muted">{t('acopios.empty')}</p> : null}
 
       <ul className="stack-list">
         {rows.map((row) => (
           <li key={row.id} className={row.isActive === false ? 'is-inactive' : undefined}>
             <div>
               <strong>{row.nombre}</strong>
-              {row.isActive === false ? <span className="badge-baja"> Baja</span> : null}
+              {row.isActive === false ? (
+                <span className="badge-baja"> {t('acopios.inactive')}</span>
+              ) : null}
               <p className="muted">
                 {ACOPIO_FLUJOS.find((item) => item.value === row.flujo)?.label}
                 {' · '}
@@ -227,8 +224,8 @@ export default function AcopiosPage() {
       ) : null}
       <ConfirmDialog
         abierto={porConfirmar !== null}
-        titulo="Eliminar este centro de acopio"
-        descripcion="Se borra de forma permanente. Las donaciones ya registradas en él quedan sin acopio asignado."
+        titulo={t('confirm.deleteAcopioTitle')}
+        descripcion={t('confirm.deleteAcopioDescription')}
         ocupado={eliminando}
         onConfirmar={() => porConfirmar && void onRemove(porConfirmar)}
         onCancelar={() => setPorConfirmar(null)}

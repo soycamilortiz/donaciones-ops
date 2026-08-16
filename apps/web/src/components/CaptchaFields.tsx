@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { fetchCaptcha } from '../lib/api';
 
 type Props = {
@@ -9,6 +10,7 @@ export default function CaptchaFields({ refreshKey }: Props) {
   const [captchaId, setCaptchaId] = useState('');
   const [svg, setSvg] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const load = useCallback(async () => {
     setError(null);
@@ -17,9 +19,9 @@ export default function CaptchaFields({ refreshKey }: Props) {
       setCaptchaId(captcha.captchaId);
       setSvg(captcha.svg);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cargar el captcha');
+      setError(err instanceof Error ? err.message : t('auth.captchaError'));
     }
-  }, []);
+  }, [t]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey no se usa dentro del efecto, es el disparador explícito para pedir otro captcha.
   useEffect(() => {
@@ -37,13 +39,13 @@ export default function CaptchaFields({ refreshKey }: Props) {
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       ) : (
-        <p className="muted">Cargando captcha…</p>
+        <p className="muted">{t('auth.captchaLoading')}</p>
       )}
       <button type="button" className="linkish" onClick={() => void load()}>
-        Otro captcha
+        {t('auth.captchaImage')}
       </button>
       <label className="field">
-        Texto del captcha
+        {t('auth.captchaText')}
         <input name="captchaAnswer" required autoComplete="off" spellCheck={false} />
       </label>
       {error ? <p className="error">{error}</p> : null}

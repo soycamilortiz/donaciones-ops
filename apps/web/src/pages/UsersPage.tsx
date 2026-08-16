@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SkeletonList } from '../components/atoms/Skeleton';
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
@@ -7,6 +8,7 @@ import { useApi } from '../lib/useApi';
 
 export default function UsersPage() {
   const { orgId, can } = useOrg();
+  const { t } = useTranslation();
   const request = useApi();
   const [members, setMembers] = useState<Member[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -91,7 +93,7 @@ export default function UsersPage() {
       });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo dar de baja');
+      setError(err instanceof Error ? err.message : t('users.removeError'));
     } finally {
       setEliminando(false);
       setPorConfirmar(null);
@@ -100,7 +102,7 @@ export default function UsersPage() {
 
   return (
     <section className="panel">
-      <h1>Usuarios</h1>
+      <h1>{t('users.title')}</h1>
       {can('members:invite') ? (
         <form className="inline-form" onSubmit={(event) => void onInvite(event)}>
           {/*
@@ -109,7 +111,7 @@ export default function UsersPage() {
             proposito, pero dejando el nombre disponible para lectores de pantalla.
           */}
           <label className="sr-only" htmlFor="invitar-correo">
-            Correo de la persona a invitar
+            {t('users.inviteEmail')}
           </label>
           <input
             id="invitar-correo"
@@ -121,7 +123,7 @@ export default function UsersPage() {
             required
           />
           <label className="sr-only" htmlFor="invitar-rol">
-            Rol que tendrá
+            {t('users.inviteRole')}
           </label>
           <select id="invitar-rol" name="roleSlug" defaultValue="voluntario">
             {roles
@@ -142,7 +144,7 @@ export default function UsersPage() {
           {error}
         </p>
       ) : null}
-      {cargando ? <SkeletonList filas={4} etiqueta="Cargando usuarios…" /> : null}
+      {cargando ? <SkeletonList filas={4} etiqueta={t('common.loading')} /> : null}
 
       <table hidden={cargando}>
         <thead>
@@ -202,7 +204,7 @@ export default function UsersPage() {
                       className="linkish"
                       onClick={() => setPorConfirmar(member.userId)}
                     >
-                      Dar de baja
+                      {t('confirm.removeMemberAction')}
                     </button>
                   )
                 ) : null}
@@ -213,9 +215,9 @@ export default function UsersPage() {
       </table>
       <ConfirmDialog
         abierto={porConfirmar !== null}
-        titulo="Dar de baja a esta persona"
-        descripcion="Pierde el acceso a la organización. Se puede reactivar después, pero deja de ver los datos de inmediato."
-        etiquetaConfirmar="Dar de baja"
+        titulo={t('confirm.removeMemberTitle')}
+        descripcion={t('confirm.removeMemberDescription')}
+        etiquetaConfirmar={t('confirm.removeMemberAction')}
         ocupado={eliminando}
         onConfirmar={() => porConfirmar && void onRemove(porConfirmar)}
         onCancelar={() => setPorConfirmar(null)}

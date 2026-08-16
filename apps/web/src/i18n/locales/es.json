@@ -112,5 +112,38 @@
     "updateAvailable": "Hay una versión nueva disponible.",
     "offlineReady": "La app ya funciona sin conexión.",
     "update": "Actualizar"
+  },
+  "acopios": {
+    "title": "Centros de acopio",
+    "subtitle": "Acá se registran las bodegas: si reciben donaciones, si las envían a zona, o ambas. No se crean al armar la organización.",
+    "empty": "Todavía no hay centros de acopio. Creá el primero con el formulario de abajo.",
+    "inactive": "Baja",
+    "deleteError": "No se pudo eliminar"
+  },
+  "users": {
+    "title": "Usuarios",
+    "inviteEmail": "Correo de la persona a invitar",
+    "inviteRole": "Rol que tendrá",
+    "add": "Agregar",
+    "reactivate": "Reactivar",
+    "removeError": "No se pudo dar de baja"
+  },
+  "roles": {
+    "title": "Roles y permisos",
+    "subtitle": "La matriz es del sistema: un cambio aplica a todas las organizaciones. Cuando se agreguen módulos (donaciones, envíos) aparecerán filas nuevas.",
+    "permission": "Permiso",
+    "deleteError": "No se pudo eliminar",
+    "yes": "Sí"
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signUp": "Registrate",
+    "userOrEmail": "Usuario o correo",
+    "password": "Contraseña",
+    "captchaImage": "Otro captcha",
+    "captchaText": "Texto del captcha",
+    "noAccount": "¿No tenés cuenta?",
+    "captchaLoading": "Cargando captcha…",
+    "captchaError": "No se pudo cargar el captcha"
   }
 }

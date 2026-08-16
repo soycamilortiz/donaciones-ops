@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
 import { useSession } from '../lib/AuthProvider';
@@ -8,6 +9,7 @@ export default function SignInPage() {
   const { setSession } = useSession();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
   const { refreshKey, onSubmitFailed } = useCaptchaRefresh();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -37,13 +39,13 @@ export default function SignInPage() {
         SOS Chocó
       </Link>
       <form className="form auth-form" onSubmit={(event) => void onSubmit(event)}>
-        <h1>Entrar</h1>
+        <h1>{t('auth.signIn')}</h1>
         <label className="field">
-          Usuario o correo
+          {t('auth.userOrEmail')}
           <input name="usuario" required minLength={3} autoComplete="username" />
         </label>
         <label className="field">
-          Contraseña
+          {t('auth.password')}
           <input
             name="password"
             type="password"
@@ -59,10 +61,10 @@ export default function SignInPage() {
           </p>
         ) : null}
         <button className="button" type="submit">
-          Entrar
+          {t('auth.signIn')}
         </button>
         <p className="muted">
-          ¿No tenés cuenta? <Link to="/sign-up">Registrate</Link>
+          {t('auth.noAccount')} <Link to="/sign-up">{t('auth.signUp')}</Link>
         </p>
       </form>
     </div>
