@@ -170,6 +170,16 @@ cualquiera del equipo pueda diagnosticar, la función expone un visor propio:
 | `/logs/stream` | SSE (la página cae a polling si el entorno no lo soporta) |
 | `/logs/raw` | Texto plano, para `curl` o pegar en un issue |
 | `/logs/reset` | Reintenta el arranque de Nest en la próxima petición |
+| `/logs/all` | Logs de **las tres apps** (api, worker, jobs). Acepta `?app=worker` |
+
+`/logs/all` lee un stream compartido en Redis. Las tres apps ya se conectan a
+Redis para la cola, así que ver sus logs juntos no añade infraestructura nueva —
+y sobrevive a una caída de Postgres, que es cuando más falta hacen.
+
+El envío es *fire-and-forget* y nunca retrasa ni rompe una escritura real; tras
+varios fallos seguidos se silencia un rato en vez de reintentar por cada línea.
+Si Redis no responde, la lectura corta a los 3 s y el visor cae al buffer local
+de la instancia, que es el comportamiento que había antes.
 
 Vive en `apps/api/api/_lib/`, **fuera** del arranque de Nest y montado antes que él: si la app
 no levanta, `/logs` sigue respondiendo y muestra el stack: sin eso, Vercel solo devuelve

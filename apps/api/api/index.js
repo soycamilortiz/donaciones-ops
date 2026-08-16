@@ -14,6 +14,7 @@
 'use strict';
 
 const logs = require('./_lib/log-buffer');
+const sharedStream = require('./_lib/shared-log-stream');
 logs.attach();
 
 const nest = require('./_lib/nest');
@@ -118,6 +119,22 @@ async function handleLogs(req, res, url) {
     return handleStream(req, res, since);
   }
 
+  // Every app's entries, not just this instance. `app` filters by emitter.
+  if (ruta === '/all') {
+    const limit = Number.parseInt(url.searchParams.get('limit') || '500', 10) || 500;
+    const app = url.searchParams.get('app');
+    const resultado = await sharedStream.readAll(limit);
+    const entries = app ? resultado.entries.filter((e) => e.app === app) : resultado.entries;
+    return sendJson(res, 200, {
+      entries,
+      // Non-null when the shared stream could not be read. The page says why
+      // instead of showing an empty list that looks like "nothing happened".
+      streamError: resultado.error,
+      apps: [...new Set(resultado.entries.map((e) => e.app))],
+      total: entries.length,
+    });
+  }
+
   if (ruta === '/raw') {
     const model = buildModel();
     const cabecera = [
@@ -144,7 +161,7 @@ async function handleLogs(req, res, url) {
 
   return sendJson(res, 404, {
     error: 'Ruta de logs desconocida',
-    disponibles: ['/logs', '/logs/data', '/logs/stream', '/logs/raw', '/logs/reset'],
+    disponibles: ['/logs', '/logs/data', '/logs/all', '/logs/stream', '/logs/raw', '/logs/reset'],
   });
 }
 

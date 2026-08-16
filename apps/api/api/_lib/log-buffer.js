@@ -8,6 +8,7 @@
  */
 
 const { redact } = require('./redact');
+const sharedStream = require('./shared-log-stream');
 
 const MAX_ENTRIES = Number(process.env.LOGS_BUFFER_SIZE || 1000) || 1000;
 const MAX_LINE_LENGTH = 8000;
@@ -68,6 +69,16 @@ function record(rawMessage, options = {}) {
     });
 
     if (entries.length > MAX_ENTRIES) entries.splice(0, entries.length - MAX_ENTRIES);
+
+    // Mirror into the shared stream so /logs can show every app, not just this
+    // instance. Fire-and-forget: it must never delay or break a real write.
+    const last = entries[entries.length - 1];
+    sharedStream.ship({
+      ts: last.ts,
+      level: last.level === 'fatal' ? 'error' : last.level,
+      context: last.context,
+      message: last.message,
+    });
   }
 
   notify();
@@ -139,6 +150,8 @@ function attach() {
       return original(chunk, encoding, callback);
     };
   }
+
+  sharedStream.attachShipper(instanceId);
 
   process.on('uncaughtException', (error) => recordError(error, 'uncaughtException'));
   process.on('unhandledRejection', (reason) => recordError(reason, 'unhandledRejection'));
