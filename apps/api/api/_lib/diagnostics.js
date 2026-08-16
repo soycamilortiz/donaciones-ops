@@ -64,6 +64,51 @@ function collectEnv() {
 
 const HOSTS_LOCALES = /^(localhost|127\.0\.0\.1|::1|db|postgres|redis)$/i;
 
+const ESQUEMAS_REDIS = new Set(['redis', 'rediss']);
+
+/**
+ * Valida REDIS_URL más allá de "no es localhost". El check ingenuo dejaba pasar
+ * en verde un valor con el esquema duplicado (`redis://https://host…`): la URL
+ * parsea a host "https", que no es localhost, así que aprobaba — y la cola
+ * fallaba igual porque ioredis no puede resolver un host llamado "https".
+ * También exige TLS (`rediss://`) contra Upstash, que rechaza conexiones planas.
+ * @param {ReturnType<typeof describeConnectionUrl>} info
+ * @returns {{ok:boolean, detail:string}}
+ */
+function evaluarRedis(info) {
+  if (!info || info.host === '(no parseable)') {
+    return {
+      ok: false,
+      detail: 'Sin definir o no parseable. Formato: rediss://default:<clave>@<host>.upstash.io:6379',
+    };
+  }
+  if (!ESQUEMAS_REDIS.has(info.protocol)) {
+    return {
+      ok: false,
+      detail: `Esquema "${info.protocol}://" inválido: debe ser redis:// o rediss://. El valor parece llevar el esquema duplicado (p.ej. redis://https://…), por eso el host quedó como "${info.host}".`,
+    };
+  }
+  if (HOSTS_LOCALES.test(info.host)) {
+    return {
+      ok: false,
+      detail: `Host "${info.host}", inalcanzable desde Vercel (es el valor por defecto). La conexión es perezosa, así que no tumba el arranque, pero la cola de donaciones fallará al usarse.`,
+    };
+  }
+  if (!info.host.includes('.')) {
+    return {
+      ok: false,
+      detail: `Host "${info.host}" no es un dominio válido: el valor está malformado (esquema duplicado o una URL https:// pegada). Usa rediss://default:<clave>@<host>.upstash.io:6379.`,
+    };
+  }
+  if (/upstash\.io$/i.test(info.host) && info.protocol !== 'rediss') {
+    return {
+      ok: false,
+      detail: `Host "${info.host}" con esquema "redis://" (sin TLS). Upstash exige TLS: usa "rediss://" (doble s).`,
+    };
+  }
+  return { ok: true, detail: `${info.protocol}://${info.host}:${info.port}` };
+}
+
 /**
  * Chequeos derivados del código real de arranque. Cada uno explica por qué
  * importa, para que un dev que no tenga acceso a Vercel pueda actuar.
@@ -104,14 +149,7 @@ function checks() {
   }
 
   const redisInfo = describeConnectionUrl(process.env.REDIS_URL);
-  result.push({
-    label: 'REDIS_URL apunta fuera de localhost',
-    ok: Boolean(redisInfo) && !HOSTS_LOCALES.test(redisInfo.host),
-    detail:
-      redisInfo && HOSTS_LOCALES.test(redisInfo.host)
-        ? `Usa el valor por defecto ("${redisInfo.host}"), inalcanzable desde Vercel. La conexión es perezosa, así que no tumba el arranque, pero la cola de donaciones fallará al usarse.`
-        : `Host "${redisInfo ? redisInfo.host : '(sin definir)'}".`,
-  });
+  result.push({ label: 'REDIS_URL válida (esquema, host y TLS)', ...evaluarRedis(redisInfo) });
 
   result.push({
     label: 'RBAC_SYNC_ON_BOOT desactivado',
