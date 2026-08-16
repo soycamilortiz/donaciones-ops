@@ -23,7 +23,7 @@ Swagger: http://localhost:3000/api/docs (o http://localhost/api/docs con Traefik
 
 ## Desplegar en Vercel
 
-En el proyecto de Vercel, **Root Directory = `apps/api`**. El resto lo define [`vercel.json`](./vercel.json): instala desde la raíz del monorepo con `--filter api...`, compila `@soschoco/shared` y luego el API.
+En el proyecto de Vercel, **Root Directory = `apps/api`**. El resto lo define [`vercel.json`](./vercel.json): instala desde la raíz del monorepo, compila `@soschoco/shared` y `@soschoco/vision`, el web y el API.
 
 Variables de entorno obligatorias:
 
