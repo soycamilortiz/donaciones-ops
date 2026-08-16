@@ -70,6 +70,13 @@
     "viewDonations": "Ver donaciones",
     "uploadError": "No se pudo subir la foto",
     "noPermission": "No tienes permiso para registrar donaciones.",
+    "eanOptional": "Código de barras (opcional)",
+    "eanOptionalHint": "Si la foto no se lee sola, escribí el EAN: así va a catálogo / Open Food Facts y no a la IA.",
+    "eanSource": {
+      "local": "catálogo propio",
+      "openfoodfacts": "Open Food Facts",
+      "ninguna": "EAN sin coincidencia"
+    },
     "via": {
       "ean": "Lo resolvimos por código de barras (catálogo u Open Food Facts).",
       "vision": "La IA leyó la foto del producto. Revisá nombre y cantidad.",

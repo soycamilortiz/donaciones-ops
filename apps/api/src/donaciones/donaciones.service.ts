@@ -333,7 +333,8 @@ export class DonacionesService {
           nombre = catalogo.nombre ?? lectura.nombre;
           marca = catalogo.marca ?? lectura.marca;
           cantidad = lectura.cantidad;
-          via = catalogo.nombre ? 'ean' : lectura.nombre ? 'vision' : 'manual';
+          // Si el modelo sacó un EAN, el camino canónico es catálogo/OFF, no “visión”.
+          via = catalogo.nombre ? 'ean' : 'manual';
         } else if (lectura?.nombre) {
           via = 'vision';
           nombre = lectura.nombre;
