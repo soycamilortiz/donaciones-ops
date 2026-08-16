@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile --filter api...",
-  "buildCommand": "cd ../.. && pnpm --filter @soschoco/shared build && pnpm --filter api build",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @soschoco/shared build && pnpm --filter web build && pnpm --filter api build && cp -r apps/web/dist/. apps/api/public/",
   "outputDirectory": "public",
   "functions": {
     "api/index.js": {
@@ -12,8 +12,24 @@
   },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api",
       "destination": "/api"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/logs",
+      "destination": "/api"
+    },
+    {
+      "source": "/logs/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
