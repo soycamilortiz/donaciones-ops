@@ -30,7 +30,19 @@ export class RbacService implements OnModuleInit {
       this.logger.log('Sincronizacion de RBAC omitida al arrancar (RBAC_SYNC_ON_BOOT=false)');
       return;
     }
-    await this.ensureCatalog();
+
+    try {
+      await this.ensureCatalog();
+    } catch (error) {
+      // No tumba el arranque: si la base no responde, la API sigue en pie y lo
+      // reporta en /api/health/ready. El catalogo se sincroniza despues con
+      // `pnpm --filter api rbac:sync`.
+      this.logger.error(
+        `No se pudo sincronizar el catalogo de roles y permisos: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   async ensureCatalog(): Promise<void> {

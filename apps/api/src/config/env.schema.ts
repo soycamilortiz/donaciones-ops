@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+/**
+ * Vercel define VERCEL=1 en build y en ejecución. Sirve para elegir defaults
+ * distintos sin que nadie tenga que configurarlos: lo que es razonable en un
+ * proceso de larga vida no lo es en una función que arranca en frío muchas
+ * veces al día.
+ */
+const enServerless = process.env.VERCEL === '1' || process.env.VERCEL === 'true';
+
+const bandera = (porDefecto: boolean) =>
+  z
+    .enum(['true', 'false'])
+    .default(porDefecto ? 'true' : 'false')
+    .transform((valor) => valor === 'true');
+
 const emptyToUndefined = (value: unknown) => {
   if (value === '' || value === undefined || value === null) return undefined;
   if (typeof value === 'string') {
@@ -47,20 +61,19 @@ export const envSchema = z.object({
    * arranque en frio: son ~20 escrituras que retrasan la primera peticion y
    * tumban la funcion si la base no responde. Alli se pone en false y se
    * sincroniza con `pnpm --filter api rbac:sync` tras cada despliegue.
+   *
+   * En serverless el default ya es `false`: no hay que acordarse de ponerlo.
    */
-  RBAC_SYNC_ON_BOOT: z
-    .enum(['true', 'false'])
-    .default('true')
-    .transform((valor) => valor === 'true'),
+  RBAC_SYNC_ON_BOOT: bandera(!enServerless),
 
   /**
    * Swagger recorre toda la metadata al construir el documento. En un proceso
    * de larga vida se paga una vez; en serverless, en cada arranque en frio.
+   *
+   * En serverless el default ya es `false`. Se puede forzar a `true` para
+   * depurar, asumiendo el coste en cada arranque.
    */
-  SWAGGER_ENABLED: z
-    .enum(['true', 'false'])
-    .default('true')
-    .transform((valor) => valor === 'true'),
+  SWAGGER_ENABLED: bandera(!enServerless),
 });
 
 export type Env = z.infer<typeof envSchema>;
