@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useOrg } from '../components/OrgGate';
 import {
@@ -36,6 +37,7 @@ function soon(value?: string | null) {
 }
 
 export default function InventoryPage() {
+  const { t } = useTranslation();
   const { orgId, can } = useOrg();
   const request = useApi();
   const writable = can('inventory:write');
@@ -72,7 +74,7 @@ export default function InventoryPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: loadAcopios se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void loadAcopios().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'Error al cargar acopios');
+      setError(err instanceof Error ? err.message : t('inventory.loadAcopiosError'));
     });
   }, [orgId]);
 
@@ -83,7 +85,7 @@ export default function InventoryPage() {
       return;
     }
     void loadItems(acopioId).catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'Error al cargar inventario');
+      setError(err instanceof Error ? err.message : t('inventory.loadError'));
     });
   }, [orgId, acopioId]);
 
@@ -263,7 +265,7 @@ export default function InventoryPage() {
   if (acopios.filter((row) => row.isActive !== false).length === 0) {
     return (
       <section className="panel">
-        <h1>Inventario</h1>
+        <h1>{t('inventory.title')}</h1>
         <p className="lede">El inventario vive en cada centro de acopio. Primero creá un acopio.</p>
         <Link className="button" to="/app/acopios">
           Ir a acopios
@@ -276,8 +278,8 @@ export default function InventoryPage() {
     <section className="panel inventory-dash">
       <header className="dash-head">
         <div>
-          <p className="eyebrow">Bodega</p>
-          <h1>Inventario</h1>
+          <p className="eyebrow">{t('inventory.warehouse')}</p>
+          <h1>{t('inventory.title')}</h1>
           <p className="muted">
             Existencias del centro seleccionado. Los productos se dan de baja; no se borran.
           </p>
@@ -317,30 +319,30 @@ export default function InventoryPage() {
           <strong>{stats.activos}</strong>
         </article>
         <article className="stat-card">
-          <span>Cantidad en stock</span>
+          <span>{t('inventory.stockQuantity')}</span>
           <strong>{stats.cantidad.toLocaleString('es-CO')}</strong>
         </article>
         <article className="stat-card">
-          <span>Categorías</span>
+          <span>{t('inventory.categories')}</span>
           <strong>{stats.categorias}</strong>
         </article>
         <article className="stat-card">
-          <span>Alertas de vencimiento</span>
+          <span>{t('inventory.expiryAlerts')}</span>
           <strong>{stats.alertas}</strong>
         </article>
         <article className="stat-card">
-          <span>Dados de baja</span>
+          <span>{t('inventory.inactive')}</span>
           <strong>{stats.bajas}</strong>
         </article>
       </div>
 
       <div className="dash-toolbar">
         <label className="field">
-          Buscar
+          {t('common.search')}
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Nombre, marca, SKU…"
+            placeholder={t('inventory.searchPlaceholder')}
           />
         </label>
         <label className="field">
@@ -375,10 +377,10 @@ export default function InventoryPage() {
           <thead>
             <tr>
               <th>Producto</th>
-              <th>Categoría</th>
-              <th>Cantidad</th>
+              <th>{t('inventory.category')}</th>
+              <th>{t('inventory.quantity')}</th>
               <th>Vence</th>
-              <th>Estado</th>
+              <th>{t('inventory.status')}</th>
               <th></th>
             </tr>
           </thead>
@@ -528,7 +530,7 @@ export default function InventoryPage() {
                   </select>
                 </label>
                 <label className="field">
-                  Cantidad
+                  {t('inventory.quantity')}
                   <input
                     name="cantidad"
                     type="number"

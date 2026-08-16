@@ -1,5 +1,6 @@
 import type { PermissionSlug } from '@soschoco/shared';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { type Me, type Membership, readStoredOrgId, storeOrgId } from '../lib/api';
 import { useApi } from '../lib/useApi';
@@ -26,6 +27,7 @@ export function useOrg(): OrgContextValue {
 }
 
 export default function OrgGate() {
+  const { t } = useTranslation();
   const request = useApi();
   const location = useLocation();
   const [me, setMe] = useState<Me | null>(null);
@@ -45,9 +47,9 @@ export default function OrgGate() {
 
   useEffect(() => {
     void refresh().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'No se pudo cargar el perfil');
+      setError(err instanceof Error ? err.message : t('session.profileError'));
     });
-  }, [refresh]);
+  }, [refresh, t]);
 
   const setOrgId = useCallback((id: string) => {
     storeOrgId(id);
@@ -64,7 +66,7 @@ export default function OrgGate() {
   }
 
   if (!me) {
-    return <p className="page">Cargando sesión…</p>;
+    return <p className="page">{t('session.loading')}</p>;
   }
 
   if (me.memberships.length === 0) {
@@ -79,7 +81,7 @@ export default function OrgGate() {
   }
 
   if (!orgId || !membership) {
-    return <p className="page">No hay organización activa.</p>;
+    return <p className="page">{t('session.noActiveOrg')}</p>;
   }
 
   const value: OrgContextValue = {
