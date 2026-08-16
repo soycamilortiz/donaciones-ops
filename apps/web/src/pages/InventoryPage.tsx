@@ -159,9 +159,41 @@ export default function InventoryPage() {
       if (evento.key === 'Escape') {
         setEditing(null);
         setFormOpen(false);
+        return;
+      }
+      if (evento.key !== 'Tab') {
+        return;
+      }
+
+      // Retiene el foco dentro del modal: sin esto se tabula hacia la pagina de
+      // detras, que esta visualmente bloqueada, y el foco se pierde de vista.
+      const dialogo = document.querySelector<HTMLElement>('[role="dialog"]');
+      const dentro = dialogo?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (!dentro || dentro.length === 0) {
+        return;
+      }
+      const primero = dentro[0];
+      const ultimo = dentro[dentro.length - 1];
+      if (!primero || !ultimo) {
+        return;
+      }
+      if (evento.shiftKey && document.activeElement === primero) {
+        evento.preventDefault();
+        ultimo.focus();
+      } else if (!evento.shiftKey && document.activeElement === ultimo) {
+        evento.preventDefault();
+        primero.focus();
       }
     };
     document.addEventListener('keydown', alPulsar);
+
+    // Al abrir, el foco debe entrar al modal; si no, sigue en el boton que lo
+    // abrio y tabular lleva al contenido de detras.
+    const dialogo = document.querySelector<HTMLElement>('[role="dialog"]');
+    dialogo?.querySelector<HTMLElement>('input, select, textarea, button')?.focus();
+
     return () => document.removeEventListener('keydown', alPulsar);
   }, [formOpen]);
 

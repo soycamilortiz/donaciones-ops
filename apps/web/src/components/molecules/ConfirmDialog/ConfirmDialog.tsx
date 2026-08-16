@@ -25,6 +25,7 @@ export function ConfirmDialog({
   const tituloId = useId();
   const descripcionId = useId();
   const cancelarRef = useRef<HTMLButtonElement>(null);
+  const dialogoRef = useRef<HTMLDivElement>(null);
   const origenRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -39,6 +40,33 @@ export function ConfirmDialog({
     const alPulsar = (evento: KeyboardEvent) => {
       if (evento.key === 'Escape') {
         onCancelar();
+        return;
+      }
+      if (evento.key !== 'Tab') {
+        return;
+      }
+
+      // Retiene el foco dentro del diálogo. Sin esto, tabular desde el último
+      // botón sale a la página de detrás: se puede operar contenido que está
+      // visualmente bloqueado, y no hay forma de saber dónde quedó el foco.
+      const dentro = dialogoRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (!dentro || dentro.length === 0) {
+        return;
+      }
+      const primero = dentro[0];
+      const ultimo = dentro[dentro.length - 1];
+      if (!primero || !ultimo) {
+        return;
+      }
+
+      if (evento.shiftKey && document.activeElement === primero) {
+        evento.preventDefault();
+        ultimo.focus();
+      } else if (!evento.shiftKey && document.activeElement === ultimo) {
+        evento.preventDefault();
+        primero.focus();
       }
     };
     document.addEventListener('keydown', alPulsar);
@@ -65,6 +93,7 @@ export function ConfirmDialog({
       }}
     >
       <div
+        ref={dialogoRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby={tituloId}
