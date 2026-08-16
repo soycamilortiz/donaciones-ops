@@ -40,6 +40,10 @@ export type DonacionImagen = {
   error?: string | null;
   textoOcr?: string | null;
   confianza?: number | null;
+  nombreDetectado?: string | null;
+  cantidadDetectada?: number | null;
+  confirmadaEn?: string | null;
+  inventoryItemId?: string | null;
   producto?: Producto | null;
   procesadaEn?: string | null;
   createdAt: string;
@@ -63,12 +67,11 @@ export type RutaSubida = {
  * forma sirve igual para un lector de código de barras o un modelo de visión.
  */
 export type Reconocimiento = {
-  /** Texto crudo, si el motor produce alguno. */
   texto: string | null;
-  /** 0..1. Null si el motor no reporta confianza. */
   confianza: number | null;
-  /** Id del producto del catálogo, si se pudo resolver. */
   productoId: string | null;
+  nombreDetectado: string | null;
+  cantidadDetectada: number | null;
 };
 
 export const MAX_IMAGEN_BYTES = 10 * 1024 * 1024;

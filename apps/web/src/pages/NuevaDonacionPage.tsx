@@ -1,13 +1,14 @@
-import type { Acopio } from '@soschoco/shared';
+import type { Acopio, DonacionImagen } from '@soschoco/shared';
 import { DonacionImagenEstado } from '@soschoco/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import { useOrg } from '@/components/OrgGate';
-import { subirFoto } from '@/features/donaciones/donaciones-service';
+import { confirmarDonacion, subirFoto } from '@/features/donaciones/donaciones-service';
 import { useReconocimiento } from '@/features/donaciones/useReconocimiento';
 import { readStoredToken } from '@/lib/api';
 import { ROUTES } from '@/lib/constants';
@@ -189,7 +190,9 @@ export default function NuevaDonacionPage() {
         <p className="text-sm text-muted-foreground">{t('newDonation.takingLong')}</p>
       ) : null}
 
-      {fase === 'listo' && imagen ? <Resultado imagen={imagen} /> : null}
+      {fase === 'listo' && imagen ? (
+        <Resultado imagen={imagen} orgId={orgId} acopioId={acopioId} request={request} />
+      ) : null}
 
       {error ? (
         <p role="alert" className="text-sm text-error">
@@ -211,10 +214,23 @@ export default function NuevaDonacionPage() {
 
 function Resultado({
   imagen,
+  orgId,
+  acopioId,
+  request,
 }: {
-  imagen: { estado: string; producto?: { nombre: string } | null };
+  imagen: DonacionImagen;
+  orgId: string;
+  acopioId: string;
+  request: <T>(path: string, init?: RequestInit) => Promise<T>;
 }) {
   const { t } = useTranslation();
+  const [nombre, setNombre] = useState(
+    imagen.nombreDetectado || imagen.producto?.nombre || imagen.textoOcr?.split('\n')[0] || '',
+  );
+  const [cantidad, setCantidad] = useState(String(imagen.cantidadDetectada ?? 1));
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmada, setConfirmada] = useState(Boolean(imagen.confirmadaEn));
 
   if (imagen.estado === DonacionImagenEstado.Fallida) {
     return (
@@ -225,19 +241,75 @@ function Resultado({
     );
   }
 
-  if (!imagen.producto) {
+  if (confirmada) {
     return (
       <div className="space-y-1">
-        <Badge variant="warning">{t('newDonation.result.unidentified')}</Badge>
-        <p className="text-sm text-muted-foreground">{t('newDonation.result.unidentifiedHint')}</p>
+        <Badge variant="success">{t('newDonation.result.confirmed')}</Badge>
+        <p className="text-lg font-medium text-foreground">{nombre}</p>
+        <p className="text-sm text-muted-foreground">
+          {t('newDonation.quantity')}: {cantidad}
+        </p>
       </div>
     );
   }
 
+  const onConfirmar = async () => {
+    const qty = Number(cantidad);
+    if (!nombre.trim() || !Number.isFinite(qty) || qty <= 0) {
+      setError(t('newDonation.confirmInvalid'));
+      return;
+    }
+    if (!acopioId) {
+      setError(t('newDonation.needAcopio'));
+      return;
+    }
+    setGuardando(true);
+    setError(null);
+    try {
+      await confirmarDonacion(request, orgId, imagen.id, {
+        nombre: nombre.trim(),
+        cantidad: qty,
+        acopioId,
+      });
+      setConfirmada(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('newDonation.confirmError'));
+    } finally {
+      setGuardando(false);
+    }
+  };
+
   return (
-    <div className="space-y-1">
-      <Badge variant="success">{t('newDonation.result.recognized')}</Badge>
-      <p className="text-lg font-medium text-foreground">{imagen.producto.nombre}</p>
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <Badge variant="warning">{t('newDonation.result.needsConfirm')}</Badge>
+        <p className="text-sm text-muted-foreground">{t('newDonation.result.needsConfirmHint')}</p>
+      </div>
+      {imagen.textoOcr ? (
+        <p className="text-xs text-muted-foreground whitespace-pre-wrap">{imagen.textoOcr}</p>
+      ) : null}
+      <label className="block space-y-1">
+        <span className="text-sm font-medium text-foreground">{t('newDonation.productName')}</span>
+        <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-sm font-medium text-foreground">{t('newDonation.quantity')}</span>
+        <Input
+          type="number"
+          min={1}
+          step={1}
+          value={cantidad}
+          onChange={(e) => setCantidad(e.target.value)}
+        />
+      </label>
+      {error ? (
+        <p role="alert" className="text-sm text-error">
+          {error}
+        </p>
+      ) : null}
+      <Button onClick={() => void onConfirmar()} disabled={guardando}>
+        {guardando ? t('common.saving') : t('newDonation.confirm')}
+      </Button>
     </div>
   );
 }

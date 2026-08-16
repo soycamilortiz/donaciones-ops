@@ -3,6 +3,7 @@
     "loading": "Cargando…",
     "cancel": "Cancelar",
     "save": "Guardar",
+    "saving": "Guardando…",
     "delete": "Eliminar",
     "edit": "Editar",
     "retry": "Reintentar",
@@ -74,10 +75,19 @@
     "result": {
       "failed": "No se pudo procesar",
       "failedHint": "La foto quedó guardada. Puedes reintentarla desde la lista de donaciones.",
+      "needsConfirm": "Revisá lo que leímos",
+      "needsConfirmHint": "El inventario no se toca hasta que confirmes. Podés editar el nombre y la cantidad.",
+      "confirmed": "Sumado al inventario",
       "unidentified": "Sin identificar",
       "unidentifiedHint": "No se reconoció el producto con suficiente certeza. Queda pendiente de revisión para que alguien lo confirme a mano.",
       "recognized": "Reconocido"
-    }
+    },
+    "productName": "Producto",
+    "quantity": "Cantidad",
+    "confirm": "Confirmar y sumar al inventario",
+    "confirmInvalid": "Completá un nombre y una cantidad mayor a cero.",
+    "needAcopio": "Elegí el acopio antes de confirmar.",
+    "confirmError": "No se pudo confirmar la donación"
   },
   "review": {
     "title": "Revisión de donaciones",

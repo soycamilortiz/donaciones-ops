@@ -54,6 +54,18 @@ export function corregirProducto(
   });
 }
 
+export function confirmarDonacion(
+  request: Peticion,
+  orgId: string,
+  id: string,
+  body: { nombre: string; cantidad: number; acopioId?: string; marca?: string },
+): Promise<DonacionImagen> {
+  return request<DonacionImagen>(`${base(orgId)}/${id}/confirmar`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 export function reprocesar(request: Peticion, orgId: string, id: string): Promise<DonacionImagen> {
   return request<DonacionImagen>(`${base(orgId)}/${id}/reprocesar`, { method: 'POST' });
 }

@@ -1,9 +1,9 @@
-import { HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../config/env.schema';
-import { normalizeR2Endpoint, publicObjectUrl } from './r2.util';
+import { esUrlPublicaUsable, normalizeR2Endpoint, publicObjectUrl } from './r2.util';
 
 @Injectable()
 export class R2StorageService {
@@ -29,6 +29,13 @@ export class R2StorageService {
       credentials: { accessKeyId, secretAccessKey },
       forcePathStyle: true,
     });
+
+    const publicBase = this.config.get('R2_PUBLIC_BASE_URL', { infer: true });
+    if (publicBase && !esUrlPublicaUsable(publicBase)) {
+      this.logger.warn(
+        'R2_PUBLIC_BASE_URL apunta al S3 API; el worker y el <img> no pueden usarla. Activá Public development URL (pub-….r2.dev) o un custom domain.',
+      );
+    }
   }
 
   isConfigured(): boolean {
@@ -72,13 +79,31 @@ export class R2StorageService {
     );
   }
 
+  async presignGet(key: string, expiresIn = 3600): Promise<string> {
+    if (!this.client) {
+      throw new Error(`R2 no configurado (${this.missingConfig().join(', ')})`);
+    }
+    return getSignedUrl(
+      this.client,
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      { expiresIn },
+    );
+  }
+
   publicUrlFor(key: string): string | null {
     const base = this.config.get('R2_PUBLIC_BASE_URL', { infer: true });
-    if (!base) return null;
+    if (!esUrlPublicaUsable(base)) return null;
     return publicObjectUrl(base, key);
   }
 
   hasPublicBase(): boolean {
-    return Boolean(this.config.get('R2_PUBLIC_BASE_URL', { infer: true }));
+    return esUrlPublicaUsable(this.config.get('R2_PUBLIC_BASE_URL', { infer: true }));
+  }
+
+  async urlParaMostrar(pathname: string, blobUrlGuardada?: string | null): Promise<string> {
+    const publica = this.publicUrlFor(pathname);
+    if (publica) return publica;
+    if (esUrlPublicaUsable(blobUrlGuardada)) return blobUrlGuardada as string;
+    return this.presignGet(pathname);
   }
 }

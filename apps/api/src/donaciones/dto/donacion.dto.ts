@@ -5,8 +5,8 @@ import {
   normalizarTipoImagen,
   TIPOS_IMAGEN_ACEPTADOS,
 } from '@soschoco/shared';
-import { Transform } from 'class-transformer';
-import { IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsIn, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class NuevaRutaDto {
   @ApiProperty({
@@ -108,6 +108,15 @@ export class DonacionImagenDto {
   @ApiPropertyOptional({ description: 'Texto crudo que devolvió el OCR' })
   textoOcr?: string | null;
 
+  @ApiPropertyOptional()
+  nombreDetectado?: string | null;
+
+  @ApiPropertyOptional()
+  cantidadDetectada?: number | null;
+
+  @ApiPropertyOptional()
+  confirmadaEn?: Date | null;
+
   @ApiPropertyOptional({ description: 'Confianza del reconocimiento, 0..1' })
   confianza?: number | null;
 
@@ -125,6 +134,28 @@ export class CorregirProductoDto {
   @ApiProperty({ description: 'Producto correcto, cuando el reconocimiento falló' })
   @IsUUID()
   productoId: string;
+}
+
+export class ConfirmarDonacionDto {
+  @ApiProperty({ example: 'Botellas de agua x6 marca Brisa' })
+  @IsString()
+  nombre: string;
+
+  @ApiProperty({ example: 6 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.001)
+  cantidad: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  acopioId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  marca?: string;
 }
 
 export class PaginaDonacionImagenDto {

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { InventoryCategoria, InventoryUnidad, Prisma } from '@prisma/client';
 import { blankToNull } from '../common/soft-delete';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
@@ -11,6 +11,46 @@ import type {
 @Injectable()
 export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Tras confirmar una donación: suma cantidad si ya hay un ítem activo con el
+   * mismo nombre en el acopio; si no, lo crea.
+   */
+  async aplicarDonacionConfirmada(
+    orgId: string,
+    acopioId: string,
+    entrada: { nombre: string; cantidad: number; marca?: string | null },
+  ): Promise<InventoryItemDto> {
+    const acopio = await this.requireAcopio(orgId, acopioId);
+    if (!acopio.isActive) {
+      throw new BadRequestException('No se puede cargar inventario en un acopio dado de baja');
+    }
+
+    const nombre = entrada.nombre.trim();
+    const existente = await this.prisma.inventoryItem.findFirst({
+      where: {
+        acopioId,
+        isActive: true,
+        nombre: { equals: nombre, mode: 'insensitive' },
+      },
+    });
+
+    if (existente) {
+      const row = await this.prisma.inventoryItem.update({
+        where: { id: existente.id },
+        data: { cantidad: { increment: entrada.cantidad } },
+      });
+      return this.toDto(row);
+    }
+
+    return this.create(orgId, acopioId, {
+      nombre,
+      cantidad: entrada.cantidad,
+      marca: entrada.marca ?? undefined,
+      categoria: inferirCategoria(nombre),
+      unidad: inferirUnidad(nombre),
+    });
+  }
 
   async list(orgId: string, acopioId: string): Promise<InventoryItemDto[]> {
     await this.requireAcopio(orgId, acopioId);
@@ -141,4 +181,23 @@ export class InventoryService {
       isActive: row.isActive === true,
     };
   }
+}
+
+function inferirCategoria(nombre: string): InventoryCategoria {
+  const n = nombre.toLowerCase();
+  if (/\bagua|brisa|cristal|botella/.test(n)) return InventoryCategoria.AGUA;
+  if (/\barroz|atún|atun|aceite|lenteja|frijol|harina|azucar|azúcar/.test(n)) {
+    return InventoryCategoria.ALIMENTOS_NO_PERECEDEROS;
+  }
+  if (/\bpañal|panal|bebe|bebé/.test(n)) return InventoryCategoria.PANALES_BEBE;
+  if (/\bjabón|jabon|shampoo|higiene|crema|colgate/.test(n)) return InventoryCategoria.ASEO_HIGIENE;
+  return InventoryCategoria.OTRO;
+}
+
+function inferirUnidad(nombre: string): InventoryUnidad {
+  const n = nombre.toLowerCase();
+  if (/\bbotella/.test(n)) return InventoryUnidad.BOTELLA;
+  if (/\bpack|paquete|x\d/.test(n)) return InventoryUnidad.PAQUETE;
+  if (/\blitro|\bl\b/.test(n)) return InventoryUnidad.LITRO;
+  return InventoryUnidad.UNIDAD;
 }

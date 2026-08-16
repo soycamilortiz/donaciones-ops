@@ -13,10 +13,11 @@ import {
   normalizarTipoImagen,
   TIPOS_IMAGEN_ACEPTADOS,
 } from '@soschoco/shared';
+import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
-import type { RegistrarImagenDto } from './dto/donacion.dto';
+import type { ConfirmarDonacionDto, RegistrarImagenDto } from './dto/donacion.dto';
 
 export type OpcionesListado = {
   estado?: string;
@@ -38,6 +39,7 @@ export class DonacionesService {
     private readonly prisma: PrismaService,
     private readonly cola: ColaService,
     private readonly r2: R2StorageService,
+    private readonly inventario: InventoryService,
   ) {}
 
   /**
@@ -51,12 +53,6 @@ export class DonacionesService {
       );
     }
 
-    if (!this.r2.hasPublicBase()) {
-      throw new ServiceUnavailableException(
-        'El almacenamiento de imágenes no está configurado (falta R2_PUBLIC_BASE_URL)',
-      );
-    }
-
     const tipo = normalizarTipoImagen(contentType, nombreArchivo);
     if (!tipo) {
       throw new BadRequestException(`Formato no aceptado: ${contentType || 'desconocido'}`);
@@ -64,12 +60,7 @@ export class DonacionesService {
 
     const pathname = this.rutaParaSubida(organizationId, nombreArchivo);
     const uploadUrl = await this.r2.presignPut(pathname, tipo);
-    const publicUrl = this.r2.publicUrlFor(pathname);
-    if (!publicUrl) {
-      throw new ServiceUnavailableException(
-        'El almacenamiento de imágenes no está configurado (falta R2_PUBLIC_BASE_URL)',
-      );
-    }
+    const publicUrl = await this.r2.urlParaMostrar(pathname);
 
     return {
       pathname,
@@ -96,12 +87,8 @@ export class DonacionesService {
       throw new ForbiddenException('La ruta no corresponde a esta organización');
     }
 
-    const blobUrl = this.r2.publicUrlFor(dto.pathname);
-    if (!blobUrl) {
-      throw new ServiceUnavailableException(
-        'El almacenamiento de imágenes no está configurado (falta R2_PUBLIC_BASE_URL)',
-      );
-    }
+    const blobUrl =
+      this.r2.publicUrlFor(dto.pathname) ?? `r2://${this.r2.bucket}/${dto.pathname}`;
 
     if (dto.acopioId) {
       await this.verificarAcopio(organizationId, dto.acopioId);
@@ -127,7 +114,7 @@ export class DonacionesService {
     });
 
     await this.cola.encolarReconocimiento(imagen.id);
-    return imagen;
+    return this.conUrlVisible(imagen);
   }
 
   /**
@@ -159,9 +146,10 @@ export class DonacionesService {
 
     const hayMas = filas.length > limite;
     const items = hayMas ? filas.slice(0, limite) : filas;
+    const visibles = await Promise.all(items.map((item) => this.conUrlVisible(item)));
 
     return {
-      items,
+      items: visibles,
       siguienteCursor: hayMas ? (items.at(-1)?.id ?? null) : null,
     };
   }
@@ -174,7 +162,7 @@ export class DonacionesService {
     if (!imagen) {
       throw new NotFoundException('Imagen no encontrada');
     }
-    return imagen;
+    return this.conUrlVisible(imagen);
   }
 
   /** Corrección manual para cuando el OCR no acertó o dejó la imagen sin producto. */
@@ -190,7 +178,7 @@ export class DonacionesService {
       where: { id },
       data: { productoId, estado: DonacionImagenEstado.Procesada, error: null },
       include: IMAGEN_CON_PRODUCTO,
-    });
+    }).then((imagen) => this.conUrlVisible(imagen));
   }
 
   /** Vuelve a encolar una imagen fallida, por ejemplo tras corregir el catálogo. */
@@ -206,8 +194,64 @@ export class DonacionesService {
     return this.obtener(organizationId, id);
   }
 
+  /**
+   * El inventario solo se toca aquí: el OCR sugiere, el operador confirma.
+   */
+  async confirmarDonacion(organizationId: string, id: string, dto: ConfirmarDonacionDto) {
+    const imagen = await this.prisma.donacionImagen.findFirst({
+      where: { id, organizationId },
+    });
+    if (!imagen) {
+      throw new NotFoundException('Imagen no encontrada');
+    }
+    if (imagen.confirmadaEn) {
+      throw new ConflictException('Esta donación ya se confirmó y está en el inventario');
+    }
+    if (imagen.estado === DonacionImagenEstado.Fallida) {
+      throw new BadRequestException('Reprocesá la foto antes de confirmarla');
+    }
+
+    const acopioId = dto.acopioId ?? imagen.acopioId;
+    if (!acopioId) {
+      throw new BadRequestException('Elegí el acopio donde entra esta donación');
+    }
+    await this.verificarAcopio(organizationId, acopioId);
+
+    const item = await this.inventario.aplicarDonacionConfirmada(organizationId, acopioId, {
+      nombre: dto.nombre,
+      cantidad: dto.cantidad,
+      marca: dto.marca,
+    });
+
+    await this.prisma.donacionImagen.update({
+      where: { id },
+      data: {
+        acopioId,
+        nombreDetectado: dto.nombre.trim(),
+        cantidadDetectada: dto.cantidad,
+        confirmadaEn: new Date(),
+        inventoryItemId: item.id,
+        estado: DonacionImagenEstado.Procesada,
+        error: null,
+      },
+    });
+
+    return this.obtener(organizationId, id);
+  }
+
   listarProductos() {
     return this.prisma.producto.findMany({ orderBy: { nombre: 'asc' } });
+  }
+
+  private async conUrlVisible<
+    T extends { blobUrl: string; blobPathname: string; cantidadDetectada?: unknown },
+  >(imagen: T): Promise<T> {
+    return {
+      ...imagen,
+      blobUrl: await this.r2.urlParaMostrar(imagen.blobPathname, imagen.blobUrl),
+      cantidadDetectada:
+        imagen.cantidadDetectada == null ? null : Number(imagen.cantidadDetectada),
+    };
   }
 
   private async verificarAcopio(organizationId: string, acopioId: string): Promise<void> {

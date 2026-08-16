@@ -1,4 +1,4 @@
-import { normalizeR2Endpoint, publicObjectUrl } from './r2.util';
+import { esUrlPublicaUsable, normalizeR2Endpoint, publicObjectUrl } from './r2.util';
 
 describe('normalizeR2Endpoint', () => {
   it('saca el nombre del bucket si lo pegaron al final del S3 API', () => {
@@ -11,6 +11,17 @@ describe('normalizeR2Endpoint', () => {
     expect(normalizeR2Endpoint('https://abc.r2.cloudflarestorage.com/', 'sos-choco')).toBe(
       'https://abc.r2.cloudflarestorage.com',
     );
+  });
+});
+
+describe('esUrlPublicaUsable', () => {
+  it('rechaza el S3 API', () => {
+    expect(esUrlPublicaUsable('https://abc.r2.cloudflarestorage.com/sos-choco')).toBe(false);
+  });
+
+  it('acepta r2.dev y un custom domain', () => {
+    expect(esUrlPublicaUsable('https://pub-x.r2.dev')).toBe(true);
+    expect(esUrlPublicaUsable('https://media.ejemplo.org')).toBe(true);
   });
 });
 

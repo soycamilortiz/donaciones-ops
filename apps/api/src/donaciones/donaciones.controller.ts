@@ -14,6 +14,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { DonacionesService } from './donaciones.service';
 import {
+  ConfirmarDonacionDto,
   CorregirProductoDto,
   DonacionImagenDto,
   NuevaRutaDto,
@@ -108,6 +109,20 @@ export class DonacionesController {
     @Body() dto: CorregirProductoDto,
   ) {
     return this.donaciones.corregirProducto(orgId, id, dto.productoId);
+  }
+
+  @Post(':id/confirmar')
+  @RequirePermission(PermissionSlug.DonacionesWrite)
+  @ApiOperation({
+    summary: 'Confirmar lo que leyó el OCR y cargarlo al inventario del acopio',
+  })
+  @ApiOkResponse({ type: DonacionImagenDto })
+  confirmar(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConfirmarDonacionDto,
+  ) {
+    return this.donaciones.confirmarDonacion(orgId, id, dto);
   }
 
   @Post(':id/reprocesar')

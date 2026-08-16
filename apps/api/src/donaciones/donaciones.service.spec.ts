@@ -1,5 +1,6 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { DonacionImagenEstado } from '@soschoco/shared';
+import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
@@ -23,6 +24,8 @@ describe('DonacionesService', () => {
     hasPublicBase: jest.Mock;
     presignPut: jest.Mock;
     publicUrlFor: jest.Mock;
+    urlParaMostrar: jest.Mock;
+    bucket: string;
   };
 
   beforeEach(async () => {
@@ -43,7 +46,11 @@ describe('DonacionesService', () => {
       missingConfig: jest.fn().mockReturnValue([]),
       hasPublicBase: jest.fn().mockReturnValue(true),
       presignPut: jest.fn().mockResolvedValue('https://r2.example/signed'),
+      urlParaMostrar: jest
+        .fn()
+        .mockImplementation((key: string) => Promise.resolve(`https://pub.example/${key}`)),
       publicUrlFor: jest.fn().mockImplementation((key: string) => `https://pub.example/${key}`),
+      bucket: 'sos-choco',
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -52,6 +59,7 @@ describe('DonacionesService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: ColaService, useValue: cola },
         { provide: R2StorageService, useValue: r2 },
+        { provide: InventoryService, useValue: { aplicarDonacionConfirmada: jest.fn() } },
       ],
     }).compile();
 
@@ -87,14 +95,6 @@ describe('DonacionesService', () => {
 
       await expect(service.reservarSubida(ORG, 'foto.jpg', 'image/jpeg')).rejects.toThrow(
         /R2_ACCESS_KEY_ID/,
-      );
-    });
-
-    it('responde 503 si falta la URL pública', async () => {
-      r2.hasPublicBase.mockReturnValue(false);
-
-      await expect(service.reservarSubida(ORG, 'foto.jpg', 'image/jpeg')).rejects.toThrow(
-        /R2_PUBLIC_BASE_URL/,
       );
     });
 

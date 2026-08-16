@@ -3,6 +3,7 @@
     "loading": "Loading…",
     "cancel": "Cancel",
     "save": "Save",
+    "saving": "Saving…",
     "delete": "Delete",
     "edit": "Edit",
     "retry": "Retry",
@@ -74,10 +75,19 @@
     "result": {
       "failed": "Could not be processed",
       "failedHint": "The photo was saved. You can retry it from the donations list.",
+      "needsConfirm": "Check what we read",
+      "needsConfirmHint": "Inventory is not updated until you confirm. You can edit the name and quantity.",
+      "confirmed": "Added to inventory",
       "unidentified": "Unidentified",
       "unidentifiedHint": "The product was not recognised with enough confidence. It stays pending review so someone can confirm it by hand.",
       "recognized": "Recognised"
-    }
+    },
+    "productName": "Product",
+    "quantity": "Quantity",
+    "confirm": "Confirm and add to inventory",
+    "confirmInvalid": "Enter a name and a quantity greater than zero.",
+    "needAcopio": "Choose a collection centre before confirming.",
+    "confirmError": "Could not confirm the donation"
   },
   "review": {
     "title": "Donation review",
