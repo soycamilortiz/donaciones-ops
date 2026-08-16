@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SkeletonList } from '../components/atoms/Skeleton';
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
@@ -7,6 +8,7 @@ import { useApi } from '../lib/useApi';
 
 export default function RolesPage() {
   const { orgId, can } = useOrg();
+  const { t } = useTranslation();
   const request = useApi();
   const writable = can('roles:write');
   const [roles, setRoles] = useState<Role[]>([]);
@@ -139,7 +141,7 @@ export default function RolesPage() {
       });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo eliminar');
+      setError(err instanceof Error ? err.message : t('roles.deleteError'));
     } finally {
       setEliminando(false);
       setPorConfirmar(null);
@@ -148,7 +150,7 @@ export default function RolesPage() {
 
   return (
     <section className="panel">
-      <h1>Roles y permisos</h1>
+      <h1>{t('roles.title')}</h1>
       <p className="muted">
         La matriz es del sistema: un cambio aplica a todas las organizaciones. Cuando se agreguen
         módulos (donaciones, envíos) aparecerán filas nuevas.
@@ -160,12 +162,12 @@ export default function RolesPage() {
         </p>
       ) : null}
       <div className="table-wrap">
-        {cargando ? <SkeletonList filas={5} etiqueta="Cargando la matriz de permisos…" /> : null}
+        {cargando ? <SkeletonList filas={5} etiqueta={t('common.loading')} /> : null}
 
         <table className="matrix" hidden={cargando}>
           <thead>
             <tr>
-              <th>Permiso</th>
+              <th>{t('roles.permission')}</th>
               {roles.map((role) => (
                 <th key={role.id}>
                   {writable ? (
@@ -264,7 +266,7 @@ export default function RolesPage() {
                           />
                         </label>
                       ) : on ? (
-                        'Sí'
+                        t('roles.yes')
                       ) : (
                         '—'
                       )}
@@ -294,8 +296,8 @@ export default function RolesPage() {
       ) : null}
       <ConfirmDialog
         abierto={porConfirmar !== null}
-        titulo={`Eliminar el rol «${porConfirmar?.nombre ?? ''}»`}
-        descripcion="Quien lo tenga asignado se queda sin permisos hasta que se le asigne otro rol."
+        titulo={t('confirm.deleteRoleTitle', { name: porConfirmar?.nombre ?? '' })}
+        descripcion={t('confirm.deleteRoleDescription')}
         ocupado={eliminando}
         onConfirmar={() => porConfirmar && void onDelete(porConfirmar)}
         onCancelar={() => setPorConfirmar(null)}

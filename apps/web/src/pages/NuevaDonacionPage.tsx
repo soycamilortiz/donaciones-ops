@@ -1,6 +1,7 @@
 import type { Acopio } from '@soschoco/shared';
 import { DonacionImagenEstado } from '@soschoco/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
@@ -33,6 +34,7 @@ export default function NuevaDonacionPage() {
   const navigate = useNavigate();
   const request = useApi();
   const { orgId, can } = useOrg();
+  const { t } = useTranslation();
 
   const [fase, setFase] = useState<Fase>('inicio');
   const [error, setError] = useState<string | null>(null);
@@ -88,11 +90,11 @@ export default function NuevaDonacionPage() {
         setImagenId(creada.id);
         setFase('reconociendo');
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'No se pudo subir la foto');
+        setError(err instanceof Error ? err.message : t('newDonation.uploadError'));
         setFase('error');
       }
     },
-    [request, orgId, acopioId],
+    [request, orgId, acopioId, t],
   );
 
   const reiniciar = () => {
@@ -106,25 +108,21 @@ export default function NuevaDonacionPage() {
   };
 
   if (!can('donaciones:write')) {
-    return (
-      <p className="py-8 text-sm text-muted-foreground">
-        No tienes permiso para registrar donaciones.
-      </p>
-    );
+    return <p className="py-8 text-sm text-muted-foreground">{t('newDonation.noPermission')}</p>;
   }
 
   return (
     <div className="space-y-6 py-2">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">Registrar producto donado</h1>
-        <p className="text-sm text-muted-foreground">
-          Toma una foto del producto. El reconocimiento corre en segundo plano.
-        </p>
+        <h1 className="text-2xl font-semibold text-foreground">{t('newDonation.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('newDonation.subtitle')}</p>
       </div>
 
       {acopios.length > 0 ? (
         <label className="block space-y-1">
-          <span className="text-sm font-medium text-foreground">¿En qué acopio se recibió?</span>
+          <span className="text-sm font-medium text-foreground">
+            {t('newDonation.acopioLabel')}
+          </span>
           <select
             className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             value={acopioId}
@@ -133,7 +131,7 @@ export default function NuevaDonacionPage() {
               recordarAcopio(orgId, event.target.value);
             }}
           >
-            <option value="">Sin especificar</option>
+            <option value="">{t('common.unspecified')}</option>
             {acopios.map((acopio) => (
               <option key={acopio.id} value={acopio.id}>
                 {acopio.nombre}
@@ -153,7 +151,7 @@ export default function NuevaDonacionPage() {
         capture="environment"
         className="sr-only"
         id="foto-producto"
-        aria-label="Tomar foto del producto donado"
+        aria-label={t('newDonation.cameraLabel')}
         onChange={(event) => void onArchivo(event.target.files?.[0])}
       />
 
@@ -163,36 +161,32 @@ export default function NuevaDonacionPage() {
         // instante en que el usuario esta mirando.
         <img
           src={vistaPrevia}
-          alt="Foto tomada del producto"
+          alt={t('newDonation.photoAlt')}
           className="aspect-[4/3] max-h-72 w-full rounded-lg bg-muted object-contain"
         />
       ) : null}
 
       {fase === 'inicio' ? (
-        <Button onClick={() => entradaRef.current?.click()}>Tomar foto</Button>
+        <Button onClick={() => entradaRef.current?.click()}>{t('newDonation.takePhoto')}</Button>
       ) : null}
 
       {fase === 'subiendo' ? (
         <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner /> Subiendo la foto…
+          <Spinner /> {t('newDonation.uploading')}
         </p>
       ) : null}
 
       {fase === 'reconociendo' ? (
         <div className="space-y-2">
           <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Spinner /> Reconociendo el producto…
+            <Spinner /> {t('newDonation.recognizing')}
           </p>
-          <p className="text-xs text-muted-foreground">
-            Puedes salir de esta pantalla: el proceso sigue y el resultado queda en la lista.
-          </p>
+          <p className="text-xs text-muted-foreground">{t('newDonation.canLeave')}</p>
         </div>
       ) : null}
 
       {expirado ? (
-        <p className="text-sm text-muted-foreground">
-          Está tardando más de lo normal. El resultado va a aparecer en la lista de donaciones.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('newDonation.takingLong')}</p>
       ) : null}
 
       {fase === 'listo' && imagen ? <Resultado imagen={imagen} /> : null}
@@ -205,7 +199,7 @@ export default function NuevaDonacionPage() {
 
       {fase === 'listo' || fase === 'error' ? (
         <div className="flex flex-wrap gap-3">
-          <Button onClick={reiniciar}>Registrar otro</Button>
+          <Button onClick={reiniciar}>{t('newDonation.registerAnother')}</Button>
           <Button variant="outline" onClick={() => navigate(ROUTES.donaciones)}>
             Ver donaciones
           </Button>
@@ -220,13 +214,13 @@ function Resultado({
 }: {
   imagen: { estado: string; producto?: { nombre: string } | null };
 }) {
+  const { t } = useTranslation();
+
   if (imagen.estado === DonacionImagenEstado.Fallida) {
     return (
       <div className="space-y-1">
-        <Badge variant="error">No se pudo procesar</Badge>
-        <p className="text-sm text-muted-foreground">
-          La foto quedó guardada. Puedes reintentarla desde la lista de donaciones.
-        </p>
+        <Badge variant="error">{t('newDonation.result.failed')}</Badge>
+        <p className="text-sm text-muted-foreground">{t('newDonation.result.failedHint')}</p>
       </div>
     );
   }
@@ -234,18 +228,15 @@ function Resultado({
   if (!imagen.producto) {
     return (
       <div className="space-y-1">
-        <Badge variant="warning">Sin identificar</Badge>
-        <p className="text-sm text-muted-foreground">
-          No se reconoció el producto con suficiente certeza. Queda pendiente de revisión para que
-          alguien lo confirme a mano.
-        </p>
+        <Badge variant="warning">{t('newDonation.result.unidentified')}</Badge>
+        <p className="text-sm text-muted-foreground">{t('newDonation.result.unidentifiedHint')}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-1">
-      <Badge variant="success">Reconocido</Badge>
+      <Badge variant="success">{t('newDonation.result.recognized')}</Badge>
       <p className="text-lg font-medium text-foreground">{imagen.producto.nombre}</p>
     </div>
   );

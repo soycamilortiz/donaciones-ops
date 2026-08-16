@@ -112,5 +112,38 @@
     "updateAvailable": "A new version is available.",
     "offlineReady": "The app now works offline.",
     "update": "Update"
+  },
+  "acopios": {
+    "title": "Collection centres",
+    "subtitle": "Warehouses are registered here: whether they receive donations, send them out, or both. They are not created when setting up the organisation.",
+    "empty": "No collection centres yet. Create the first one with the form below.",
+    "inactive": "Inactive",
+    "deleteError": "Could not delete"
+  },
+  "users": {
+    "title": "Users",
+    "inviteEmail": "Email of the person to invite",
+    "inviteRole": "Role they will have",
+    "add": "Add",
+    "reactivate": "Reactivate",
+    "removeError": "Could not remove"
+  },
+  "roles": {
+    "title": "Roles and permissions",
+    "subtitle": "The matrix is system-wide: a change applies to every organisation. New rows appear as modules are added (donations, shipments).",
+    "permission": "Permission",
+    "deleteError": "Could not delete",
+    "yes": "Yes"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "userOrEmail": "Username or email",
+    "password": "Password",
+    "captchaImage": "Another captcha",
+    "captchaText": "Captcha text",
+    "noAccount": "No account yet?",
+    "captchaLoading": "Loading captcha…",
+    "captchaError": "Could not load the captcha"
   }
 }
