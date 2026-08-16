@@ -106,4 +106,17 @@ export class R2StorageService {
     if (esUrlPublicaUsable(blobUrlGuardada)) return blobUrlGuardada as string;
     return this.presignGet(pathname);
   }
+
+  async getObjectBytes(key: string): Promise<{ bytes: Buffer; contentType: string }> {
+    if (!this.client) {
+      throw new Error(`R2 no configurado (${this.missingConfig().join(', ')})`);
+    }
+    const out = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    const body = out.Body;
+    if (!body) {
+      throw new Error(`R2: objeto vacío (${key})`);
+    }
+    const bytes = Buffer.from(await body.transformToByteArray());
+    return { bytes, contentType: out.ContentType || 'image/jpeg' };
+  }
 }

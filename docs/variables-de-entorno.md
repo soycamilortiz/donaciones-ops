@@ -27,6 +27,8 @@ servicios con dirección pública.
 | `CORS_ORIGIN` | ✅ | — | — | — |
 | `BLOB_READ_WRITE_TOKEN` | — (obsoleto) | — | — | — |
 | `R2_*` | ✅ | ✅ | — | — |
+| `OPEN_FOOD_FACTS_*` | ✅ | — | — | — |
+| `VISION_*` | ✅ | — | — | — |
 | `JOBS_USER` / `JOBS_PASSWORD` | — | — | ✅ | — |
 | `OCR_*` | — | ✅ | — | — |
 | `RBAC_SYNC_ON_BOOT` / `SWAGGER_ENABLED` | ✅ | — | — | — |
@@ -107,6 +109,15 @@ serverless quien escucha es el runtime.
 | `R2_BUCKET` | `sos-choco` | |
 | `R2_ENDPOINT` | `https://<accountid>.r2.cloudflarestorage.com` | |
 | `R2_PUBLIC_BASE_URL` | custom domain o `https://pub-….r2.dev` | |
+| `OPEN_FOOD_FACTS_ENABLED` | `true` | |
+| `OPEN_FOOD_FACTS_BASE_URL` | `https://world.openfoodfacts.org` | |
+| `OPEN_FOOD_FACTS_USER_AGENT` | `SOSChoco/1.0 (correo de contacto)` | |
+| `OPEN_FOOD_FACTS_TIMEOUT_MS` | `8000` | |
+| `VISION_PROVIDER` | `openai` (adapter) | |
+| `VISION_API_KEY` | clave del proveedor | ✅ |
+| `VISION_BASE_URL` | `https://api.openai.com/v1` | |
+| `VISION_MODEL` | `gpt-4o-mini` | |
+| `VISION_TIMEOUT_MS` | `45000` | |
 | `RBAC_SYNC_ON_BOOT` | `false` | |
 | `SWAGGER_ENABLED` | `false` | |
 

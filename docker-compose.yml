@@ -71,6 +71,15 @@ services:
       R2_BUCKET: ${R2_BUCKET:-sos-choco}
       R2_ENDPOINT: ${R2_ENDPOINT:-}
       R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
+      OPEN_FOOD_FACTS_ENABLED: ${OPEN_FOOD_FACTS_ENABLED:-true}
+      OPEN_FOOD_FACTS_BASE_URL: ${OPEN_FOOD_FACTS_BASE_URL:-https://world.openfoodfacts.org}
+      OPEN_FOOD_FACTS_USER_AGENT: ${OPEN_FOOD_FACTS_USER_AGENT:-SOSChoco/1.0 (contacto@soschoco.local)}
+      OPEN_FOOD_FACTS_TIMEOUT_MS: ${OPEN_FOOD_FACTS_TIMEOUT_MS:-8000}
+      VISION_PROVIDER: ${VISION_PROVIDER:-openai}
+      VISION_API_KEY: ${VISION_API_KEY:-}
+      VISION_BASE_URL: ${VISION_BASE_URL:-https://api.openai.com/v1}
+      VISION_MODEL: ${VISION_MODEL:-gpt-4o-mini}
+      VISION_TIMEOUT_MS: ${VISION_TIMEOUT_MS:-45000}
     depends_on:
       postgres:
         condition: service_healthy

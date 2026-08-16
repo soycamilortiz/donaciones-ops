@@ -7,6 +7,7 @@ import type {
   InventoryItemDto,
   UpdateInventoryItemDto,
 } from './dto/inventory.dto';
+import { UMBRAL_MISMO_PRODUCTO, similitudNombres } from './nombre-producto';
 
 @Injectable()
 export class InventoryService {
@@ -19,25 +20,35 @@ export class InventoryService {
   async aplicarDonacionConfirmada(
     orgId: string,
     acopioId: string,
-    entrada: { nombre: string; cantidad: number; marca?: string | null },
+    entrada: {
+      nombre: string;
+      cantidad: number;
+      marca?: string | null;
+      inventoryItemId?: string | null;
+    },
   ): Promise<InventoryItemDto> {
     const acopio = await this.requireAcopio(orgId, acopioId);
     if (!acopio.isActive) {
       throw new BadRequestException('No se puede cargar inventario en un acopio dado de baja');
     }
 
-    const nombre = entrada.nombre.trim();
-    const existente = await this.prisma.inventoryItem.findFirst({
-      where: {
-        acopioId,
-        isActive: true,
-        nombre: { equals: nombre, mode: 'insensitive' },
-      },
-    });
-
-    if (existente) {
+    if (entrada.inventoryItemId) {
+      const pin = await this.requireItem(orgId, acopioId, entrada.inventoryItemId);
+      if (!pin.isActive) {
+        throw new BadRequestException('Ese ítem de inventario está dado de baja');
+      }
       const row = await this.prisma.inventoryItem.update({
-        where: { id: existente.id },
+        where: { id: pin.id },
+        data: { cantidad: { increment: entrada.cantidad } },
+      });
+      return this.toDto(row);
+    }
+
+    const nombre = entrada.nombre.trim();
+    const match = await this.mejorCoincidencia(acopioId, nombre, entrada.marca);
+    if (match && match.score >= UMBRAL_MISMO_PRODUCTO) {
+      const row = await this.prisma.inventoryItem.update({
+        where: { id: match.id },
         data: { cantidad: { increment: entrada.cantidad } },
       });
       return this.toDto(row);
@@ -50,6 +61,45 @@ export class InventoryService {
       categoria: inferirCategoria(nombre),
       unidad: inferirUnidad(nombre),
     });
+  }
+
+  async coincidencias(
+    orgId: string,
+    acopioId: string,
+    nombre: string,
+    marca?: string | null,
+  ): Promise<Array<{ id: string; nombre: string; marca: string | null; cantidad: number; score: number }>> {
+    await this.requireAcopio(orgId, acopioId);
+    const filas = await this.prisma.inventoryItem.findMany({
+      where: { acopioId, isActive: true },
+      select: { id: true, nombre: true, marca: true, cantidad: true },
+    });
+    return filas
+      .map((row) => ({
+        id: row.id,
+        nombre: row.nombre,
+        marca: row.marca,
+        cantidad: Number(row.cantidad),
+        score: scoreFila(nombre, marca, row.nombre, row.marca),
+      }))
+      .filter((row) => row.score >= 0.55)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+  }
+
+  private async mejorCoincidencia(acopioId: string, nombre: string, marca?: string | null) {
+    const filas = await this.prisma.inventoryItem.findMany({
+      where: { acopioId, isActive: true },
+      select: { id: true, nombre: true, marca: true },
+    });
+    let best: { id: string; score: number } | null = null;
+    for (const row of filas) {
+      const score = scoreFila(nombre, marca, row.nombre, row.marca);
+      if (!best || score > best.score) {
+        best = { id: row.id, score };
+      }
+    }
+    return best;
   }
 
   async list(orgId: string, acopioId: string): Promise<InventoryItemDto[]> {
@@ -200,4 +250,17 @@ function inferirUnidad(nombre: string): InventoryUnidad {
   if (/\bpack|paquete|x\d/.test(n)) return InventoryUnidad.PAQUETE;
   if (/\blitro|\bl\b/.test(n)) return InventoryUnidad.LITRO;
   return InventoryUnidad.UNIDAD;
+}
+
+function scoreFila(
+  nombre: string,
+  marca: string | null | undefined,
+  nombreFila: string,
+  marcaFila: string | null,
+): number {
+  let score = similitudNombres(nombre, nombreFila);
+  if (marca && marcaFila && similitudNombres(marca, marcaFila) >= 0.85) {
+    score = Math.min(1, score + 0.08);
+  }
+  return score;
 }

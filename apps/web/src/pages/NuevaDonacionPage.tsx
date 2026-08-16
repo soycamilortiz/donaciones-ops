@@ -1,5 +1,4 @@
-import type { Acopio, DonacionImagen } from '@soschoco/shared';
-import { DonacionImagenEstado } from '@soschoco/shared';
+import type { Acopio, InterpretacionDonacion } from '@soschoco/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -8,28 +7,18 @@ import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import { useOrg } from '@/components/OrgGate';
-import { confirmarDonacion, subirFoto } from '@/features/donaciones/donaciones-service';
-import { useReconocimiento } from '@/features/donaciones/useReconocimiento';
+import { leerAcopioRecordado, recordarAcopio } from '@/features/donaciones/acopio-recordado';
+import {
+  confirmarDonacion,
+  interpretarImagen,
+  subirFoto,
+} from '@/features/donaciones/donaciones-service';
+import { leerEanDeFoto } from '@/features/donaciones/leer-ean';
 import { readStoredToken } from '@/lib/api';
 import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
 
 type Fase = 'inicio' | 'subiendo' | 'reconociendo' | 'listo' | 'error';
-
-const CLAVE_ACOPIO = 'soschoco.ultimoAcopio';
-
-/** El acopio se recuerda por organización: cambiar de org no debe arrastrarlo. */
-function leerAcopioRecordado(orgId: string): string {
-  return localStorage.getItem(`${CLAVE_ACOPIO}.${orgId}`) ?? '';
-}
-
-function recordarAcopio(orgId: string, acopioId: string): void {
-  if (acopioId) {
-    localStorage.setItem(`${CLAVE_ACOPIO}.${orgId}`, acopioId);
-  } else {
-    localStorage.removeItem(`${CLAVE_ACOPIO}.${orgId}`);
-  }
-}
 
 export default function NuevaDonacionPage() {
   const navigate = useNavigate();
@@ -42,24 +31,16 @@ export default function NuevaDonacionPage() {
   const [imagenId, setImagenId] = useState<string | null>(null);
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
   const [acopios, setAcopios] = useState<Acopio[]>([]);
-  // Quien registra en campo sube muchas fotos seguidas en el mismo acopio;
-  // volver a elegirlo cada vez es friccion pura, asi que se recuerda.
   const [acopioId, setAcopioId] = useState<string>(() => leerAcopioRecordado(orgId));
+  const [lectura, setLectura] = useState<InterpretacionDonacion | null>(null);
   const entradaRef = useRef<HTMLInputElement>(null);
-
-  const { imagen, enCurso, expirado } = useReconocimiento(request, orgId, imagenId);
 
   useEffect(() => {
     void request<Acopio[]>(`/api/v1/organizations/${orgId}/acopios`)
       .then(setAcopios)
-      .catch(() => {
-        // Que falle el listado no debe impedir registrar la foto: el acopio se
-        // puede completar despues desde la revision.
-        setAcopios([]);
-      });
+      .catch(() => setAcopios([]));
   }, [request, orgId]);
 
-  // La vista previa es un object URL; hay que soltarlo o se filtra memoria.
   useEffect(() => {
     return () => {
       if (vistaPrevia) {
@@ -68,18 +49,13 @@ export default function NuevaDonacionPage() {
     };
   }, [vistaPrevia]);
 
-  useEffect(() => {
-    if (imagen && !enCurso) {
-      setFase('listo');
-    }
-  }, [imagen, enCurso]);
-
   const onArchivo = useCallback(
     async (archivo: File | undefined) => {
       if (!archivo) {
         return;
       }
       setError(null);
+      setLectura(null);
       setVistaPrevia(URL.createObjectURL(archivo));
       setFase('subiendo');
 
@@ -90,6 +66,13 @@ export default function NuevaDonacionPage() {
         });
         setImagenId(creada.id);
         setFase('reconociendo');
+        const ean = await leerEanDeFoto(archivo);
+        const r = await interpretarImagen(request, orgId, creada.id, {
+          ean: ean ?? undefined,
+          acopioId: acopioId || undefined,
+        });
+        setLectura(r);
+        setFase('listo');
       } catch (err) {
         setError(err instanceof Error ? err.message : t('newDonation.uploadError'));
         setFase('error');
@@ -103,6 +86,7 @@ export default function NuevaDonacionPage() {
     setImagenId(null);
     setError(null);
     setVistaPrevia(null);
+    setLectura(null);
     if (entradaRef.current) {
       entradaRef.current.value = '';
     }
@@ -121,9 +105,7 @@ export default function NuevaDonacionPage() {
 
       {acopios.length > 0 ? (
         <label className="block space-y-1">
-          <span className="text-sm font-medium text-foreground">
-            {t('newDonation.acopioLabel')}
-          </span>
+          <span className="text-sm font-medium text-foreground">{t('newDonation.acopioLabel')}</span>
           <select
             className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             value={acopioId}
@@ -143,8 +125,6 @@ export default function NuevaDonacionPage() {
         </label>
       ) : null}
 
-      {/* `capture="environment"` abre la cámara trasera en móvil; en escritorio
-          degrada a un selector de archivos, que es lo deseable. */}
       <input
         ref={entradaRef}
         type="file"
@@ -157,9 +137,6 @@ export default function NuevaDonacionPage() {
       />
 
       {vistaPrevia ? (
-        // `aspect-[4/3]` reserva el hueco antes de que la imagen cargue. Sin esto
-        // el contenido de abajo salta al aparecer la foto, que es justo el
-        // instante en que el usuario esta mirando.
         <img
           src={vistaPrevia}
           alt={t('newDonation.photoAlt')}
@@ -171,27 +148,21 @@ export default function NuevaDonacionPage() {
         <Button onClick={() => entradaRef.current?.click()}>{t('newDonation.takePhoto')}</Button>
       ) : null}
 
-      {fase === 'subiendo' ? (
+      {fase === 'subiendo' || fase === 'reconociendo' ? (
         <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner /> {t('newDonation.uploading')}
+          <Spinner />{' '}
+          {fase === 'subiendo' ? t('newDonation.uploading') : t('newDonation.recognizing')}
         </p>
       ) : null}
 
-      {fase === 'reconociendo' ? (
-        <div className="space-y-2">
-          <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Spinner /> {t('newDonation.recognizing')}
-          </p>
-          <p className="text-xs text-muted-foreground">{t('newDonation.canLeave')}</p>
-        </div>
-      ) : null}
-
-      {expirado ? (
-        <p className="text-sm text-muted-foreground">{t('newDonation.takingLong')}</p>
-      ) : null}
-
-      {fase === 'listo' && imagen ? (
-        <Resultado imagen={imagen} orgId={orgId} acopioId={acopioId} request={request} />
+      {fase === 'listo' && imagenId ? (
+        <Resultado
+          imagenId={imagenId}
+          orgId={orgId}
+          acopioId={acopioId}
+          lectura={lectura}
+          request={request}
+        />
       ) : null}
 
       {error ? (
@@ -204,7 +175,7 @@ export default function NuevaDonacionPage() {
         <div className="flex flex-wrap gap-3">
           <Button onClick={reiniciar}>{t('newDonation.registerAnother')}</Button>
           <Button variant="outline" onClick={() => navigate(ROUTES.donaciones)}>
-            Ver donaciones
+            {t('newDonation.viewDonations')}
           </Button>
         </div>
       ) : null}
@@ -213,42 +184,33 @@ export default function NuevaDonacionPage() {
 }
 
 function Resultado({
-  imagen,
+  imagenId,
   orgId,
   acopioId,
+  lectura,
   request,
 }: {
-  imagen: DonacionImagen;
+  imagenId: string;
   orgId: string;
   acopioId: string;
+  lectura: InterpretacionDonacion | null;
   request: <T>(path: string, init?: RequestInit) => Promise<T>;
 }) {
   const { t } = useTranslation();
-  const [nombre, setNombre] = useState(
-    imagen.nombreDetectado || imagen.producto?.nombre || imagen.textoOcr?.split('\n')[0] || '',
-  );
-  const [cantidad, setCantidad] = useState(String(imagen.cantidadDetectada ?? 1));
+  const mejor = lectura?.coincidencias[0];
+  const [nombre, setNombre] = useState(lectura?.nombre ?? '');
+  const [marca, setMarca] = useState(lectura?.marca ?? '');
+  const [cantidad, setCantidad] = useState(String(lectura?.cantidad ?? 1));
+  const [inventoryItemId, setInventoryItemId] = useState(mejor && mejor.score >= 0.82 ? mejor.id : '');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmada, setConfirmada] = useState(Boolean(imagen.confirmadaEn));
-
-  if (imagen.estado === DonacionImagenEstado.Fallida) {
-    return (
-      <div className="space-y-1">
-        <Badge variant="error">{t('newDonation.result.failed')}</Badge>
-        <p className="text-sm text-muted-foreground">{t('newDonation.result.failedHint')}</p>
-      </div>
-    );
-  }
+  const [confirmada, setConfirmada] = useState(false);
 
   if (confirmada) {
     return (
       <div className="space-y-1">
         <Badge variant="success">{t('newDonation.result.confirmed')}</Badge>
         <p className="text-lg font-medium text-foreground">{nombre}</p>
-        <p className="text-sm text-muted-foreground">
-          {t('newDonation.quantity')}: {cantidad}
-        </p>
       </div>
     );
   }
@@ -266,10 +228,12 @@ function Resultado({
     setGuardando(true);
     setError(null);
     try {
-      await confirmarDonacion(request, orgId, imagen.id, {
+      await confirmarDonacion(request, orgId, imagenId, {
         nombre: nombre.trim(),
         cantidad: qty,
         acopioId,
+        marca: marca.trim() || undefined,
+        inventoryItemId: inventoryItemId || undefined,
       });
       setConfirmada(true);
     } catch (err) {
@@ -283,24 +247,50 @@ function Resultado({
     <div className="space-y-4">
       <div className="space-y-1">
         <Badge variant="warning">{t('newDonation.result.needsConfirm')}</Badge>
-        <p className="text-sm text-muted-foreground">{t('newDonation.result.needsConfirmHint')}</p>
+        <p className="text-sm text-muted-foreground">
+          {t(`newDonation.via.${lectura?.via ?? 'manual'}`)}
+        </p>
       </div>
-      {imagen.textoOcr ? (
-        <p className="text-xs text-muted-foreground whitespace-pre-wrap">{imagen.textoOcr}</p>
+      {lectura?.coincidencias.length ? (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-foreground">{t('newDonation.mergeHint')}</legend>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="merge"
+              checked={!inventoryItemId}
+              onChange={() => setInventoryItemId('')}
+            />
+            {t('newDonation.mergeNew')}
+          </label>
+          {lectura.coincidencias.map((c) => (
+            <label key={c.id} className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="merge"
+                checked={inventoryItemId === c.id}
+                onChange={() => {
+                  setInventoryItemId(c.id);
+                  setNombre(c.nombre);
+                  setMarca(c.marca ?? '');
+                }}
+              />
+              {t('newDonation.mergeExisting', { name: c.nombre, qty: c.cantidad })}
+            </label>
+          ))}
+        </fieldset>
       ) : null}
       <label className="block space-y-1">
         <span className="text-sm font-medium text-foreground">{t('newDonation.productName')}</span>
         <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
       </label>
       <label className="block space-y-1">
+        <span className="text-sm font-medium text-foreground">{t('newDonation.brand')}</span>
+        <Input value={marca} onChange={(e) => setMarca(e.target.value)} />
+      </label>
+      <label className="block space-y-1">
         <span className="text-sm font-medium text-foreground">{t('newDonation.quantity')}</span>
-        <Input
-          type="number"
-          min={1}
-          step={1}
-          value={cantidad}
-          onChange={(e) => setCantidad(e.target.value)}
-        />
+        <Input type="number" min={1} step={1} value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
       </label>
       {error ? (
         <p role="alert" className="text-sm text-error">

@@ -17,7 +17,14 @@ import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
-import type { ConfirmarDonacionDto, RegistrarImagenDto } from './dto/donacion.dto';
+import type {
+  ConfirmarDonacionDto,
+  InterpretarImagenDto,
+  RegistrarEntradaDto,
+  RegistrarImagenDto,
+} from './dto/donacion.dto';
+import { OpenFoodFactsService } from './open-food-facts.service';
+import { VisionProductoService } from './vision-producto.service';
 
 export type OpcionesListado = {
   estado?: string;
@@ -40,6 +47,8 @@ export class DonacionesService {
     private readonly cola: ColaService,
     private readonly r2: R2StorageService,
     private readonly inventario: InventoryService,
+    private readonly off: OpenFoodFactsService,
+    private readonly vision: VisionProductoService,
   ) {}
 
   /**
@@ -113,7 +122,8 @@ export class DonacionesService {
       include: IMAGEN_CON_PRODUCTO,
     });
 
-    await this.cola.encolarReconocimiento(imagen.id);
+    // El reconocimiento lo dispara la PWA: EAN y, si no, visión. Tesseract
+    // queda para reprocesar fotos viejas.
     return this.conUrlVisible(imagen);
   }
 
@@ -221,6 +231,7 @@ export class DonacionesService {
       nombre: dto.nombre,
       cantidad: dto.cantidad,
       marca: dto.marca,
+      inventoryItemId: dto.inventoryItemId,
     });
 
     await this.prisma.donacionImagen.update({
@@ -241,6 +252,188 @@ export class DonacionesService {
 
   listarProductos() {
     return this.prisma.producto.findMany({ orderBy: { nombre: 'asc' } });
+  }
+
+  /**
+   * 1) catálogo local (`productos.ean`) 2) Open Food Facts 3) vacío para llenar a mano.
+   */
+  async consultarEan(codigo: string) {
+    const ean = normalizarEan(codigo);
+    const local = await this.prisma.producto.findFirst({
+      where: { ean: { in: variantesEan(ean) } },
+    });
+    if (local) {
+      return {
+        fuente: 'local' as const,
+        ean: local.ean ?? ean,
+        nombre: local.nombre,
+        marca: local.marca,
+        imagenUrl: null,
+        productoId: local.id,
+      };
+    }
+
+    const externo = await this.off.buscarPorEan(ean);
+    if (externo) {
+      const guardado = await this.guardarProductoDesdeOff(externo);
+      return {
+        fuente: 'openfoodfacts' as const,
+        ean: externo.ean,
+        nombre: externo.nombre,
+        marca: externo.marca,
+        imagenUrl: externo.imagenUrl,
+        productoId: guardado?.id ?? null,
+      };
+    }
+
+    return {
+      fuente: 'ninguna' as const,
+      ean,
+      nombre: null,
+      marca: null,
+      imagenUrl: null,
+      productoId: null,
+    };
+  }
+
+  /**
+   * 1) EAN leído en la PWA → catálogo/OFF. 2) Si no, visión. 3) Candidatos
+   * del inventario del acopio para no duplicar “Agua Brisa”.
+   */
+  async interpretarImagen(organizationId: string, id: string, dto: InterpretarImagenDto) {
+    const imagen = await this.prisma.donacionImagen.findFirst({
+      where: { id, organizationId },
+    });
+    if (!imagen) {
+      throw new NotFoundException('Imagen no encontrada');
+    }
+
+    let via: 'ean' | 'vision' | 'manual' = 'manual';
+    let nombre: string | null = null;
+    let marca: string | null = null;
+    let cantidad: number | null = 1;
+    let ean: string | null = dto.ean ? normalizarEan(dto.ean) : null;
+    let fuenteEan: 'local' | 'openfoodfacts' | 'ninguna' | null = null;
+
+    if (ean) {
+      const catalogo = await this.consultarEan(ean);
+      fuenteEan = catalogo.fuente;
+      ean = catalogo.ean;
+      nombre = catalogo.nombre;
+      marca = catalogo.marca;
+      via = catalogo.nombre ? 'ean' : 'manual';
+    } else {
+      try {
+        const objeto = await this.r2.getObjectBytes(imagen.blobPathname);
+        const lectura = await this.vision.leerImagen(objeto.bytes, objeto.contentType);
+        if (lectura?.ean) {
+          const catalogo = await this.consultarEan(lectura.ean);
+          fuenteEan = catalogo.fuente;
+          ean = catalogo.ean;
+          nombre = catalogo.nombre ?? lectura.nombre;
+          marca = catalogo.marca ?? lectura.marca;
+          cantidad = lectura.cantidad;
+          via = catalogo.nombre ? 'ean' : lectura.nombre ? 'vision' : 'manual';
+        } else if (lectura?.nombre) {
+          via = 'vision';
+          nombre = lectura.nombre;
+          marca = lectura.marca;
+          cantidad = lectura.cantidad;
+        }
+      } catch {
+        via = 'manual';
+      }
+    }
+
+    const acopioId = dto.acopioId ?? imagen.acopioId;
+    const coincidencias =
+      acopioId && nombre
+        ? await this.inventario.coincidencias(organizationId, acopioId, nombre, marca)
+        : [];
+
+    await this.prisma.donacionImagen.update({
+      where: { id },
+      data: {
+        nombreDetectado: nombre,
+        cantidadDetectada: cantidad,
+        estado: DonacionImagenEstado.Procesada,
+        error: null,
+        procesadaEn: new Date(),
+      },
+    });
+
+    return {
+      via,
+      fuenteEan,
+      ean,
+      nombre,
+      marca,
+      cantidad,
+      coincidencias,
+    };
+  }
+
+  /**
+   * Alta sin foto (manual o código de barras). No encola Tesseract.
+   */
+  async registrarEntrada(organizationId: string, dto: RegistrarEntradaDto) {
+    await this.verificarAcopio(organizationId, dto.acopioId);
+    const ean = dto.ean ? normalizarEan(dto.ean) : null;
+    const item = await this.inventario.aplicarDonacionConfirmada(organizationId, dto.acopioId, {
+      nombre: dto.nombre,
+      cantidad: dto.cantidad,
+      marca: dto.marca,
+    });
+
+    if (ean) {
+      const ya = await this.prisma.producto.findFirst({
+        where: { ean: { in: variantesEan(ean) } },
+      });
+      if (!ya) {
+        await this.prisma.producto.create({
+          data: {
+            nombre: dto.nombre.trim(),
+            marca: dto.marca?.trim() || null,
+            ean,
+            alias: [],
+          },
+        }).catch(() => undefined);
+      }
+    }
+
+    return {
+      inventoryItemId: item.id,
+      nombre: dto.nombre.trim(),
+      cantidad: dto.cantidad,
+      ean,
+    };
+  }
+
+  private async guardarProductoDesdeOff(externo: {
+    ean: string;
+    nombre: string;
+    marca: string | null;
+  }) {
+    const existente = await this.prisma.producto.findFirst({
+      where: { ean: { in: variantesEan(externo.ean) } },
+    });
+    if (existente) {
+      return existente;
+    }
+    try {
+      return await this.prisma.producto.create({
+        data: {
+          nombre: externo.nombre,
+          marca: externo.marca,
+          ean: externo.ean,
+          alias: [],
+        },
+      });
+    } catch {
+      return this.prisma.producto.findFirst({
+        where: { ean: { in: variantesEan(externo.ean) } },
+      });
+    }
   }
 
   private async conUrlVisible<
@@ -277,4 +470,23 @@ function extensionDe(nombre: string): string {
   }
   const extension = nombre.slice(punto).toLowerCase();
   return /^\.[a-z0-9]{1,5}$/.test(extension) ? extension : '';
+}
+
+export function normalizarEan(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length < 8 || digits.length > 14) {
+    throw new BadRequestException('El código de barras debe tener entre 8 y 14 dígitos');
+  }
+  return digits;
+}
+
+export function variantesEan(ean: string): string[] {
+  const set = new Set<string>([ean]);
+  if (ean.length === 12) {
+    set.add(`0${ean}`);
+  }
+  if (ean.length === 13 && ean.startsWith('0')) {
+    set.add(ean.slice(1));
+  }
+  return [...set];
 }

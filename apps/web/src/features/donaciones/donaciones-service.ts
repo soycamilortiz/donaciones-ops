@@ -1,5 +1,8 @@
 import {
+  type ConsultaEan,
   type DonacionImagen,
+  type EntradaDonacion,
+  type InterpretacionDonacion,
   normalizarTipoImagen,
   type Pagina,
   type Producto,
@@ -10,7 +13,8 @@ import {
  * Cliente del módulo de donaciones.
  *
  * El archivo no pasa por el API: se pide una URL firmada de R2, se hace PUT
- * al bucket y recién entonces se registra la imagen (eso encola el OCR).
+ * al bucket y recién entonces se registra la imagen. El reconocimiento
+ * (EAN o visión) lo pide la PWA con POST .../interpretar.
  */
 
 export type Peticion = <T>(path: string, init?: RequestInit) => Promise<T>;
@@ -54,11 +58,29 @@ export function corregirProducto(
   });
 }
 
+export function interpretarImagen(
+  request: Peticion,
+  orgId: string,
+  id: string,
+  body: { ean?: string; acopioId?: string } = {},
+): Promise<InterpretacionDonacion> {
+  return request<InterpretacionDonacion>(`${base(orgId)}/${id}/interpretar`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 export function confirmarDonacion(
   request: Peticion,
   orgId: string,
   id: string,
-  body: { nombre: string; cantidad: number; acopioId?: string; marca?: string },
+  body: {
+    nombre: string;
+    cantidad: number;
+    acopioId?: string;
+    marca?: string;
+    inventoryItemId?: string;
+  },
 ): Promise<DonacionImagen> {
   return request<DonacionImagen>(`${base(orgId)}/${id}/confirmar`, {
     method: 'POST',
@@ -68,6 +90,21 @@ export function confirmarDonacion(
 
 export function reprocesar(request: Peticion, orgId: string, id: string): Promise<DonacionImagen> {
   return request<DonacionImagen>(`${base(orgId)}/${id}/reprocesar`, { method: 'POST' });
+}
+
+export function consultarEan(request: Peticion, orgId: string, codigo: string): Promise<ConsultaEan> {
+  return request<ConsultaEan>(`${base(orgId)}/ean/${encodeURIComponent(codigo)}`);
+}
+
+export function registrarEntrada(
+  request: Peticion,
+  orgId: string,
+  body: { nombre: string; cantidad: number; acopioId: string; marca?: string; ean?: string },
+): Promise<EntradaDonacion> {
+  return request<EntradaDonacion>(`${base(orgId)}/entradas`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
 /**

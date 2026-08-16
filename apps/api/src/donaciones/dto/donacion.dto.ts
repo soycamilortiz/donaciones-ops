@@ -1,12 +1,23 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   DonacionImagenEstado,
+  FuenteCatalogo,
   MAX_IMAGEN_BYTES,
   normalizarTipoImagen,
   TIPOS_IMAGEN_ACEPTADOS,
 } from '@soschoco/shared';
 import { Transform, Type } from 'class-transformer';
-import { IsIn, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import {
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class NuevaRutaDto {
   @ApiProperty({
@@ -156,6 +167,11 @@ export class ConfirmarDonacionDto {
   @IsOptional()
   @IsString()
   marca?: string;
+
+  @ApiPropertyOptional({ description: 'Sumar a este ítem aunque el nombre no coincida letra a letra' })
+  @IsOptional()
+  @IsUUID()
+  inventoryItemId?: string;
 }
 
 export class PaginaDonacionImagenDto {
@@ -167,4 +183,119 @@ export class PaginaDonacionImagenDto {
     nullable: true,
   })
   siguienteCursor: string | null;
+}
+
+export class ConsultaEanDto {
+  @ApiProperty({ enum: Object.values(FuenteCatalogo) })
+  fuente: string;
+
+  @ApiProperty()
+  ean: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  nombre: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  marca: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  imagenUrl: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  productoId: string | null;
+}
+
+export class RegistrarEntradaDto {
+  @ApiProperty({ example: 'Botellas de agua x6' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  nombre: string;
+
+  @ApiProperty({ example: 6 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.001)
+  cantidad: number;
+
+  @ApiProperty()
+  @IsUUID()
+  acopioId: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  marca?: string;
+
+  @ApiPropertyOptional({ example: '7702006400011' })
+  @IsOptional()
+  @Matches(/^\d{8,14}$/)
+  ean?: string;
+}
+
+export class EntradaDonacionDto {
+  @ApiProperty()
+  inventoryItemId: string;
+
+  @ApiProperty()
+  nombre: string;
+
+  @ApiProperty()
+  cantidad: number;
+
+  @ApiPropertyOptional({ nullable: true })
+  ean: string | null;
+}
+
+export class InterpretarImagenDto {
+  @ApiPropertyOptional({ description: 'EAN leído en la PWA con BarcodeDetector' })
+  @IsOptional()
+  @Matches(/^\d{8,14}$/)
+  ean?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  acopioId?: string;
+}
+
+export class CoincidenciaInventarioDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  nombre: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  marca: string | null;
+
+  @ApiProperty()
+  cantidad: number;
+
+  @ApiProperty()
+  score: number;
+}
+
+export class InterpretacionDto {
+  @ApiProperty({ enum: ['ean', 'vision', 'manual'] })
+  via: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  fuenteEan: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  ean: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  nombre: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  marca: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  cantidad: number | null;
+
+  @ApiProperty({ type: [CoincidenciaInventarioDto] })
+  coincidencias: CoincidenciaInventarioDto[];
 }

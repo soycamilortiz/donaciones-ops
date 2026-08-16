@@ -43,6 +43,7 @@
     "@nestjs/terminus": "^11.0.0",
     "@prisma/client": "^6.13.0",
     "@soschoco/shared": "workspace:*",
+    "@soschoco/vision": "workspace:*",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.81.3",
     "class-transformer": "^0.5.1",

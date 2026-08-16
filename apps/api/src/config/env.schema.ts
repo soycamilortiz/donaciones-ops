@@ -74,6 +74,33 @@ export const envSchema = z.object({
    * depurar, asumiendo el coste en cada arranque.
    */
   SWAGGER_ENABLED: bandera(!enServerless),
+
+  /**
+   * Open Food Facts (lookup EAN cuando el código no está en `productos`).
+   * No pide API key. El User-Agent es obligatorio para no ser tratado como bot.
+   * Docs: https://openfoodfacts.github.io/openfoodfacts-server/api/
+   */
+  OPEN_FOOD_FACTS_ENABLED: bandera(true),
+  OPEN_FOOD_FACTS_BASE_URL: z
+    .preprocess(emptyToUndefined, z.string().url().optional())
+    .transform((v) => v ?? 'https://world.openfoodfacts.org'),
+  OPEN_FOOD_FACTS_USER_AGENT: z
+    .string()
+    .min(8)
+    .default('SOSChoco/1.0 (contacto@soschoco.local)'),
+  OPEN_FOOD_FACTS_TIMEOUT_MS: z.coerce.number().int().positive().max(30000).default(8000),
+
+  /**
+   * Visión vía `@soschoco/vision` (adapters). Sin VISION_API_KEY → noop.
+   * `VISION_PROVIDER=openai` usa Chat Completions compatible (OpenAI, Azure, etc.).
+   */
+  VISION_PROVIDER: z.string().min(1).default('openai'),
+  VISION_API_KEY: z.preprocess(emptyToUndefined, z.string().min(8).optional()),
+  VISION_BASE_URL: z
+    .preprocess(emptyToUndefined, z.string().url().optional())
+    .transform((v) => v ?? 'https://api.openai.com/v1'),
+  VISION_MODEL: z.string().min(1).default('gpt-4o-mini'),
+  VISION_TIMEOUT_MS: z.coerce.number().int().positive().max(120000).default(45000),
 });
 
 export type Env = z.infer<typeof envSchema>;

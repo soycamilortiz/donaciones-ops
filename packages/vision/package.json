@@ -1,0 +1,39 @@
+{
+  "name": "@soschoco/vision",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Lectura de productos donados por visión: adapters intercambiables",
+  "license": "UNLICENSED",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && node scripts/emit-module-markers.mjs",
+    "dev": "pnpm build && tsc -p tsconfig.esm.json --watch --preserveWatchOutput",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --import tsx --test src/parse.test.ts",
+    "clean": "node scripts/clean-dist.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
