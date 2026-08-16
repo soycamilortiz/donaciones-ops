@@ -7,6 +7,7 @@ import express, { type Express } from 'express';
 import { Redis } from 'ioredis';
 import { basicAuth } from './auth.js';
 import type { Config } from './config.js';
+import { shipLogsToStream } from './logging/ship-logs.js';
 
 /**
  * Las colas que se muestran en el panel. Al agregar un job nuevo en
@@ -33,6 +34,10 @@ export function crearPanel(config: Config): PanelCreado {
 
   const colas = NOMBRES_DE_COLA.map((nombre) => new Queue(nombre, { connection: conexion }));
 
+  // Mirror this process's output into the shared stream, reusing the queue
+  // connection so /logs on the API can show the panel's logs too.
+  const detenerEnvioDeLogs = shipLogsToStream(conexion, 'jobs');
+
   const adaptador = new ExpressAdapter();
   adaptador.setBasePath(config.JOBS_BASE_PATH);
 
@@ -55,6 +60,7 @@ export function crearPanel(config: Config): PanelCreado {
     app,
     colas: colas.map((cola) => cola.name),
     cerrar: async () => {
+      detenerEnvioDeLogs();
       await Promise.all(colas.map((cola) => cola.close()));
       await conexion.quit();
     },
