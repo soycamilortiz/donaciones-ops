@@ -145,5 +145,100 @@
     "noAccount": "¿No tenés cuenta?",
     "captchaLoading": "Cargando captcha…",
     "captchaError": "No se pudo cargar el captcha"
+  },
+  "onboarding": {
+    "chooseTitle": "¿Cómo querés seguir?",
+    "createOrg": "Crear organización",
+    "waitInvite": "Esperar invitación",
+    "waitingTitle": "Esperando invitación",
+    "preferCreate": "Prefiero crear una organización",
+    "back": "Volver"
+  },
+  "session": {
+    "loading": "Cargando sesión…",
+    "noActiveOrg": "No hay organización activa.",
+    "profileError": "No se pudo cargar el perfil"
+  },
+  "dashboard": {
+    "roleLine": "Tipo {{tipo}} · tu rol es {{rol}}",
+    "switchOrg": "{{nombre}} ({{correo}}) puede cambiar de organización si tiene varias membresías.",
+    "open": "Abrir",
+    "usersHint": "Sumar personas ya registradas y asignar roles.",
+    "rolesHint": "Matriz editable: roles, permisos y altas nuevas.",
+    "acopiosHint": "Bodegas para recibir o enviar donaciones.",
+    "inventoryHint": "Existencias por centro de acopio: producto, lote y vencimiento."
+  },
+  "inventoryCategories": {
+    "ALIMENTOS_NO_PERECEDEROS": "Alimentos no perecederos",
+    "AGUA": "Agua",
+    "ASEO_HIGIENE": "Aseo e higiene",
+    "PANALES_BEBE": "Pañales y elementos de bebé",
+    "MEDICAMENTOS": "Medicamentos y primeros auxilios",
+    "ROPA_CALZADO": "Prendas de vestir y calzado",
+    "COLCHONETAS_COBIJAS": "Colchonetas, cobijas y abrigo",
+    "ALIMENTO_MASCOTAS": "Alimento para mascotas",
+    "MEDICAMENTO_MASCOTAS": "Medicamento para mascotas",
+    "LOGISTICA_RESCATE": "Logística, emergencia y rescate",
+    "MENAJE_COCINA": "Menaje y utensilios de cocina",
+    "DESECHABLES": "Desechables",
+    "OTRO": "Otro"
+  },
+  "inventoryStates": {
+    "NUEVO": "Nuevo",
+    "BUEN_ESTADO": "Buen estado",
+    "USADO": "Usado",
+    "PROXIMO_A_VENCER": "Próximo a vencer",
+    "VENCIDO": "Vencido",
+    "NO_APLICA": "No aplica"
+  },
+  "inventoryUnits": {
+    "UNIDAD": "Unidad",
+    "LIBRA": "Libra",
+    "KILO": "Kilo",
+    "LITRO": "Litro",
+    "BOTELLA": "Botella",
+    "LATA": "Lata",
+    "PAQUETE": "Paquete",
+    "CAJA": "Caja",
+    "GALON": "Galón",
+    "FRASCO": "Frasco",
+    "TABLETA": "Tableta",
+    "DOCENA": "Docena",
+    "OTRO": "Otra unidad"
+  },
+  "inventoryRecipients": {
+    "NO_APLICA": "No aplica",
+    "UNISEX": "Unisex",
+    "MUJER": "Mujer",
+    "HOMBRE": "Hombre",
+    "NINO": "Niño",
+    "NINA": "Niña",
+    "BEBE": "Bebé",
+    "MASCOTA": "Mascota"
+  },
+  "inventory": {
+    "title": "Inventario",
+    "newProduct": "Nuevo producto",
+    "editProduct": "Editar producto",
+    "warehouse": "Bodega",
+    "goToAcopios": "Ir a acopios",
+    "category": "Categoría",
+    "categories": "Categorías",
+    "quantity": "Cantidad",
+    "stockQuantity": "Cantidad en stock",
+    "status": "Estado",
+    "expiryAlerts": "Alertas de vencimiento",
+    "inactive": "Dados de baja",
+    "deactivate": "Dar de baja",
+    "donor": "Donante",
+    "donorContact": "Contacto del donante",
+    "recipient": "Destinatario",
+    "categoryDetail": "Detalle de categoría",
+    "unitDetail": "Detalle de unidad",
+    "notes": "Observaciones",
+    "noResults": "No hay productos con esos filtros.",
+    "searchPlaceholder": "Nombre, marca, SKU…",
+    "loadAcopiosError": "Error al cargar acopios",
+    "loadError": "Error al cargar inventario"
   }
 }

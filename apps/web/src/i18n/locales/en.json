@@ -145,5 +145,100 @@
     "noAccount": "No account yet?",
     "captchaLoading": "Loading captcha…",
     "captchaError": "Could not load the captcha"
+  },
+  "onboarding": {
+    "chooseTitle": "How do you want to continue?",
+    "createOrg": "Create organisation",
+    "waitInvite": "Wait for an invitation",
+    "waitingTitle": "Waiting for an invitation",
+    "preferCreate": "I'd rather create an organisation",
+    "back": "Back"
+  },
+  "session": {
+    "loading": "Loading session…",
+    "noActiveOrg": "No active organisation.",
+    "profileError": "Could not load the profile"
+  },
+  "dashboard": {
+    "roleLine": "Type {{tipo}} · your role is {{rol}}",
+    "switchOrg": "{{nombre}} ({{correo}}) can switch organisation when they belong to more than one.",
+    "open": "Open",
+    "usersHint": "Add already-registered people and assign roles.",
+    "rolesHint": "Editable matrix: roles, permissions and new entries.",
+    "acopiosHint": "Warehouses to receive or send donations.",
+    "inventoryHint": "Stock per collection centre: product, batch and expiry."
+  },
+  "inventoryCategories": {
+    "ALIMENTOS_NO_PERECEDEROS": "Non-perishable food",
+    "AGUA": "Water",
+    "ASEO_HIGIENE": "Hygiene and cleaning",
+    "PANALES_BEBE": "Nappies and baby items",
+    "MEDICAMENTOS": "Medicine and first aid",
+    "ROPA_CALZADO": "Clothing and footwear",
+    "COLCHONETAS_COBIJAS": "Mats, blankets and warmth",
+    "ALIMENTO_MASCOTAS": "Pet food",
+    "MEDICAMENTO_MASCOTAS": "Pet medicine",
+    "LOGISTICA_RESCATE": "Logistics, emergency and rescue",
+    "MENAJE_COCINA": "Kitchenware and utensils",
+    "DESECHABLES": "Desechables",
+    "OTRO": "Other"
+  },
+  "inventoryStates": {
+    "NUEVO": "Nuevo",
+    "BUEN_ESTADO": "Buen estado",
+    "USADO": "Usado",
+    "PROXIMO_A_VENCER": "Próximo a vencer",
+    "VENCIDO": "Vencido",
+    "NO_APLICA": "No aplica"
+  },
+  "inventoryUnits": {
+    "UNIDAD": "Unit",
+    "LIBRA": "Libra",
+    "KILO": "Kilo",
+    "LITRO": "Litre",
+    "BOTELLA": "Botella",
+    "LATA": "Lata",
+    "PAQUETE": "Pack",
+    "CAJA": "Box",
+    "GALON": "Gallon",
+    "FRASCO": "Jar",
+    "TABLETA": "Tablet",
+    "DOCENA": "Dozen",
+    "OTRO": "Other"
+  },
+  "inventoryRecipients": {
+    "NO_APLICA": "No aplica",
+    "UNISEX": "Unisex",
+    "MUJER": "Mujer",
+    "HOMBRE": "Hombre",
+    "NINO": "Niño",
+    "NINA": "Niña",
+    "BEBE": "Bebé",
+    "MASCOTA": "Mascota"
+  },
+  "inventory": {
+    "title": "Inventory",
+    "newProduct": "New product",
+    "editProduct": "Edit product",
+    "warehouse": "Warehouse",
+    "goToAcopios": "Go to collection centres",
+    "category": "Category",
+    "categories": "Categories",
+    "quantity": "Quantity",
+    "stockQuantity": "Quantity in stock",
+    "status": "Status",
+    "expiryAlerts": "Expiry alerts",
+    "inactive": "Deactivated",
+    "deactivate": "Deactivate",
+    "donor": "Donor",
+    "donorContact": "Donor contact",
+    "recipient": "Recipient",
+    "categoryDetail": "Category detail",
+    "unitDetail": "Unit detail",
+    "notes": "Notes",
+    "noResults": "No products match those filters.",
+    "searchPlaceholder": "Name, brand, SKU…",
+    "loadAcopiosError": "Error loading collection centres",
+    "loadError": "Error loading inventory"
   }
 }

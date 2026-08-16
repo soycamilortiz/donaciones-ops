@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { type Me, ORGANIZATION_TIPOS, storeOrgId } from '../lib/api';
 import { useApi } from '../lib/useApi';
@@ -6,6 +7,7 @@ import { useApi } from '../lib/useApi';
 type OutletCtx = { me: Me; refresh: () => Promise<void> };
 
 export default function Onboarding() {
+  const { t } = useTranslation();
   const { me, refresh } = useOutletContext<OutletCtx>();
   const request = useApi();
   const navigate = useNavigate();
@@ -41,9 +43,9 @@ export default function Onboarding() {
   return (
     <section>
       <p className="eyebrow">
-        <Link to="/empezar">Volver</Link>
+        <Link to="/empezar">{t('onboarding.back')}</Link>
       </p>
-      <h1>Crear organización</h1>
+      <h1>{t('onboarding.createOrg')}</h1>
       <p className="lede">
         Solo caracterización (quiénes son y cómo contactarlos). Los centros de acopio —recibir o
         enviar donaciones— se cargan en Acopios, ya dentro del panel.

@@ -1,40 +1,36 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useOrg } from '../components/OrgGate';
 
 export default function Dashboard() {
   const { membership, me } = useOrg();
+  const { t } = useTranslation();
   const org = membership.organization;
+
+  /* Module cards. Kept as data so adding one is a single entry, and so the
+     copy lives in the catalogue rather than inline in the markup. */
+  const modules = [
+    { to: '/app/usuarios', title: t('nav.users'), hint: t('dashboard.usersHint') },
+    { to: '/app/roles', title: t('nav.roles'), hint: t('dashboard.rolesHint') },
+    { to: '/app/acopios', title: t('nav.acopios'), hint: t('dashboard.acopiosHint') },
+    { to: '/app/inventario', title: t('nav.inventory'), hint: t('dashboard.inventoryHint') },
+  ];
 
   return (
     <section className="panel">
       <h1>{org.nombre}</h1>
       <p className="muted">
-        Tipo {org.tipo} · tu rol es {membership.role.nombre}
+        {t('dashboard.roleLine', { tipo: org.tipo, rol: membership.role.nombre })}
       </p>
-      <p>
-        {me.nombre} ({me.correo}) puede cambiar de organización si tiene varias membresías.
-      </p>
+      <p>{t('dashboard.switchOrg', { nombre: me.nombre, correo: me.correo })}</p>
       <ul className="modules">
-        <li>
-          <h2>Usuarios</h2>
-          <p>Sumar personas ya registradas y asignar roles.</p>
-          <Link to="/app/usuarios">Abrir</Link>
-        </li>
-        <li>
-          <h2>Roles</h2>
-          <p>Matriz editable: roles, permisos y altas nuevas.</p>
-          <Link to="/app/roles">Abrir</Link>
-        </li>
-        <li>
-          <h2>Acopios</h2>
-          <p>Bodegas para recibir o enviar donaciones.</p>
-          <Link to="/app/acopios">Abrir</Link>
-        </li>
-        <li>
-          <h2>Inventario</h2>
-          <p>Existencias por centro de acopio: producto, lote y vencimiento.</p>
-          <Link to="/app/inventario">Abrir</Link>
-        </li>
+        {modules.map((module) => (
+          <li key={module.to}>
+            <h2>{module.title}</h2>
+            <p>{module.hint}</p>
+            <Link to={module.to}>{t('dashboard.open')}</Link>
+          </li>
+        ))}
       </ul>
     </section>
   );
