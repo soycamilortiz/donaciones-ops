@@ -13,22 +13,24 @@ export function StatCard({
 }: StatCardProps): ReactElement {
   return (
     <div
-      className={cn('rounded-lg border border-border bg-card p-5 shadow-sm', className)}
+      className={cn('flex flex-col gap-3 rounded-lg border border-border bg-card p-4', className)}
       {...props}
     >
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
         {icon ? (
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-muted text-muted-foreground">
+          <span className="grid h-9 w-9 place-items-center rounded-md bg-secondary text-primary">
             <Icon name={icon} size={18} />
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-2xl font-semibold text-card-foreground">{value}</p>
+      <p className="text-3xl font-bold tabular-nums tracking-tight text-foreground">{value}</p>
       {trend ? (
         <p
           className={cn(
-            'mt-1 text-xs font-medium',
+            'text-xs font-semibold',
             trend.direction === 'up'
               ? 'text-success'
               : trend.direction === 'down'

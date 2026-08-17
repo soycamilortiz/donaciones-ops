@@ -25,7 +25,7 @@ export function LanguageSwitcher(): ReactElement {
     <label className="inline-flex items-center gap-2">
       <span className="sr-only">{t('common.language')}</span>
       <select
-        className="min-h-11 cursor-pointer rounded border border-border bg-card px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="min-h-11 cursor-pointer rounded-md border border-border bg-card px-3 py-1 text-sm font-semibold text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         value={current}
         onChange={(event) => void i18n.changeLanguage(event.target.value)}
       >
