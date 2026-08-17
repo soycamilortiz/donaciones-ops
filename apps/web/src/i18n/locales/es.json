@@ -554,6 +554,8 @@
     "statusUpdateError": "No se pudo actualizar el estado",
     "saved": "Producto guardado",
     "deactivated": "Producto dado de baja",
-    "reactivated": "Producto reactivado"
+    "reactivated": "Producto reactivado",
+    "showing": "Mostrando {{shown}} de {{total}}",
+    "showMore": "Ver {{count}} más"
   }
 }

@@ -186,6 +186,21 @@ export default function InventoryPage() {
     });
   }, [items, query, categoria, showInactive]);
 
+  // Una bodega real tiene cientos de SKU y hasta ahora se montaban todos de
+  // una: con 300 productos la página llega a ~5.900 nodos y cada tecla del
+  // buscador repinta la lista entera. En un Android barato eso es el tirón que
+  // describe el audit. Se muestran de a PASO y el resto entra a pedido.
+  const PASO = 50;
+  const [visibles, setVisibles] = useState(PASO);
+  const mostradas = visible.slice(0, visibles);
+  const quedan = visible.length - mostradas.length;
+
+  // Al filtrar, cambiar de acopio o pedir las bajas, la ventana vuelve a empezar.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: los filtros son el disparador; `visibles` es lo que se reinicia.
+  useEffect(() => {
+    setVisibles(PASO);
+  }, [query, categoria, showInactive, acopioId]);
+
   const hasFilters = query.trim() !== '' || categoria !== '' || showInactive;
 
   function clearFilters() {
@@ -612,7 +627,7 @@ export default function InventoryPage() {
                 ) : null}
               </div>
             ) : (
-              visible.map((item) => {
+              mostradas.map((item) => {
                 const inactive = item.isActive === false;
                 const sub = [item.marca, item.presentacion, item.talla, item.sku]
                   .filter(Boolean)
@@ -710,6 +725,23 @@ export default function InventoryPage() {
                 );
               })
             )}
+
+            {visible.length > 0 ? (
+              <div className="flex flex-col items-center gap-3 border-t border-border px-4 py-4 text-sm text-muted-foreground">
+                <p aria-live="polite">
+                  {t('inventory.showing', { shown: mostradas.length, total: visible.length })}
+                </p>
+                {quedan > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setVisibles((actuales) => actuales + PASO)}
+                  >
+                    {t('inventory.showMore', { count: Math.min(quedan, PASO) })}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

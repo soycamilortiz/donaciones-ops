@@ -554,6 +554,8 @@
     "statusUpdateError": "Could not update status",
     "saved": "Product saved",
     "deactivated": "Product deactivated",
-    "reactivated": "Product reactivated"
+    "reactivated": "Product reactivated",
+    "showing": "Showing {{shown}} of {{total}}",
+    "showMore": "Show {{count}} more"
   }
 }
