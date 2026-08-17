@@ -350,6 +350,12 @@ export default function InventoryPage() {
       return;
     }
     setError(null);
+    const previos = items;
+    // La fila cambia de estado ya: en una lista larga, esperar el ida y vuelta
+    // para ver si pasó algo termina en un segundo toque sobre otra fila.
+    setItems((actuales) =>
+      actuales.map((row) => (row.id === item.id ? { ...row, isActive } : row)),
+    );
     try {
       await request(`/api/v1/organizations/${orgId}/acopios/${acopioId}/inventory/${item.id}`, {
         method: 'PATCH',
@@ -363,7 +369,10 @@ export default function InventoryPage() {
           : { accion: { etiqueta: t('common.undo'), alPulsar: () => void setActive(item, true) } },
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('inventory.statusUpdateError'));
+      setItems(previos);
+      const mensaje = err instanceof Error ? err.message : t('inventory.statusUpdateError');
+      setError(mensaje);
+      avisar(mensaje, { tono: 'error' });
     }
   }
 
