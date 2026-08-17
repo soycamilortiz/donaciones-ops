@@ -167,10 +167,14 @@ export class DonacionesService {
         ? Math.min(Math.trunc(pedido), 200)
         : 50;
 
+    // El estado también llega de la query string. Pasarlo crudo a Prisma
+    // convierte un '?estado=cualquiera' en un 500 en vez de un 400.
+    const estado = opciones.estado ? normalizarEstado(opciones.estado) : undefined;
+
     const filas = await this.prisma.donacionImagen.findMany({
       where: {
         organizationId,
-        ...(opciones.estado ? { estado: opciones.estado as DonacionImagenEstado } : {}),
+        ...(estado ? { estado } : {}),
       },
       include: IMAGEN_CON_PRODUCTO,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -446,6 +450,16 @@ export class DonacionesService {
       throw new NotFoundException('Acopio no encontrado en esta organización');
     }
   }
+}
+
+const ESTADOS_IMAGEN = Object.values(DonacionImagenEstado) as string[];
+
+function normalizarEstado(raw: string): DonacionImagenEstado {
+  const estado = raw.trim().toUpperCase();
+  if (!ESTADOS_IMAGEN.includes(estado)) {
+    throw new BadRequestException(`Estado no válido: ${raw}`);
+  }
+  return estado as DonacionImagenEstado;
 }
 
 /** Evita que una organización escriba (o registre) blobs de otra. */

@@ -108,10 +108,17 @@ export class R2StorageService {
     return esUrlPublicaUsable(this.config.get('R2_PUBLIC_BASE_URL', { infer: true }));
   }
 
+  /**
+   * Sin R2 configurado (arranque local sin credenciales) no hay URL que firmar.
+   * Devolver la guardada —aunque sea `r2://…` y no se vea— deja el listado en
+   * pie: reventar aquí tumbaba `GET /donaciones` entero por no poder pintar una
+   * miniatura.
+   */
   async urlParaMostrar(pathname: string, blobUrlGuardada?: string | null): Promise<string> {
     const publica = this.publicUrlFor(pathname);
     if (publica) return publica;
     if (esUrlPublicaUsable(blobUrlGuardada)) return blobUrlGuardada as string;
+    if (!this.client) return blobUrlGuardada ?? `r2://${this.bucket}/${pathname}`;
     return this.presignGet(pathname);
   }
 
