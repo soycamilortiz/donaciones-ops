@@ -1,6 +1,11 @@
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
+import { FormField } from '@/components/molecules/FormField';
+import { AuthLayout } from '@/components/templates/AuthLayout';
+import { ROUTES } from '@/lib/constants';
 import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
 import { useSession } from '../lib/AuthProvider';
 import { type AuthSession, apiRequest } from '../lib/api';
@@ -34,39 +39,40 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="auth-page">
-      <Link to="/" className="brand">
-        SOS Chocó
-      </Link>
-      <form className="form auth-form" onSubmit={(event) => void onSubmit(event)}>
-        <h1>{t('auth.signIn')}</h1>
-        <label className="field">
-          {t('auth.userOrEmail')}
-          <input name="usuario" required minLength={3} autoComplete="username" />
-        </label>
-        <label className="field">
-          {t('auth.password')}
-          <input
+    <AuthLayout title={t('auth.signIn')}>
+      <form className="space-y-5" onSubmit={(event) => void onSubmit(event)}>
+        <FormField label={t('auth.userOrEmail')} htmlFor="usuario" required>
+          <Input id="usuario" name="usuario" required minLength={3} autoComplete="username" />
+        </FormField>
+        <FormField label={t('auth.password')} htmlFor="password" required>
+          <Input
+            id="password"
             name="password"
             type="password"
             required
             minLength={8}
             autoComplete="current-password"
           />
-        </label>
+        </FormField>
         <CaptchaFields refreshKey={refreshKey} />
         {error ? (
-          <p role="alert" className="error">
+          <p role="alert" className="text-sm font-medium text-error">
             {error}
           </p>
         ) : null}
-        <button className="button" type="submit">
+        <Button type="submit" size="lg" className="w-full">
           {t('auth.signIn')}
-        </button>
-        <p className="muted">
-          {t('auth.noAccount')} <Link to="/sign-up">{t('auth.signUp')}</Link>
+        </Button>
+        <p className="text-center text-sm text-muted-foreground">
+          {t('auth.noAccount')}{' '}
+          <Link
+            to={ROUTES.signUp}
+            className="font-semibold text-primary underline underline-offset-4"
+          >
+            {t('auth.signUp')}
+          </Link>
         </p>
       </form>
-    </div>
+    </AuthLayout>
   );
 }
