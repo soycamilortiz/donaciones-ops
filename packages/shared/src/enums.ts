@@ -97,3 +97,108 @@ export const INVENTORY_DESTINATARIOS = [
   { value: 'BEBE', label: 'Bebé' },
   { value: 'MASCOTA', label: 'Mascota' },
 ] as const;
+
+export const RecepcionTipo = {
+  DonacionIndividual: 'DONACION_INDIVIDUAL',
+  DonacionMasiva: 'DONACION_MASIVA',
+  Transferencia: 'TRANSFERENCIA',
+  Compra: 'COMPRA',
+  Devolucion: 'DEVOLUCION',
+  Reubicacion: 'REUBICACION',
+  Otro: 'OTRO',
+} as const;
+
+export type RecepcionTipo = (typeof RecepcionTipo)[keyof typeof RecepcionTipo];
+
+export const RecepcionPresentacion = {
+  Suelta: 'SUELTA',
+  Cajas: 'CAJAS',
+  Bultos: 'BULTOS',
+  Pallets: 'PALLETS',
+  Contenedores: 'CONTENEDORES',
+  Mixta: 'MIXTA',
+} as const;
+
+export type RecepcionPresentacion =
+  (typeof RecepcionPresentacion)[keyof typeof RecepcionPresentacion];
+
+export const RecepcionEstado = {
+  Borrador: 'BORRADOR',
+  EnRecepcion: 'EN_RECEPCION',
+  EnInspeccion: 'EN_INSPECCION',
+  PendienteValidacion: 'PENDIENTE_VALIDACION',
+  Validada: 'VALIDADA',
+  Cerrada: 'CERRADA',
+  Anulada: 'ANULADA',
+} as const;
+
+export type RecepcionEstado = (typeof RecepcionEstado)[keyof typeof RecepcionEstado];
+
+export const UnidadLogisticaTipo = {
+  Pallet: 'PALLET',
+  Caja: 'CAJA',
+  Bulto: 'BULTO',
+  Saco: 'SACO',
+  Contenedor: 'CONTENEDOR',
+  Caneca: 'CANECA',
+  Bolsa: 'BOLSA',
+  Paquete: 'PAQUETE',
+  Otro: 'OTRO',
+} as const;
+
+export type UnidadLogisticaTipo = (typeof UnidadLogisticaTipo)[keyof typeof UnidadLogisticaTipo];
+
+export const UnidadLogisticaEstado = {
+  Recibida: 'RECIBIDA',
+  Abierta: 'ABIERTA',
+  Vacia: 'VACIA',
+} as const;
+
+export type UnidadLogisticaEstado =
+  (typeof UnidadLogisticaEstado)[keyof typeof UnidadLogisticaEstado];
+
+export const RecepcionItemEstado = {
+  PendienteId: 'PENDIENTE_ID',
+  Identificada: 'IDENTIFICADA',
+  Inspeccionada: 'INSPECCIONADA',
+  Validada: 'VALIDADA',
+} as const;
+
+export type RecepcionItemEstado = (typeof RecepcionItemEstado)[keyof typeof RecepcionItemEstado];
+
+export const RECEPCION_TIPOS: ReadonlyArray<{ value: RecepcionTipo; label: string }> = [
+  { value: RecepcionTipo.DonacionIndividual, label: 'Donación individual' },
+  { value: RecepcionTipo.DonacionMasiva, label: 'Donación masiva' },
+  { value: RecepcionTipo.Transferencia, label: 'Transferencia' },
+  { value: RecepcionTipo.Compra, label: 'Compra' },
+  { value: RecepcionTipo.Devolucion, label: 'Devolución' },
+  { value: RecepcionTipo.Reubicacion, label: 'Reubicación' },
+  { value: RecepcionTipo.Otro, label: 'Otro' },
+];
+
+export const RECEPCION_PRESENTACIONES: ReadonlyArray<{
+  value: RecepcionPresentacion;
+  label: string;
+}> = [
+  { value: RecepcionPresentacion.Suelta, label: 'Suelta' },
+  { value: RecepcionPresentacion.Cajas, label: 'Cajas' },
+  { value: RecepcionPresentacion.Bultos, label: 'Bultos' },
+  { value: RecepcionPresentacion.Pallets, label: 'Pallets' },
+  { value: RecepcionPresentacion.Contenedores, label: 'Contenedores' },
+  { value: RecepcionPresentacion.Mixta, label: 'Mixta' },
+];
+
+export const UNIDAD_LOGISTICA_TIPOS: ReadonlyArray<{
+  value: UnidadLogisticaTipo;
+  label: string;
+}> = [
+  { value: UnidadLogisticaTipo.Pallet, label: 'Pallet' },
+  { value: UnidadLogisticaTipo.Caja, label: 'Caja' },
+  { value: UnidadLogisticaTipo.Bulto, label: 'Bulto' },
+  { value: UnidadLogisticaTipo.Saco, label: 'Saco' },
+  { value: UnidadLogisticaTipo.Contenedor, label: 'Contenedor' },
+  { value: UnidadLogisticaTipo.Caneca, label: 'Caneca' },
+  { value: UnidadLogisticaTipo.Bolsa, label: 'Bolsa' },
+  { value: UnidadLogisticaTipo.Paquete, label: 'Paquete' },
+  { value: UnidadLogisticaTipo.Otro, label: 'Otro' },
+];

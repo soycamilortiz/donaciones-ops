@@ -5,19 +5,22 @@ import OrgGate from './components/OrgGate';
 import PendingShell from './components/PendingShell';
 import RequireAuth from './components/RequireAuth';
 import AcopiosPage from './pages/AcopiosPage';
+import CompleteGoogleProfilePage from './pages/CompleteGoogleProfilePage';
 import Dashboard from './pages/Dashboard';
 import DonacionesPage from './pages/DonacionesPage';
 import InventoryPage from './pages/InventoryPage';
 import Landing from './pages/Landing';
 import NuevaDonacionPage from './pages/NuevaDonacionPage';
+import NuevaRecepcionPage from './pages/NuevaRecepcionPage';
 import Onboarding from './pages/Onboarding';
+import RecepcionDetailPage from './pages/RecepcionDetailPage';
+import RecepcionesPage from './pages/RecepcionesPage';
 import RevisionDonacionesPage from './pages/RevisionDonacionesPage';
 import RolesPage from './pages/RolesPage';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
 import StartChoice from './pages/StartChoice';
 import UsersPage from './pages/UsersPage';
-import CompleteGoogleProfilePage from './pages/CompleteGoogleProfilePage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import WaitingRoom from './pages/WaitingRoom';
 
@@ -47,6 +50,9 @@ export default function App() {
             <Route path="/app/donaciones" element={<DonacionesPage />} />
             <Route path="/app/donaciones/nueva" element={<NuevaDonacionPage />} />
             <Route path="/app/donaciones/revision" element={<RevisionDonacionesPage />} />
+            <Route path="/app/recepciones" element={<RecepcionesPage />} />
+            <Route path="/app/recepciones/nueva" element={<NuevaRecepcionPage />} />
+            <Route path="/app/recepciones/:id" element={<RecepcionDetailPage />} />
           </Route>
         </Route>
       </Route>

@@ -80,6 +80,14 @@ export function confirmarDonacion(
     acopioId?: string;
     marca?: string;
     inventoryItemId?: string;
+    recepcionId?: string;
+    unidadLogisticaId?: string;
+    productoId?: string;
+    crearProducto?: boolean;
+    ean?: string;
+    presentacion?: string;
+    loteCodigoOrigen?: string;
+    vencimiento?: string;
   },
 ): Promise<DonacionImagen> {
   return request<DonacionImagen>(`${base(orgId)}/${id}/confirmar`, {
@@ -92,7 +100,11 @@ export function reprocesar(request: Peticion, orgId: string, id: string): Promis
   return request<DonacionImagen>(`${base(orgId)}/${id}/reprocesar`, { method: 'POST' });
 }
 
-export function consultarEan(request: Peticion, orgId: string, codigo: string): Promise<ConsultaEan> {
+export function consultarEan(
+  request: Peticion,
+  orgId: string,
+  codigo: string,
+): Promise<ConsultaEan> {
   return request<ConsultaEan>(`${base(orgId)}/ean/${encodeURIComponent(codigo)}`);
 }
 

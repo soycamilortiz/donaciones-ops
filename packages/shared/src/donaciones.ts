@@ -22,11 +22,19 @@ export type ReconocerProductoJob = {
 
 export type Producto = {
   id: string;
+  sku: string;
   nombre: string;
   marca?: string | null;
   categoria?: string | null;
+  categoriaInventario?: string | null;
   ean?: string | null;
   alias: string[];
+  unidadBase?: string;
+  presentacion?: string | null;
+  requiereLote?: boolean;
+  requiereVencimiento?: boolean;
+  esPerecedero?: boolean;
+  isActive?: boolean;
 };
 
 export type DonacionImagen = {
@@ -44,6 +52,7 @@ export type DonacionImagen = {
   cantidadDetectada?: number | null;
   confirmadaEn?: string | null;
   inventoryItemId?: string | null;
+  recepcionItemId?: string | null;
   producto?: Producto | null;
   procesadaEn?: string | null;
   createdAt: string;

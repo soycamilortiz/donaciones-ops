@@ -7,7 +7,7 @@ import type {
   InventoryItemDto,
   UpdateInventoryItemDto,
 } from './dto/inventory.dto';
-import { UMBRAL_MISMO_PRODUCTO, similitudNombres } from './nombre-producto';
+import { similitudNombres, UMBRAL_MISMO_PRODUCTO } from './nombre-producto';
 
 @Injectable()
 export class InventoryService {
@@ -63,12 +63,78 @@ export class InventoryService {
     });
   }
 
+  /**
+   * Tras validar una recepción: suma stock por (acopio, producto, lote).
+   * Solo entra `cantidad_aprobada`.
+   */
+  async aplicarStockValidado(
+    orgId: string,
+    acopioId: string,
+    entrada: {
+      productoId: string;
+      loteId?: string | null;
+      nombre: string;
+      marca?: string | null;
+      sku?: string | null;
+      categoria: InventoryCategoria;
+      unidad: InventoryUnidad;
+      cantidad: number;
+      vencimiento?: Date | null;
+      loteCodigo?: string | null;
+      donanteNombre?: string | null;
+      donanteContacto?: string | null;
+    },
+  ): Promise<InventoryItemDto> {
+    const acopio = await this.requireAcopio(orgId, acopioId);
+    if (!acopio.isActive) {
+      throw new BadRequestException('No se puede cargar inventario en un acopio dado de baja');
+    }
+
+    const existente = await this.prisma.inventoryItem.findFirst({
+      where: {
+        acopioId,
+        isActive: true,
+        productoId: entrada.productoId,
+        loteId: entrada.loteId ?? null,
+      },
+    });
+    if (existente) {
+      const row = await this.prisma.inventoryItem.update({
+        where: { id: existente.id },
+        data: { cantidad: { increment: entrada.cantidad } },
+      });
+      return this.toDto(row);
+    }
+
+    const row = await this.prisma.inventoryItem.create({
+      data: {
+        acopioId,
+        productoId: entrada.productoId,
+        loteId: entrada.loteId ?? null,
+        nombre: entrada.nombre.trim(),
+        categoria: entrada.categoria,
+        sku: entrada.sku ?? null,
+        marca: entrada.marca ?? null,
+        cantidad: new Prisma.Decimal(entrada.cantidad),
+        unidad: entrada.unidad,
+        vencimiento: entrada.vencimiento ?? undefined,
+        loteCodigo: entrada.loteCodigo ?? null,
+        donanteNombre: entrada.donanteNombre ?? null,
+        donanteContacto: entrada.donanteContacto ?? null,
+        isActive: true,
+      },
+    });
+    return this.toDto(row);
+  }
+
   async coincidencias(
     orgId: string,
     acopioId: string,
     nombre: string,
     marca?: string | null,
-  ): Promise<Array<{ id: string; nombre: string; marca: string | null; cantidad: number; score: number }>> {
+  ): Promise<
+    Array<{ id: string; nombre: string; marca: string | null; cantidad: number; score: number }>
+  > {
     await this.requireAcopio(orgId, acopioId);
     const filas = await this.prisma.inventoryItem.findMany({
       where: { acopioId, isActive: true },

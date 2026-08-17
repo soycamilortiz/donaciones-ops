@@ -11,7 +11,6 @@ export type {
   AuthSession,
   AuthUser,
   Captcha,
-  RegisterPendingVerification,
   GoogleAuthResult,
   GoogleProfilePending,
   InventoryItem,
@@ -21,6 +20,7 @@ export type {
   Organization,
   OrganizationTipo,
   Permission,
+  RegisterPendingVerification,
   Role,
 } from '@soschoco/shared';
 export {
@@ -31,7 +31,10 @@ export {
   INVENTORY_UNIDADES,
   ORGANIZATION_TIPOS,
   PermissionSlug,
+  RECEPCION_PRESENTACIONES,
+  RECEPCION_TIPOS,
   RoleSlug,
+  UNIDAD_LOGISTICA_TIPOS,
 } from '@soschoco/shared';
 
 export function readStoredToken(): string | null {

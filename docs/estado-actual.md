@@ -101,13 +101,13 @@ Invitar personas: quien se suma **ya tiene que estar registrada** con ese correo
 
 ## Dominio (Prisma)
 
-`User` (usuario + correo únicos, `password_hash`, `correoVerificadoAt`), `EmailVerification`, `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto`, `DonacionImagen`.
+`User` (usuario + correo únicos, `password_hash`, `correoVerificadoAt`), `EmailVerification`, `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto` (catálogo global con SKU), `DonacionImagen`, `Recepcion`, `UnidadLogistica`, `Lote`, `RecepcionItem`, `OrgCounter`.
 
 Roles semilla: administrador de acopio, auxiliar administrativo, líder de zona, finanzas, transportador, voluntario. Quien crea la org queda como administrador de acopio. El alta por defecto es voluntario. La matriz se edita en `/app/roles` (permiso `roles:write`). Los permisos nuevos de código aparecen como filas; no se pisan los tildes ya guardados.
 
 Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `inventory:read/write`, `donaciones:read/write`.
 
-Inventario: por centro de acopio. Dashboard en `/app/inventario`. Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol e ítem. Dar de baja no bloquea un alta nueva (el producto siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
+Inventario: por centro de acopio. Dashboard en `/app/inventario`. El alta de stock desde campo pasa por una **recepción**: confirmar una foto identifica el producto; **validar** la recepción incrementa `inventory_items` (solo `cantidad_aprobada`). Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol, producto, recepción e ítem. Dar de baja no bloquea un alta nueva (el producto de inventario siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
 
 ## API NestJS
 
@@ -124,6 +124,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
 | Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas/ruta`, `/productos`, `/ean/:codigo`, `/:id/interpretar`, `/:id/confirmar`) |
+| Recepciones | `/api/v1/organizations/:orgId/recepciones` (+ `/:id/unidades`, `/:id/items`, `/:id/items/:itemId/inspeccion`, `/:id/validar`, `/:id/anular`) |
 
 `GET /donaciones` está **paginado por cursor**, no por offset: las fotos se insertan sin parar desde el campo y con `OFFSET` una fila nueva desplaza la ventana, haciendo que se repitan o se salten registros entre páginas. Devuelve `{ items, siguienteCursor }`; `siguienteCursor` es `null` cuando ya no hay más. Acepta `?estado=`, `?cursor=` y `?limite=` (1–200, default 50).
 
@@ -234,12 +235,13 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 
 ## Shell (`apps/web`)
 
-Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio.
+Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio. Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar) y foto en `/app/donaciones/nueva`.
 
 Alta/edición de acopios: departamento y municipio (DIVIPOLA Colombia), autocomplete Photon, geolocalización del navegador, pin Leaflet arrastrable y mapa para `lat`/`lng`. Componente `AddressLocationPicker`.
 
 ## Qué falta
 
+- Recepción v1 **está**. Diseño: [recepcion.md](recepcion.md). Falta todavía: ubicaciones tipo pasillo, pallet de despacho, variantes (talla/gramaje), bloquear validación si falta lote (hoy va a cuarentena).
 - Módulo de envíos (contenedor + API).
 - Cookie httpOnly en lugar de `localStorage` si se endurece XSS.
 - Rate limit explícito en login (hoy el captcha cubre brute-force básico).
@@ -252,7 +254,7 @@ Un solo camino: **subir una foto** (envase o código de barras).
 0. La PWA lee el EAN sobre la foto original, **comprime** (lado largo ≤ 2048 px, JPEG ~600 KB objetivo, tope 1,5 MB) y sube a R2. HEIC se convierte a JPEG antes del PUT.
 1. La PWA intenta leer un EAN con `BarcodeDetector`. Si hay código: catálogo `productos.ean` y, si no, Open Food Facts. Si nadie lo conoce, el operador completa a mano.
 2. Si no hay EAN: el API baja la foto de R2 y llama a `@soschoco/vision` (adapter por `VISION_PROVIDER`). El operador confirma.
-3. Al confirmar, el inventario **fusiona** nombres parecidos en el mismo acopio (“Agua Brisa” vs “botella de agua brisa”) y muestra candidatos para que no nazcan 10 filas del mismo SKU. El EAN, cuando existe, es la clave canónica.
+3. Al confirmar, la foto se cuelga de un `recepcion_item` (se abre una donación individual si no había recepción). El inventario **no** se toca hasta `POST .../recepciones/:id/validar`. Coincidencias son del catálogo `productos`, no del stock. El EAN, cuando existe, es la clave canónica.
 
 Constantes compartidas en `@soschoco/shared`: `IMAGEN_LADO_MAX`, `IMAGEN_PESO_OBJETIVO`, `IMAGEN_PESO_MAX`, `MAX_IMAGEN_BYTES` (entrada cruda).
 

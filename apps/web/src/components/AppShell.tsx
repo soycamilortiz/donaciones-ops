@@ -32,6 +32,7 @@ export default function AppShell() {
           <NavLink to="/app/roles">{t('nav.roles')}</NavLink>
           <NavLink to="/app/acopios">{t('nav.acopios')}</NavLink>
           <NavLink to="/app/inventario">{t('nav.inventory')}</NavLink>
+          <NavLink to="/app/recepciones">{t('nav.receptions')}</NavLink>
           <NavLink to="/app/donaciones">{t('nav.donations')}</NavLink>
         </nav>
       </aside>

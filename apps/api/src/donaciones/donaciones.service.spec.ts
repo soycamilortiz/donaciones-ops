@@ -1,7 +1,9 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { DonacionImagenEstado } from '@soschoco/shared';
+import { CatalogoService } from '../catalogo/catalogo.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecepcionesService } from '../recepciones/recepciones.service';
 import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
 import { DonacionesService } from './donaciones.service';
@@ -20,6 +22,12 @@ describe('DonacionesService', () => {
     acopio: Record<string, jest.Mock>;
   };
   let inventario: { aplicarDonacionConfirmada: jest.Mock; coincidencias: jest.Mock };
+  let catalogo: {
+    coincidencias: jest.Mock;
+    crear: jest.Mock;
+    findOrCreateDesdeOff: jest.Mock;
+  };
+  let recepciones: { confirmarFoto: jest.Mock };
   let off: { buscarPorEan: jest.Mock };
   let cola: { encolarReconocimiento: jest.Mock };
   let r2: {
@@ -41,7 +49,9 @@ describe('DonacionesService', () => {
         findFirst: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockImplementation(({ data }) => ({ id: 'img-1', ...data })),
-        update: jest.fn().mockImplementation(({ data }) => ({ id: 'img-1', ...data })),
+        update: jest
+          .fn()
+          .mockImplementation(({ data }) => Promise.resolve({ id: 'img-1', ...data })),
       },
       producto: {
         findUnique: jest.fn(),
@@ -56,6 +66,14 @@ describe('DonacionesService', () => {
       aplicarDonacionConfirmada: jest.fn().mockResolvedValue({ id: 'inv-1' }),
       coincidencias: jest.fn().mockResolvedValue([]),
     };
+    catalogo = {
+      coincidencias: jest.fn().mockResolvedValue([]),
+      crear: jest.fn().mockResolvedValue({ id: 'prod-1' }),
+      findOrCreateDesdeOff: jest.fn().mockResolvedValue({ id: 'prod-off' }),
+    };
+    recepciones = {
+      confirmarFoto: jest.fn().mockResolvedValue({ recepcionId: 'rec-1', itemId: 'item-1' }),
+    };
     off = { buscarPorEan: jest.fn().mockResolvedValue(null) };
     r2 = {
       isConfigured: jest.fn().mockReturnValue(true),
@@ -66,7 +84,9 @@ describe('DonacionesService', () => {
         .fn()
         .mockImplementation((key: string) => Promise.resolve(`https://pub.example/${key}`)),
       publicUrlFor: jest.fn().mockImplementation((key: string) => `https://pub.example/${key}`),
-      headObject: jest.fn().mockResolvedValue({ contentLength: 400_000, contentType: 'image/jpeg' }),
+      headObject: jest
+        .fn()
+        .mockResolvedValue({ contentLength: 400_000, contentType: 'image/jpeg' }),
       getObjectBytes: jest.fn(),
       bucket: 'sos-choco',
     };
@@ -78,8 +98,13 @@ describe('DonacionesService', () => {
         { provide: ColaService, useValue: cola },
         { provide: R2StorageService, useValue: r2 },
         { provide: InventoryService, useValue: inventario },
+        { provide: CatalogoService, useValue: catalogo },
+        { provide: RecepcionesService, useValue: recepciones },
         { provide: OpenFoodFactsService, useValue: off },
-        { provide: VisionProductoService, useValue: { leerImagen: jest.fn().mockResolvedValue(null) } },
+        {
+          provide: VisionProductoService,
+          useValue: { leerImagen: jest.fn().mockResolvedValue(null) },
+        },
       ],
     }).compile();
 
@@ -347,7 +372,7 @@ describe('DonacionesService', () => {
 
       expect(r.fuente).toBe('openfoodfacts');
       expect(r.nombre).toBe('Nutella');
-      expect(prisma.producto.create).toHaveBeenCalled();
+      expect(catalogo.findOrCreateDesdeOff).toHaveBeenCalled();
     });
 
     it('deja el formulario vacío si nadie conoce el código', async () => {
@@ -373,7 +398,7 @@ describe('DonacionesService', () => {
       expect(inventario.aplicarDonacionConfirmada).toHaveBeenCalled();
       expect(cola.encolarReconocimiento).not.toHaveBeenCalled();
       expect(r.inventoryItemId).toBe('inv-1');
-      expect(prisma.producto.create).toHaveBeenCalled();
+      expect(catalogo.crear).toHaveBeenCalled();
     });
   });
 });

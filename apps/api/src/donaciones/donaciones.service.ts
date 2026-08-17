@@ -15,8 +15,10 @@ import {
   normalizarTipoImagen,
   TIPOS_IMAGEN_ACEPTADOS,
 } from '@soschoco/shared';
+import { CatalogoService } from '../catalogo/catalogo.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecepcionesService } from '../recepciones/recepciones.service';
 import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
 import type {
@@ -36,7 +38,15 @@ export type OpcionesListado = {
 
 const IMAGEN_CON_PRODUCTO = {
   producto: {
-    select: { id: true, nombre: true, marca: true, categoria: true, ean: true, alias: true },
+    select: {
+      id: true,
+      sku: true,
+      nombre: true,
+      marca: true,
+      categoria: true,
+      ean: true,
+      alias: true,
+    },
   },
   // Sin el nombre, el acopioId no sirve para mostrar nada en pantalla.
   acopio: { select: { id: true, nombre: true, municipio: true } },
@@ -51,6 +61,8 @@ export class DonacionesService {
     private readonly inventario: InventoryService,
     private readonly off: OpenFoodFactsService,
     private readonly vision: VisionProductoService,
+    private readonly recepciones: RecepcionesService,
+    private readonly catalogo: CatalogoService,
   ) {}
 
   /**
@@ -87,8 +99,7 @@ export class DonacionesService {
   /** Ruta que la PWA debe pedir para una foto nueva. */
   rutaParaSubida(organizationId: string, nombreArchivo: string, contentType?: string): string {
     const tipo = contentType ?? normalizarTipoImagen(undefined, nombreArchivo);
-    const extension =
-      tipo === IMAGEN_FORMATO_ALMACENAMIENTO ? '.jpg' : extensionDe(nombreArchivo);
+    const extension = tipo === IMAGEN_FORMATO_ALMACENAMIENTO ? '.jpg' : extensionDe(nombreArchivo);
     return `donaciones/${organizationId}/${randomUUID()}${extension || '.jpg'}`;
   }
 
@@ -111,8 +122,7 @@ export class DonacionesService {
       }
     }
 
-    const blobUrl =
-      this.r2.publicUrlFor(dto.pathname) ?? `r2://${this.r2.bucket}/${dto.pathname}`;
+    const blobUrl = this.r2.publicUrlFor(dto.pathname) ?? `r2://${this.r2.bucket}/${dto.pathname}`;
 
     if (dto.acopioId) {
       await this.verificarAcopio(organizationId, dto.acopioId);
@@ -199,11 +209,13 @@ export class DonacionesService {
       throw new NotFoundException('Producto no encontrado');
     }
 
-    return this.prisma.donacionImagen.update({
-      where: { id },
-      data: { productoId, estado: DonacionImagenEstado.Procesada, error: null },
-      include: IMAGEN_CON_PRODUCTO,
-    }).then((imagen) => this.conUrlVisible(imagen));
+    return this.prisma.donacionImagen
+      .update({
+        where: { id },
+        data: { productoId, estado: DonacionImagenEstado.Procesada, error: null },
+        include: IMAGEN_CON_PRODUCTO,
+      })
+      .then((imagen) => this.conUrlVisible(imagen));
   }
 
   /** Vuelve a encolar una imagen fallida, por ejemplo tras corregir el catálogo. */
@@ -220,9 +232,15 @@ export class DonacionesService {
   }
 
   /**
-   * El inventario solo se toca aquí: el OCR sugiere, el operador confirma.
+   * Identifica el producto y lo cuelga de una recepción. El inventario
+   * solo sube cuando se valida esa recepción.
    */
-  async confirmarDonacion(organizationId: string, id: string, dto: ConfirmarDonacionDto) {
+  async confirmarDonacion(
+    organizationId: string,
+    id: string,
+    usuarioId: string,
+    dto: ConfirmarDonacionDto,
+  ) {
     const imagen = await this.prisma.donacionImagen.findFirst({
       where: { id, organizationId },
     });
@@ -230,36 +248,25 @@ export class DonacionesService {
       throw new NotFoundException('Imagen no encontrada');
     }
     if (imagen.confirmadaEn) {
-      throw new ConflictException('Esta donación ya se confirmó y está en el inventario');
+      throw new ConflictException('Esta foto ya está en una recepción');
     }
     if (imagen.estado === DonacionImagenEstado.Fallida) {
       throw new BadRequestException('Reprocesá la foto antes de confirmarla');
     }
 
-    const acopioId = dto.acopioId ?? imagen.acopioId;
-    if (!acopioId) {
-      throw new BadRequestException('Elegí el acopio donde entra esta donación');
-    }
-    await this.verificarAcopio(organizationId, acopioId);
-
-    const item = await this.inventario.aplicarDonacionConfirmada(organizationId, acopioId, {
+    await this.recepciones.confirmarFoto(organizationId, id, usuarioId, {
       nombre: dto.nombre,
       cantidad: dto.cantidad,
+      acopioId: dto.acopioId,
       marca: dto.marca,
-      inventoryItemId: dto.inventoryItemId,
-    });
-
-    await this.prisma.donacionImagen.update({
-      where: { id },
-      data: {
-        acopioId,
-        nombreDetectado: dto.nombre.trim(),
-        cantidadDetectada: dto.cantidad,
-        confirmadaEn: new Date(),
-        inventoryItemId: item.id,
-        estado: DonacionImagenEstado.Procesada,
-        error: null,
-      },
+      recepcionId: dto.recepcionId,
+      unidadLogisticaId: dto.unidadLogisticaId,
+      productoId: dto.productoId,
+      crearProducto: dto.crearProducto,
+      ean: dto.ean,
+      presentacion: dto.presentacion,
+      loteCodigoOrigen: dto.loteCodigoOrigen,
+      vencimiento: dto.vencimiento,
     });
 
     return this.obtener(organizationId, id);
@@ -290,7 +297,7 @@ export class DonacionesService {
 
     const externo = await this.off.buscarPorEan(ean);
     if (externo) {
-      const guardado = await this.guardarProductoDesdeOff(externo);
+      const guardado = await this.catalogo.findOrCreateDesdeOff(externo);
       return {
         fuente: 'openfoodfacts' as const,
         ean: externo.ean,
@@ -362,14 +369,12 @@ export class DonacionesService {
     }
 
     const acopioId = dto.acopioId ?? imagen.acopioId;
-    const coincidencias =
-      acopioId && nombre
-        ? await this.inventario.coincidencias(organizationId, acopioId, nombre, marca)
-        : [];
+    const coincidencias = nombre ? await this.catalogo.coincidencias(nombre, marca) : [];
 
     await this.prisma.donacionImagen.update({
       where: { id },
       data: {
+        acopioId: acopioId ?? imagen.acopioId,
         nombreDetectado: nombre,
         cantidadDetectada: cantidad,
         estado: DonacionImagenEstado.Procesada,
@@ -406,14 +411,11 @@ export class DonacionesService {
         where: { ean: { in: variantesEan(ean) } },
       });
       if (!ya) {
-        await this.prisma.producto.create({
-          data: {
-            nombre: dto.nombre.trim(),
-            marca: dto.marca?.trim() || null,
-            ean,
-            alias: [],
-          },
-        }).catch(() => undefined);
+        await this.catalogo.crear({
+          nombre: dto.nombre.trim(),
+          marca: dto.marca,
+          ean,
+        });
       }
     }
 
@@ -425,41 +427,13 @@ export class DonacionesService {
     };
   }
 
-  private async guardarProductoDesdeOff(externo: {
-    ean: string;
-    nombre: string;
-    marca: string | null;
-  }) {
-    const existente = await this.prisma.producto.findFirst({
-      where: { ean: { in: variantesEan(externo.ean) } },
-    });
-    if (existente) {
-      return existente;
-    }
-    try {
-      return await this.prisma.producto.create({
-        data: {
-          nombre: externo.nombre,
-          marca: externo.marca,
-          ean: externo.ean,
-          alias: [],
-        },
-      });
-    } catch {
-      return this.prisma.producto.findFirst({
-        where: { ean: { in: variantesEan(externo.ean) } },
-      });
-    }
-  }
-
   private async conUrlVisible<
     T extends { blobUrl: string; blobPathname: string; cantidadDetectada?: unknown },
   >(imagen: T): Promise<T> {
     return {
       ...imagen,
       blobUrl: await this.r2.urlParaMostrar(imagen.blobPathname, imagen.blobUrl),
-      cantidadDetectada:
-        imagen.cantidadDetectada == null ? null : Number(imagen.cantidadDetectada),
+      cantidadDetectada: imagen.cantidadDetectada == null ? null : Number(imagen.cantidadDetectada),
     };
   }
 

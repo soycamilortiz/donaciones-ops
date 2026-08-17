@@ -8,6 +8,7 @@ import {
 } from '@soschoco/shared';
 import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsIn,
   IsNumber,
   IsOptional,
@@ -77,6 +78,9 @@ export class RegistrarImagenDto {
 export class ProductoDto {
   @ApiProperty()
   id: string;
+
+  @ApiProperty()
+  sku: string;
 
   @ApiProperty()
   nombre: string;
@@ -168,10 +172,52 @@ export class ConfirmarDonacionDto {
   @IsString()
   marca?: string;
 
-  @ApiPropertyOptional({ description: 'Sumar a este ítem aunque el nombre no coincida letra a letra' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()
   inventoryItemId?: string;
+
+  @ApiPropertyOptional({ description: 'Recepción a la que se cuelga esta foto' })
+  @IsOptional()
+  @IsUUID()
+  recepcionId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  unidadLogisticaId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  productoId?: string;
+
+  @ApiPropertyOptional({ description: 'Alta en catálogo si no hay match' })
+  @IsOptional()
+  @IsBoolean()
+  crearProducto?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Matches(/^\d{8,14}$/)
+  ean?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  presentacion?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  loteCodigoOrigen?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  vencimiento?: string;
 }
 
 export class PaginaDonacionImagenDto {
