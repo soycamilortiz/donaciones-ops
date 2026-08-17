@@ -224,6 +224,8 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 
 Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio.
 
+Sistema visual «html-base»: paleta verde (`#12331A`) + acento dorado (`#F2C230`) sobre fondo sage, tipografía Archivo (self-hosted vía `@fontsource-variable/archivo`) y radios tipo píldora. Los tokens viven en `src/styles/design-system.css` (`@theme` de Tailwind) y `src/styles.css` (`:root` de las páginas legacy); cambiarlos repinta toda la app. El CTA primario usa tinta verde sobre el dorado para cumplir WCAG AA.
+
 ## Qué falta
 
 - Módulo de envíos (contenedor + API).
