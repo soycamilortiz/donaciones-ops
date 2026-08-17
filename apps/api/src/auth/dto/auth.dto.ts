@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { AuthSession, AuthUser, Captcha, RegisterPendingVerification } from '@soschoco/shared';
+import type {
+  AuthSession,
+  AuthUser,
+  Captcha,
+  GoogleProfilePending,
+  RegisterPendingVerification,
+} from '@soschoco/shared';
 import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class CaptchaResponseDto implements Captcha {
@@ -124,4 +130,51 @@ export class ResendVerificationDto {
   @ApiProperty({ example: 'ana@org.org' })
   @IsEmail()
   correo: string;
+}
+
+export class GoogleSignInDto {
+  @ApiProperty({ description: 'ID token (credential) del botón de Google' })
+  @IsString()
+  @MinLength(20)
+  credential: string;
+}
+
+export class CompleteGoogleProfileDto {
+  @ApiProperty({ description: 'Token devuelto cuando falta completar el perfil' })
+  @IsString()
+  @MinLength(20)
+  profileToken: string;
+
+  @ApiProperty({ example: 'ana.restrepo' })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(32)
+  @Matches(/^[a-zA-Z0-9._]+$/, {
+    message: 'El usuario solo admite letras, números, punto y guion bajo',
+  })
+  usuario: string;
+
+  @ApiPropertyOptional({ example: 'Ana Restrepo' })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  nombre?: string;
+}
+
+export class GoogleProfilePendingDto implements GoogleProfilePending {
+  @ApiProperty({ example: true })
+  needsProfile: true;
+
+  @ApiProperty()
+  profileToken: string;
+
+  @ApiProperty()
+  correo: string;
+
+  @ApiProperty()
+  nombre: string;
+
+  @ApiProperty()
+  usuarioSugerido: string;
 }

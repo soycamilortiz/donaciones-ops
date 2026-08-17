@@ -27,6 +27,16 @@ export type RegisterPendingVerification = {
 
 export type RegisterResult = AuthSession | RegisterPendingVerification;
 
+export type GoogleProfilePending = {
+  needsProfile: true;
+  profileToken: string;
+  correo: string;
+  nombre: string;
+  usuarioSugerido: string;
+};
+
+export type GoogleAuthResult = AuthSession | GoogleProfilePending;
+
 export type Captcha = {
   captchaId: string;
   svg: string;

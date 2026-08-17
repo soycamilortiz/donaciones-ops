@@ -26,6 +26,8 @@ FROM deps AS build
 COPY turbo.json biome.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/web ./apps/web
+ARG VITE_GOOGLE_CLIENT_ID=
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN pnpm --filter @soschoco/shared build && pnpm --filter web build
 
 FROM nginx:1.27-alpine AS runner

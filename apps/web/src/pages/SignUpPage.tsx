@@ -2,6 +2,7 @@ import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { apiRequest, type RegisterPendingVerification } from '../lib/api';
 import { ROUTES } from '../lib/constants';
 
@@ -48,6 +49,8 @@ export default function SignUpPage() {
       </Link>
       <form className="form auth-form" onSubmit={(event) => void onSubmit(event)}>
         <h1>{t('auth.createAccount')}</h1>
+        <GoogleSignInButton onError={setError} />
+        <p className="auth-divider muted">{t('auth.orEmail')}</p>
         <label className="field">
           {t('auth.name')}
           <input name="nombre" required minLength={2} autoComplete="name" />

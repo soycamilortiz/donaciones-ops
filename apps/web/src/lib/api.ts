@@ -12,6 +12,8 @@ export type {
   AuthUser,
   Captcha,
   RegisterPendingVerification,
+  GoogleAuthResult,
+  GoogleProfilePending,
   InventoryItem,
   Me,
   Member,

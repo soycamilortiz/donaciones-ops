@@ -9,6 +9,7 @@ export const ROUTES = {
   signIn: '/sign-in',
   signUp: '/sign-up',
   verificarCorreo: '/verificar-correo',
+  completarGoogle: '/completar-cuenta-google',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

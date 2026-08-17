@@ -206,6 +206,13 @@
     "submitSignUp": "Sign up",
     "passwordsMismatch": "Passwords do not match",
     "signUpError": "Could not register",
+    "orEmail": "or with email and password",
+    "googleError": "Could not sign in with Google",
+    "googleCompleteTitle": "Complete your account",
+    "googleCompleteSubtitle": "Pick a username for SOS Chocó. Your email comes from Google.",
+    "googleCompleteSubmit": "Create account",
+    "googleCompleting": "Saving…",
+    "googleCompleteError": "Could not complete registration",
     "captchaLoading": "Loading captcha…",
     "captchaError": "Could not load the captcha"
   },

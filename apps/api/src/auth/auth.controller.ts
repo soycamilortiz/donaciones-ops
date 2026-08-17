@@ -14,6 +14,9 @@ import { CaptchaService } from './captcha.service';
 import {
   AuthTokenDto,
   CaptchaResponseDto,
+  CompleteGoogleProfileDto,
+  GoogleProfilePendingDto,
+  GoogleSignInDto,
   LoginDto,
   RegisterDto,
   RegisterPendingDto,
@@ -75,5 +78,25 @@ export class AuthController {
   @ApiUnprocessableEntityResponse({ description: 'Captcha inválido' })
   login(@Body() dto: LoginDto) {
     return this.auth.login(dto);
+  }
+
+  @Post('google')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Inicio o registro con Google (ID token del front)' })
+  @ApiOkResponse({ type: AuthTokenDto, description: 'Sesión emitida' })
+  @ApiCreatedResponse({ type: GoogleProfilePendingDto, description: 'Falta elegir usuario' })
+  @ApiUnauthorizedResponse({ description: 'Credencial inválida' })
+  signInWithGoogle(@Body() dto: GoogleSignInDto) {
+    return this.auth.signInWithGoogle(dto);
+  }
+
+  @Post('google/completar')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Completa el perfil tras el primer inicio con Google' })
+  @ApiOkResponse({ type: AuthTokenDto })
+  @ApiConflictResponse({ description: 'Usuario en uso' })
+  @ApiUnprocessableEntityResponse({ description: 'Token de perfil inválido' })
+  completeGoogleProfile(@Body() dto: CompleteGoogleProfileDto) {
+    return this.auth.completeGoogleProfile(dto);
   }
 }

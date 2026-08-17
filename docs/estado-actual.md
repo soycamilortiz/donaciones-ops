@@ -86,6 +86,8 @@ No hay proveedor externo. El API emite un JWT y el front lo guarda en `localStor
 | Verificar correo | `POST /api/v1/auth/verificar-correo` — token del enlace **o** correo + código de 6 dígitos. Emite JWT |
 | Reenviar código | `POST /api/v1/auth/verificar-correo/reenviar` — cooldown 60 s. No revela si el correo existe |
 | Login | `POST /api/v1/auth/login` — usuario **o** correo, contraseña y captcha. 403 si el correo no está verificado |
+| Google | `POST /api/v1/auth/google` — ID token del botón. Emite JWT o pide completar perfil |
+| Completar Google | `POST /api/v1/auth/google/completar` — usuario (y nombre opcional) tras el primer Google |
 | Captcha | `GET /api/v1/auth/captcha` — SVG, 5 minutos, un solo uso. La respuesta se guarda como SHA-256 |
 | Contraseña | bcrypt, 12 rounds. Nunca se persiste ni se devuelve en texto plano |
 | Sesión | `Authorization: Bearer <jwt>`. Default 8h (`JWT_EXPIRES_IN`) |
@@ -113,7 +115,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 
 | Recurso | Ruta |
 | --- | --- |
-| Auth | `/api/v1/auth/captcha`, `/register`, `/login`, `/verificar-correo`, `/verificar-correo/reenviar` |
+| Auth | `/api/v1/auth/captcha`, `/register`, `/login`, `/google`, `/google/completar`, `/verificar-correo`, `/verificar-correo/reenviar` |
 | Yo | `/api/v1/me` |
 | Organizaciones | `/api/v1/organizations` |
 | Miembros | `/api/v1/organizations/:orgId/members` |
@@ -157,6 +159,8 @@ Variables del API:
 | `RESEND_API_KEY` | Clave de Resend. Solo hace falta con `EMAIL_VERIFICATION=true` |
 | `MAIL_FROM` | Default `SOS Chocó <beth.t@example.com>` (sandbox de Resend) |
 | `PUBLIC_WEB_URL` | Origen del front para el link. Default `http://localhost` |
+| `GOOGLE_CLIENT_ID` | OAuth Google (validar ID token). Mismo valor en `VITE_GOOGLE_CLIENT_ID` del front |
+| `GOOGLE_CLIENT_SECRET` | Opcional hoy; reservado para flujos server-side |
 | `RBAC_SYNC_ON_BOOT` | Default `true`. Ponelo en `false` en serverless |
 | `SWAGGER_ENABLED` | Default `true`. Ponelo en `false` en serverless |
 | `LOGS_TOKEN` | Opcional. Si está, `/logs` exige `?token=…` |

@@ -796,3 +796,14 @@ label:has(> input[type="radio"]) {
 .address-suggest-item:focus-visible {
   background: var(--muted);
 }
+
+.auth-google {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 8px;
+}
+
+.auth-divider {
+  text-align: center;
+  margin: 4px 0 12px;
+}

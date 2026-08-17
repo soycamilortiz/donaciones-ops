@@ -206,6 +206,13 @@
     "submitSignUp": "Registrarme",
     "passwordsMismatch": "Las contraseñas no coinciden",
     "signUpError": "No se pudo registrar",
+    "orEmail": "o con correo y contraseña",
+    "googleError": "No se pudo entrar con Google",
+    "googleCompleteTitle": "Completá tu cuenta",
+    "googleCompleteSubtitle": "Elegí un usuario para SOS Chocó. El correo ya viene de Google.",
+    "googleCompleteSubmit": "Crear cuenta",
+    "googleCompleting": "Guardando…",
+    "googleCompleteError": "No se pudo completar el registro",
     "captchaLoading": "Cargando captcha…",
     "captchaError": "No se pudo cargar el captcha"
   },

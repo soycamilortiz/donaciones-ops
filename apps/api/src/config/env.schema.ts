@@ -114,6 +114,11 @@ export const envSchema = z.object({
   PUBLIC_WEB_URL: z.preprocess(emptyToUndefined, z.string().url().optional()).transform(
     (v) => v ?? 'http://localhost',
   ),
+
+  /** Google Sign-In (OAuth). Solo hace falta el client ID para validar el ID token. */
+  GOOGLE_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().min(8).optional()),
+  /** Reservado por si más adelante usamos flujo authorization-code en el API. */
+  GOOGLE_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().min(8).optional()),
 });
 
 export type Env = z.infer<typeof envSchema>;

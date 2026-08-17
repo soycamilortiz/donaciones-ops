@@ -20,7 +20,8 @@ model User {
   usuario             String    @unique
   correo              String    @unique
   nombre              String
-  passwordHash        String    @map("password_hash")
+  passwordHash        String?   @map("password_hash")
+  googleId            String?   @unique @map("google_id")
   isActive            Boolean   @default(true) @map("is_active")
   correoVerificadoAt  DateTime? @map("correo_verificado_at")
   createdAt           DateTime  @default(now()) @map("created_at")
