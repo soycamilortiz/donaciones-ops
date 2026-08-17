@@ -2,17 +2,18 @@ import type { ReactElement } from 'react';
 import { cn } from '@/lib/utils';
 import type { BadgeProps, BadgeVariant } from './Badge.types';
 
+// Skin html-base: pastillas «soft» — fondo tenue + texto del color de estado.
 const base =
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors';
+  'inline-flex items-center rounded-pill px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors';
 
 const variants: Record<BadgeVariant, string> = {
-  default: 'border-transparent bg-primary text-primary-foreground',
-  secondary: 'border-transparent bg-secondary text-secondary-foreground',
-  success: 'border-transparent bg-success text-success-foreground',
-  warning: 'border-transparent bg-warning text-warning-foreground',
-  error: 'border-transparent bg-error text-error-foreground',
-  info: 'border-transparent bg-info text-info-foreground',
-  outline: 'border-border text-foreground',
+  default: 'bg-secondary text-muted-foreground',
+  secondary: 'bg-muted text-foreground',
+  success: 'bg-success-soft text-success',
+  warning: 'bg-warning-soft text-warning',
+  error: 'bg-error-soft text-error',
+  info: 'bg-info-soft text-info',
+  outline: 'border border-border text-foreground',
 };
 
 export function Badge({ className, variant = 'default', ...props }: BadgeProps): ReactElement {

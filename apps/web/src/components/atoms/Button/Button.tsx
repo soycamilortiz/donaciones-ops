@@ -7,23 +7,24 @@ import type { ButtonProps, ButtonSize, ButtonVariant } from './Button.types';
 // la mano, en campo y muchas veces con guantes o bajo lluvia; alli un boton de
 // 36px se falla seguido. El alto visual lo sigue marcando `sizes`, pero el area
 // pulsable nunca baja de 44.
+// Skin html-base: pastilla (`rounded-pill`), peso fuerte y CTA primario en oro.
 const base =
-  'appearance-none inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50';
+  'appearance-none inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-pill text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50';
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
-  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-  outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-  ghost: 'hover:bg-accent hover:text-accent-foreground',
+  primary: 'bg-accent text-accent-foreground hover:brightness-105 active:brightness-95',
+  secondary: 'bg-primary text-primary-foreground hover:bg-primary-panel',
+  outline: 'border border-border bg-card text-foreground hover:bg-background',
+  ghost: 'text-foreground hover:bg-secondary',
   destructive: 'bg-error text-error-foreground hover:bg-error/90',
-  link: 'text-primary underline-offset-4 hover:underline',
+  link: 'min-h-0 min-w-0 rounded-none text-primary underline underline-offset-4 hover:brightness-110',
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: 'h-11 px-3',
-  md: 'h-11 px-4 py-2',
-  lg: 'h-12 px-8',
-  icon: 'h-11 w-11',
+  sm: 'h-11 px-4',
+  md: 'h-11 px-5',
+  lg: 'h-14 px-8 text-base',
+  icon: 'h-11 w-11 px-0',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
