@@ -7,7 +7,7 @@ import type { FooterProps } from './Footer.types';
 
 export function Footer({ className, ...props }: FooterProps): ReactElement {
   return (
-    <footer className={cn('border-t border-border bg-background', className)} {...props}>
+    <footer className={cn('border-t border-border bg-card', className)} {...props}>
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 font-semibold">
           <Icon name="heart" className="text-primary" />
