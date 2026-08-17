@@ -468,6 +468,9 @@ export default function InventoryPage() {
             />
             <Input
               id="inv-q"
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t('inventory.searchPlaceholder')}

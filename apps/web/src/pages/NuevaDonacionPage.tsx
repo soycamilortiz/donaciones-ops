@@ -273,6 +273,8 @@ export default function NuevaDonacionPage() {
           <Input
             id="donacion-ean"
             inputMode="numeric"
+            enterKeyHint="done"
+            autoComplete="off"
             value={eanManual}
             onChange={(e) => setEanManual(e.target.value)}
             placeholder="3017620422003"
