@@ -12,7 +12,10 @@ const base =
   'appearance-none inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-pill text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50';
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-accent-foreground hover:brightness-105 active:brightness-95',
+  // Etiqueta en verde tinta sobre la pastilla dorada: html-base usa gold-deep,
+  // pero ese par da ~2.6:1 y no pasa WCAG AA. Las reglas de a11y del proyecto
+  // mandan sobre el mockup, asi que la etiqueta va en `text-primary` (~8.4:1).
+  primary: 'bg-accent text-primary hover:brightness-105 active:brightness-95',
   secondary: 'bg-primary text-primary-foreground hover:bg-primary-panel',
   outline: 'border border-border bg-card text-foreground hover:bg-background',
   ghost: 'text-foreground hover:bg-secondary',
