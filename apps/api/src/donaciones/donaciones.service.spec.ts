@@ -39,14 +39,14 @@ describe('DonacionesService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
         findFirst: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
-        create: jest.fn().mockImplementation(({ data }) => ({ id: 'img-1', ...data })),
-        update: jest.fn().mockImplementation(({ data }) => ({ id: 'img-1', ...data })),
+        create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'img-1', ...data })),
+        update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'img-1', ...data })),
       },
       producto: {
         findUnique: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
         findMany: jest.fn().mockResolvedValue([]),
-        create: jest.fn(),
+        create: jest.fn().mockResolvedValue({ id: 'prod-new' }),
       },
       acopio: { findFirst: jest.fn().mockResolvedValue({ id: 'acopio-1' }) },
     };
@@ -77,7 +77,10 @@ describe('DonacionesService', () => {
         { provide: R2StorageService, useValue: r2 },
         { provide: InventoryService, useValue: inventario },
         { provide: OpenFoodFactsService, useValue: off },
-        { provide: VisionProductoService, useValue: { leerImagen: jest.fn().mockResolvedValue(null) } },
+        {
+          provide: VisionProductoService,
+          useValue: { leerImagen: jest.fn().mockResolvedValue(null) },
+        },
       ],
     }).compile();
 

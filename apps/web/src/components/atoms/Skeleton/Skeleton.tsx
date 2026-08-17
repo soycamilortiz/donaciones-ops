@@ -15,7 +15,7 @@ import type { SkeletonListProps, SkeletonProps } from './Skeleton.types';
  */
 export function Skeleton({ className }: SkeletonProps): ReactElement {
   return (
-    <span aria-hidden="true" className={cn('block animate-pulse rounded bg-muted', className)} />
+    <span aria-hidden="true" className={cn('block animate-pulse rounded-md bg-muted', className)} />
   );
 }
 

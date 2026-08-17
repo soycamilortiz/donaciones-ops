@@ -1,10 +1,33 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SkeletonList } from '../components/atoms/Skeleton';
-import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
-import { useOrg } from '../components/OrgGate';
-import type { Member, Role } from '../lib/api';
-import { useApi } from '../lib/useApi';
+import { Avatar } from '@/components/atoms/Avatar';
+import { Badge } from '@/components/atoms/Badge';
+import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
+import { Input } from '@/components/atoms/Input';
+import { SkeletonList } from '@/components/atoms/Skeleton';
+import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
+import { FormField } from '@/components/molecules/FormField';
+import { useOrg } from '@/components/OrgGate';
+import type { Member, Role } from '@/lib/api';
+import { useApi } from '@/lib/useApi';
+import { cn } from '@/lib/utils';
+
+// Shared with the invite-form role picker and the per-row role selects (mobile
+// card + desktop table), so the three stay visually identical.
+const roleSelectBase =
+  'min-h-11 w-full cursor-pointer rounded-md border border-border bg-card px-3.5 text-sm font-medium text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+
+/** First letter of up to two words, for the round avatar fallback. */
+function initials(nombre: string): string {
+  return nombre
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0] ?? '')
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
 
 export default function UsersPage() {
   const { orgId, can } = useOrg();
@@ -100,119 +123,240 @@ export default function UsersPage() {
     }
   }
 
+  const activeRoles = roles.filter((role) => role.isActive !== false);
+
+  function roleField(member: Member, className?: string) {
+    if (can('members:role') && member.isActive !== false) {
+      return (
+        <select
+          className={cn(roleSelectBase, className)}
+          value={member.roleSlug}
+          aria-label={`${t('users.columns.role')}: ${member.nombre}`}
+          onChange={(event) => void onRole(member.userId, event.target.value)}
+        >
+          {activeRoles.map((role) => (
+            <option key={role.slug} value={role.slug}>
+              {role.nombre}
+            </option>
+          ))}
+        </select>
+      );
+    }
+    return <span className="text-sm text-foreground">{member.roleNombre}</span>;
+  }
+
+  function actionField(member: Member, className?: string) {
+    if (!can('members:remove')) {
+      return null;
+    }
+    if (member.isActive === false) {
+      if (!can('members:invite')) {
+        return null;
+      }
+      return (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={className}
+          onClick={() => void onReactivate(member)}
+        >
+          {t('users.reactivate')}
+        </Button>
+      );
+    }
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className={className}
+        onClick={() => setPorConfirmar(member.userId)}
+      >
+        {t('confirm.removeMemberAction')}
+      </Button>
+    );
+  }
+
   return (
-    <section className="panel">
-      <h1>{t('users.title')}</h1>
+    <div className="space-y-6 py-2">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold text-foreground">{t('users.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('users.subtitle')}</p>
+      </div>
+
       {can('members:invite') ? (
-        <form className="inline-form" onSubmit={(event) => void onInvite(event)}>
-          {/*
-            El placeholder desaparece al escribir: no sirve como etiqueta. Se usa
-            `sr-only` para no alterar el formulario en linea, que es compacto a
-            proposito, pero dejando el nombre disponible para lectores de pantalla.
-          */}
-          <label className="sr-only" htmlFor="invitar-correo">
-            {t('users.inviteEmail')}
-          </label>
-          <input
-            id="invitar-correo"
-            name="correo"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="correo@org.org"
-            required
-          />
-          <label className="sr-only" htmlFor="invitar-rol">
-            {t('users.inviteRole')}
-          </label>
-          <select id="invitar-rol" name="roleSlug" defaultValue="voluntario">
-            {roles
-              .filter((role) => role.isActive !== false)
-              .map((role) => (
-                <option key={role.slug} value={role.slug}>
-                  {role.nombre}
-                </option>
-              ))}
-          </select>
-          <button className="button" type="submit">
-            Agregar
-          </button>
+        <form
+          className="space-y-3 rounded-lg border border-border bg-card p-5"
+          onSubmit={(event) => void onInvite(event)}
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+            <FormField
+              label={t('users.inviteEmail')}
+              htmlFor="invitar-correo"
+              required
+              hint={t('users.inviteHint')}
+              className="flex-1 sm:min-w-[240px]"
+            >
+              <Input
+                id="invitar-correo"
+                name="correo"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="correo@org.org"
+                required
+              />
+            </FormField>
+            <FormField label={t('users.inviteRole')} htmlFor="invitar-rol" className="sm:w-56">
+              <select
+                id="invitar-rol"
+                name="roleSlug"
+                defaultValue="voluntario"
+                className={roleSelectBase}
+              >
+                {activeRoles.map((role) => (
+                  <option key={role.slug} value={role.slug}>
+                    {role.nombre}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <Button type="submit">
+              {t('users.add')}
+              <Icon name="plus" size={18} />
+            </Button>
+          </div>
         </form>
       ) : null}
+
       {error ? (
-        <p role="alert" className="error">
+        <p role="alert" className="text-sm font-medium text-error">
           {error}
         </p>
       ) : null}
-      {cargando ? <SkeletonList filas={4} etiqueta={t('common.loading')} /> : null}
 
-      <table hidden={cargando}>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Usuario</th>
-            <th>Correo</th>
-            <th>Rol</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {members.map((member) => (
-            <tr
-              key={member.userId}
-              className={member.isActive === false ? 'is-inactive' : undefined}
-            >
-              <td>
-                {member.nombre}
-                {member.isActive === false ? <div className="badge-baja">Baja</div> : null}
-              </td>
-              <td>{member.usuario}</td>
-              <td>{member.correo}</td>
-              <td>
-                {can('members:role') && member.isActive !== false ? (
-                  <select
-                    value={member.roleSlug}
-                    onChange={(event) => void onRole(member.userId, event.target.value)}
+      {cargando ? (
+        <SkeletonList filas={4} etiqueta={t('common.loading')} />
+      ) : members.length === 0 ? (
+        <p className="rounded-lg border border-border bg-card px-6 py-10 text-center text-sm text-muted-foreground">
+          {t('common.empty')}
+        </p>
+      ) : (
+        <>
+          {/* UX-014 · <600px (~sm): una tarjeta por persona, controles a lo ancho. */}
+          <ul className="space-y-3 sm:hidden">
+            {members.map((member) => (
+              <li
+                key={member.userId}
+                className="space-y-3 rounded-lg border border-border bg-card p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar
+                    size="sm"
+                    alt={member.nombre}
+                    fallback={initials(member.nombre)}
+                    className={member.isActive === false ? 'opacity-50' : undefined}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-foreground">{member.nombre}</p>
+                    <p className="truncate text-xs text-muted-foreground">{member.correo}</p>
+                  </div>
+                  {member.isActive === false ? (
+                    <Badge variant="error">{t('users.inactiveBadge')}</Badge>
+                  ) : null}
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-bold uppercase tracking-wide">
+                    {t('users.columns.username')}:
+                  </span>{' '}
+                  {member.usuario}
+                </p>
+
+                <div className="space-y-1.5">
+                  <span className="block text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {t('users.columns.role')}
+                  </span>
+                  {roleField(member)}
+                </div>
+
+                {actionField(member, 'w-full')}
+              </li>
+            ))}
+          </ul>
+
+          {/* UX-014 · >=600px (sm): tabla completa, sin scroll de página. */}
+          <div className="hidden overflow-x-auto rounded-lg border border-border bg-card sm:block">
+            <table className="w-full caption-bottom text-sm">
+              <thead className="border-b border-border bg-secondary">
+                <tr>
+                  <th
+                    scope="col"
+                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
                   >
-                    {roles
-                      .filter((role) => role.isActive !== false)
-                      .map((role) => (
-                        <option key={role.slug} value={role.slug}>
-                          {role.nombre}
-                        </option>
-                      ))}
-                  </select>
-                ) : (
-                  member.roleNombre
-                )}
-              </td>
-              <td>
-                {can('members:remove') ? (
-                  member.isActive === false ? (
-                    can('members:invite') ? (
-                      <button
-                        type="button"
-                        className="linkish"
-                        onClick={() => void onReactivate(member)}
-                      >
-                        Reactivar
-                      </button>
-                    ) : null
-                  ) : (
-                    <button
-                      type="button"
-                      className="linkish"
-                      onClick={() => setPorConfirmar(member.userId)}
-                    >
-                      {t('confirm.removeMemberAction')}
-                    </button>
-                  )
-                ) : null}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                    {t('users.columns.name')}
+                  </th>
+                  <th
+                    scope="col"
+                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                  >
+                    {t('users.columns.username')}
+                  </th>
+                  <th
+                    scope="col"
+                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                  >
+                    {t('users.columns.email')}
+                  </th>
+                  <th
+                    scope="col"
+                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                  >
+                    {t('users.columns.role')}
+                  </th>
+                  <th
+                    scope="col"
+                    className="h-11 px-4 text-right align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                  >
+                    {t('users.columns.actions')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member) => (
+                  <tr
+                    key={member.userId}
+                    className="border-b border-border transition-colors last:border-0 hover:bg-secondary/50"
+                  >
+                    <td className="px-4 py-3.5 align-middle">
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          size="sm"
+                          alt={member.nombre}
+                          fallback={initials(member.nombre)}
+                          className={member.isActive === false ? 'opacity-50' : undefined}
+                        />
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-bold text-foreground">{member.nombre}</span>
+                          {member.isActive === false ? (
+                            <Badge variant="error">{t('users.inactiveBadge')}</Badge>
+                          ) : null}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 align-middle text-foreground">{member.usuario}</td>
+                    <td className="px-4 py-3.5 align-middle text-foreground">{member.correo}</td>
+                    <td className="px-4 py-3.5 align-middle">{roleField(member, 'sm:w-48')}</td>
+                    <td className="px-4 py-3.5 text-right align-middle">{actionField(member)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       <ConfirmDialog
         abierto={porConfirmar !== null}
         titulo={t('confirm.removeMemberTitle')}
@@ -222,6 +366,6 @@ export default function UsersPage() {
         onConfirmar={() => porConfirmar && void onRemove(porConfirmar)}
         onCancelar={() => setPorConfirmar(null)}
       />
-    </section>
+    </div>
   );
 }

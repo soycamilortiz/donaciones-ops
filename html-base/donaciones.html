@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Donaciones — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .d-head, .d-row { grid-template-columns: 76px minmax(220px, 2fr) minmax(160px, 1.2fr) 110px 130px 120px; }
+  .d-row { min-height: 76px; }
+  .stat-ico { width: 42px; height: 42px; border-radius: 12px; background: var(--sage); display: flex; align-items: center; justify-content: center; color: var(--green); }
+  .stat-ico svg { width: 20px; height: 20px; }
+  .stat-ico-warn { background: var(--warn-soft); color: var(--warn); }
+</style>
+</head>
+<body data-route="/app/donaciones">
+
+<div class="shell">
+  <div data-shell></div>
+
+  <div class="main">
+    <header class="topbar" data-topbar></header>
+
+    <main class="content">
+
+      <div class="page-head">
+        <div class="page-head-copy">
+          <p class="eyebrow">Donaciones</p>
+          <h1 class="page-title">Donaciones</h1>
+          <p class="page-sub">Productos donados, reconocidos a partir de la foto.</p>
+        </div>
+        <a class="btn" href="donaciones-nueva.html">Registrar producto<span class="btn-cap" data-ico="camera"></span></a>
+      </div>
+
+      <div class="stat-grid" id="stats"></div>
+
+      <div class="card row row-wrap" id="banner" hidden style="background:var(--warn-soft);border-color:#E6D3AE;gap:16px">
+        <div class="stat-ico stat-ico-warn" data-ico="info"></div>
+        <div class="col gap-4 grow">
+          <p class="td-strong" id="banner-titulo"></p>
+          <p class="td-sub">El reconocimiento no llegó al umbral de certeza. Necesitan que alguien las confirme a mano.</p>
+        </div>
+        <a class="btn-ghost" href="donaciones-revision.html">Revisar<span data-ico="arrowRight"></span></a>
+      </div>
+
+      <div class="table">
+        <div class="thead d-head">
+          <span class="th">Foto</span><span class="th">Producto</span><span class="th">Acopio</span>
+          <span class="th" style="text-align:right">Certeza</span><span class="th">Estado</span>
+          <span class="th" style="text-align:right">Fecha</span>
+        </div>
+        <div id="filas"></div>
+      </div>
+
+      <p class="td-sub" id="cola-aviso" hidden></p>
+
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  import { el, fill, icon, productArt } from './assets/app.js';
+  import { DONACIONES, DONACION_ESTADOS, acopioName } from './assets/data.js';
+
+  const rows = DONACIONES.map((d) => ({ ...d }));
+  const $ = (id) => document.getElementById(id);
+
+  function pintar() {
+    const procesadas = rows.filter((d) => d.estado === 'PROCESADA');
+    const porRevisar = procesadas.filter((d) => !d.producto).length + rows.filter((d) => d.estado === 'FALLIDA').length;
+    const enCola = rows.filter((d) => d.estado === 'PENDIENTE' || d.estado === 'PROCESANDO').length;
+
+    const stats = [
+      ['heart', 'Fotos registradas', rows.length, false],
+      ['check', 'Reconocidas', procesadas.filter((d) => d.producto).length, false],
+      ['info', 'Por revisar', porRevisar, true],
+      ['settings', 'En cola', enCola, false],
+    ];
+    fill($('stats'), stats.map(([ico, l, v, warn]) => el('div', { class: 'stat', style: 'flex-direction:row;align-items:center;gap:14px' }, [
+      el('div', { class: warn && v ? 'stat-ico stat-ico-warn' : 'stat-ico' }, icon(ico)),
+      el('div', { class: 'col gap-4' }, [
+        el('span', { class: 'stat-value', text: String(v) }),
+        el('span', { class: 'stat-label', text: l }),
+      ]),
+    ])));
+
+    $('banner').hidden = porRevisar === 0;
+    $('banner-titulo').textContent = porRevisar === 1
+      ? 'Hay 1 foto sin producto identificado.'
+      : `Hay ${porRevisar} fotos sin producto identificado.`;
+
+    fill($('filas'), rows.map((d) => {
+      const est = DONACION_ESTADOS[d.estado];
+      return el('div', { class: 'trow d-row' }, [
+        el('div', { class: 'thumb' }, productArt(d.art, 52)),
+        d.producto
+          ? el('span', { class: 'td-strong', text: d.producto })
+          : el('span', { class: 'td', style: 'color:var(--ink-400)', text: 'Sin identificar' }),
+        acopioName(d.acopioId)
+          ? el('span', { class: 'td', text: acopioName(d.acopioId) })
+          : el('span', { class: 'td', style: 'color:var(--ink-400)', text: 'Sin especificar' }),
+        el('span', { class: 'td-num', style: 'text-align:right', text: typeof d.confianza === 'number' ? `${Math.round(d.confianza * 100)}%` : '—' }),
+        el('span', { class: `badge badge-${est.variant}`, text: est.label }),
+        el('span', { class: 'td mono', style: 'text-align:right', text: d.fecha }),
+      ]);
+    }));
+
+    // DonacionesPage.tsx:72-83: si hay algo en cola, recarga sola cada 4 s.
+    if (enCola) {
+      $('cola-aviso').hidden = false;
+      $('cola-aviso').textContent = `${enCola} en cola · la lista se recarga sola cada 4 segundos`;
+      clearTimeout(pintar._t);
+      pintar._t = setTimeout(avanzarCola, 4000);
+    } else {
+      $('cola-aviso').hidden = true;
+    }
+  }
+
+  /** El worker va resolviendo la cola: PENDIENTE → PROCESANDO → PROCESADA. */
+  function avanzarCola() {
+    const proc = rows.find((d) => d.estado === 'PROCESANDO');
+    if (proc) {
+      proc.estado = 'PROCESADA';
+      if (!proc.producto) proc.confianza = 0.38;
+    } else {
+      const pend = rows.find((d) => d.estado === 'PENDIENTE');
+      if (pend) { pend.estado = 'PROCESANDO'; pend.confianza = 0.62; }
+    }
+    pintar();
+  }
+
+  pintar();
+</script>
+
+</body>
+</html>

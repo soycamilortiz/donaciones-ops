@@ -11,17 +11,20 @@ export function Sidebar({
   ...props
 }: SidebarProps): ReactElement {
   return (
+    // Skin html-base: panel verde oscuro con logo en crema y navegacion clara.
     <aside
-      className={cn('flex h-full w-64 flex-col border-r border-border bg-card', className)}
+      className={cn('flex h-full w-64 flex-col bg-primary text-primary-foreground', className)}
       {...props}
     >
-      {header ? <div className="border-b border-border p-4">{header}</div> : null}
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+      {header ? <div className="p-5 text-primary-foreground">{header}</div> : null}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
         {items.map((item) => (
           <NavItem key={item.href} {...item} />
         ))}
       </nav>
-      {footer ? <div className="border-t border-border p-4">{footer}</div> : null}
+      {footer ? (
+        <div className="m-3 rounded-md bg-primary-panel p-4 text-primary-foreground">{footer}</div>
+      ) : null}
     </aside>
   );
 }

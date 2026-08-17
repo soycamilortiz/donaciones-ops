@@ -128,7 +128,13 @@ async function resolver(
   { prisma, env }: ContextoJob,
 ): Promise<Reconocimiento> {
   if (texto.trim() === '') {
-    return { texto: texto || null, confianza, productoId: null, nombreDetectado: null, cantidadDetectada: null };
+    return {
+      texto: texto || null,
+      confianza,
+      productoId: null,
+      nombreDetectado: null,
+      cantidadDetectada: null,
+    };
   }
 
   const productos = (await prisma.producto.findMany({

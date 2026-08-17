@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roles y permisos — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-route="/app/roles">
+
+<div class="shell">
+  <div data-shell></div>
+
+  <div class="main">
+    <header class="topbar" data-topbar></header>
+
+    <main class="content">
+
+      <div class="page-head">
+        <div class="page-head-copy">
+          <p class="eyebrow">Personas</p>
+          <h1 class="page-title">Roles y permisos</h1>
+          <p class="page-sub">La matriz es del sistema: un cambio aplica a todas las organizaciones. Cuando se agreguen módulos (donaciones, envíos) aparecerán filas nuevas.</p>
+        </div>
+        <span class="td-sub" id="estado-guardado"></span>
+      </div>
+
+      <div class="alert alert-warn">
+        <span data-ico="triangle"></span>
+        <div class="alert-copy">
+          <p class="alert-title">Administrador de acopio no se puede modificar</p>
+          <p class="alert-text">Es el único rol que garantiza acceso total a la organización: ni se le quitan permisos ni se da de baja.</p>
+        </div>
+      </div>
+
+      <div class="matrix">
+        <div class="matrix-grid" id="grid"></div>
+      </div>
+
+      <form class="card row row-wrap" id="nuevo-rol" style="gap:12px;align-items:flex-end">
+        <div class="field grow" style="max-width:240px">
+          <label class="field-label" for="r-nombre">Nombre del rol</label>
+          <input class="input" id="r-nombre" minlength="2" required>
+        </div>
+        <div class="field grow" style="max-width:320px">
+          <label class="field-label" for="r-desc">Descripción</label>
+          <input class="input" id="r-desc">
+        </div>
+        <button class="btn" type="submit">Crear rol<span class="btn-cap" data-ico="plus"></span></button>
+      </form>
+
+    </main>
+  </div>
+</div>
+
+<div class="backdrop" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="m-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-copy">
+        <p class="eyebrow" style="color:var(--danger)">Confirmación</p>
+        <h2 class="modal-title" id="m-title"></h2>
+      </div>
+      <button class="modal-x" type="button" data-close aria-label="Cerrar"><span data-ico="x"></span></button>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+    <div class="modal-foot">
+      <span class="td-sub grow" id="m-hint"></span>
+      <button class="btn-ghost" type="button" data-close>Cancelar</button>
+      <button class="btn-danger" type="button" id="m-ok"><span data-ico="trash"></span>Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { el, fill, icon, openModal, closeModal, wireModal, toast } from './assets/app.js';
+  import { ROLES, PERMISSIONS, MEMBERS, roleName } from './assets/data.js';
+
+  const roles = ROLES.map((r) => ({ ...r, permissions: [...r.permissions] }));
+  const miembros = MEMBERS.filter((m) => m.isActive);
+  const $ = (id) => document.getElementById(id);
+  const modal = $('modal');
+  wireModal(modal);
+  let porBorrar = null;
+
+  const conRol = (slug) => miembros.filter((m) => m.roleSlug === slug);
+
+  function marcar() {
+    $('estado-guardado').textContent = 'Guardado';
+    clearTimeout(marcar._t);
+    marcar._t = setTimeout(() => { $('estado-guardado').textContent = ''; }, 1400);
+  }
+
+  function pintar() {
+    const cabecera = el('div', { class: 'mrow mrow-head' }, [
+      el('span', { class: 'th', text: 'Permiso' }),
+      ...roles.map((r) => el('div', { class: 'col gap-4' }, [
+        el('span', { class: 'mrole-name', text: r.nombre }),
+        el('span', { class: 'mrole-slug', text: r.slug }),
+        !r.locked ? bajaBtn(r) : el('span', { class: 'mrole-slug', text: 'no editable' }),
+      ])),
+    ]);
+
+    const filas = PERMISSIONS.map((p) => el('div', { class: 'mrow' }, [
+      el('div', { class: 'col gap-4' }, [
+        el('span', { class: 'mperm-name', text: p.nombre }),
+        el('span', { class: 'mperm-slug', text: p.slug }),
+      ]),
+      ...roles.map((r) => celda(r, p)),
+    ]));
+
+    fill($('grid'), [cabecera, ...filas]);
+    $('grid').style.gridTemplateColumns = '';
+    document.querySelectorAll('.mrow').forEach((row) => {
+      row.style.gridTemplateColumns = `280px repeat(${roles.length}, 1fr)`;
+    });
+  }
+
+  function celda(rol, perm) {
+    const on = rol.permissions.includes(perm.slug);
+    const input = el('input', { type: 'checkbox', checked: on, 'aria-label': `${perm.nombre} para ${rol.nombre}` });
+    if (rol.locked) input.disabled = true;
+
+    input.addEventListener('change', () => {
+      if (input.checked) rol.permissions.push(perm.slug);
+      else rol.permissions = rol.permissions.filter((s) => s !== perm.slug);
+      marcar();
+    });
+
+    return el('label', {
+      class: rol.locked ? 'mcell mcell-locked' : 'mcell',
+      title: rol.locked ? 'El administrador de acopio conserva todos los permisos' : '',
+    }, [input, el('span', { class: 'mbox' }, icon('check', 'ico', 3.4))]);
+  }
+
+  function bajaBtn(rol) {
+    const b = el('button', { class: 'link', type: 'button', text: 'Dar de baja', style: 'font-size:10px' });
+    b.addEventListener('click', () => abrirConfirm(rol));
+    return b;
+  }
+
+  function abrirConfirm(rol) {
+    porBorrar = rol;
+    const gente = conRol(rol.slug);
+    $('m-title').textContent = `Eliminar el rol «${rol.nombre}»`;
+
+    const cuerpo = [el('p', { class: 'page-sub', text: 'Quien lo tenga asignado se queda sin permisos hasta que se le asigne otro rol.' })];
+
+    if (gente.length) {
+      cuerpo.push(el('div', { class: 'alert alert-danger' }, [
+        icon('lock'),
+        el('div', { class: 'alert-copy' }, [
+          el('p', { class: 'alert-title', text: 'Hay personas con este rol. Reasignalas antes de darlo de baja' }),
+          el('p', { class: 'alert-text', text: 'El API rechaza la baja mientras exista una membresía activa con este rol. No es una advertencia: es un bloqueo.' }),
+        ]),
+      ]));
+      cuerpo.push(el('p', { class: 'section-label', text: `${gente.length} persona${gente.length > 1 ? 's' : ''} con el rol` }));
+      cuerpo.push(...gente.map((m) => el('div', { class: 'note' }, [
+        icon('users'),
+        el('p', { class: 'note-text' }, [el('strong', { text: m.nombre }), ` · ${m.correo}`]),
+      ])));
+    }
+
+    fill($('m-body'), cuerpo);
+    $('m-ok').disabled = gente.length > 0;
+    $('m-hint').textContent = gente.length ? `Reasigná ${gente.length} para habilitar` : '';
+    openModal(modal);
+  }
+
+  $('m-ok').addEventListener('click', () => {
+    if (porBorrar && !conRol(porBorrar.slug).length) {
+      const i = roles.indexOf(porBorrar);
+      roles.splice(i, 1);
+      toast({ title: 'Rol eliminado', text: porBorrar.nombre, ico: 'trash' });
+      porBorrar = null;
+      pintar();
+    }
+    closeModal(modal);
+  });
+
+  $('nuevo-rol').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const nombre = $('r-nombre').value.trim();
+    if (!nombre) return;
+    const slug = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_');
+    if (!slug) return toast({ title: 'No se pudo generar un slug para el rol', ico: 'alert', gold: true });
+    roles.push({ slug, nombre, permissions: ['org:read'] });
+    $('nuevo-rol').reset();
+    toast({ title: 'Rol creado', text: `${nombre} arranca solo con org:read.`, ico: 'shield' });
+    pintar();
+  });
+
+  pintar();
+</script>
+
+</body>
+</html>

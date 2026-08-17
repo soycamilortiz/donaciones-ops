@@ -7,7 +7,7 @@ import type {
   InventoryItemDto,
   UpdateInventoryItemDto,
 } from './dto/inventory.dto';
-import { UMBRAL_MISMO_PRODUCTO, similitudNombres } from './nombre-producto';
+import { similitudNombres, UMBRAL_MISMO_PRODUCTO } from './nombre-producto';
 
 @Injectable()
 export class InventoryService {
@@ -68,7 +68,9 @@ export class InventoryService {
     acopioId: string,
     nombre: string,
     marca?: string | null,
-  ): Promise<Array<{ id: string; nombre: string; marca: string | null; cantidad: number; score: number }>> {
+  ): Promise<
+    Array<{ id: string; nombre: string; marca: string | null; cantidad: number; score: number }>
+  > {
     await this.requireAcopio(orgId, acopioId);
     const filas = await this.prisma.inventoryItem.findMany({
       where: { acopioId, isActive: true },

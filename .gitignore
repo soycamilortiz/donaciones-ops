@@ -46,3 +46,6 @@ desktop.ini
 package-lock.json
 yarn.lock
 bun.lockb
+
+# Env con secretos, nunca al repo
+env.txt

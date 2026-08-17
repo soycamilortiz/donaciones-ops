@@ -84,7 +84,7 @@ export function ConfirmDialog({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: el fondo es decorativo; cerrar al pincharlo es comodidad de ratón y el camino de teclado es Escape.
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-primary-deep/40 p-4"
       role="presentation"
       onClick={(evento) => {
         if (evento.target === evento.currentTarget) {
@@ -98,9 +98,9 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={tituloId}
         aria-describedby={descripcion ? descripcionId : undefined}
-        className="w-full max-w-md space-y-4 rounded-lg border border-border bg-card p-6 shadow-lg"
+        className="w-full max-w-md space-y-4 rounded-xl border border-border bg-card p-6 shadow-xl"
       >
-        <h2 id={tituloId} className="text-lg font-semibold text-foreground">
+        <h2 id={tituloId} className="text-xl font-bold tracking-tight text-foreground">
           {titulo}
         </h2>
 

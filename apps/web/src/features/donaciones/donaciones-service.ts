@@ -92,7 +92,11 @@ export function reprocesar(request: Peticion, orgId: string, id: string): Promis
   return request<DonacionImagen>(`${base(orgId)}/${id}/reprocesar`, { method: 'POST' });
 }
 
-export function consultarEan(request: Peticion, orgId: string, codigo: string): Promise<ConsultaEan> {
+export function consultarEan(
+  request: Peticion,
+  orgId: string,
+  codigo: string,
+): Promise<ConsultaEan> {
   return request<ConsultaEan>(`${base(orgId)}/ean/${encodeURIComponent(codigo)}`);
 }
 

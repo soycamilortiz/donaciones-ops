@@ -19,8 +19,8 @@ import {
   CorregirProductoDto,
   DonacionImagenDto,
   EntradaDonacionDto,
-  InterpretarImagenDto,
   InterpretacionDto,
+  InterpretarImagenDto,
   NuevaRutaDto,
   PaginaDonacionImagenDto,
   ProductoDto,
@@ -53,7 +53,8 @@ export class DonacionesController {
   @Post()
   @RequirePermission(PermissionSlug.DonacionesWrite)
   @ApiOperation({
-    summary: 'Registrar una foto ya subida. El reconocimiento (EAN o visión) lo pide la PWA después.',
+    summary:
+      'Registrar una foto ya subida. El reconocimiento (EAN o visión) lo pide la PWA después.',
   })
   @ApiCreatedResponse({ type: DonacionImagenDto })
   registrar(
@@ -112,10 +113,7 @@ export class DonacionesController {
     summary: 'Registrar donación sin foto (manual o código de barras) y sumar inventario',
   })
   @ApiCreatedResponse({ type: EntradaDonacionDto })
-  registrarEntrada(
-    @Param('orgId', ParseUUIDPipe) orgId: string,
-    @Body() dto: RegistrarEntradaDto,
-  ) {
+  registrarEntrada(@Param('orgId', ParseUUIDPipe) orgId: string, @Body() dto: RegistrarEntradaDto) {
     return this.donaciones.registrarEntrada(orgId, dto);
   }
 

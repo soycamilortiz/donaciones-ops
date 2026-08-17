@@ -21,7 +21,9 @@
     "roles": "Roles",
     "acopios": "Collection centres",
     "inventory": "Inventory",
-    "donations": "Donations"
+    "donations": "Donations",
+    "skipToContent": "Skip to content",
+    "primary": "Primary navigation"
   },
   "donations": {
     "title": "Donations",
@@ -142,7 +144,32 @@
     "subtitle": "Warehouses are registered here: whether they receive donations, send them out, or both. They are not created when setting up the organisation.",
     "empty": "No collection centres yet. Create the first one with the form below.",
     "inactive": "Inactive",
-    "deleteError": "Could not delete"
+    "deleteError": "Could not delete",
+    "emptyTitle": "No collection centres yet",
+    "noLocation": "No location details",
+    "listTitle": "Registered",
+    "count": "{{active}} active · {{inactive}} inactive",
+    "newTitle": "New collection centre",
+    "editTitle": "Edit collection centre",
+    "reactivate": "Reactivate",
+    "deactivate": "Deactivate",
+    "reactivateError": "Could not reactivate",
+    "saveError": "Could not save",
+    "fields": {
+      "name": "Name",
+      "namePlaceholder": "Warehouse, drop-off point or site",
+      "flow": "Donation flow",
+      "municipality": "Municipality",
+      "municipalityPlaceholder": "Quibdó, Nuquí, Istmina…",
+      "address": "Address",
+      "addressPlaceholder": "Street, cross street, landmark",
+      "phone": "Phone",
+      "phonePlaceholder": "+57 000 000 0000",
+      "description": "Description",
+      "descriptionPlaceholder": "Hours, contact person, what it accepts…",
+      "lat": "Lat",
+      "lng": "Lng"
+    }
   },
   "users": {
     "title": "Users",
@@ -150,14 +177,37 @@
     "inviteRole": "Role they will have",
     "add": "Add",
     "reactivate": "Reactivate",
-    "removeError": "Could not remove"
+    "removeError": "Could not remove",
+    "subtitle": "Organization members and the role they sign in with.",
+    "inviteHint": "The person must already have an account with that email before they can be added.",
+    "inactiveBadge": "Inactive",
+    "columns": {
+      "name": "Name",
+      "username": "Username",
+      "email": "Email",
+      "role": "Role",
+      "actions": "Actions"
+    }
   },
   "roles": {
     "title": "Roles and permissions",
     "subtitle": "The matrix is system-wide: a change applies to every organisation. New rows appear as modules are added (donations, shipments).",
     "permission": "Permission",
     "deleteError": "Could not delete",
-    "yes": "Yes"
+    "yes": "Yes",
+    "lockedTitle": "The acopio administrator can't be modified",
+    "lockedText": "It's the only role that guarantees full access to the organisation: its permissions can't be removed and it can't be deactivated.",
+    "pickRole": "Pick a role",
+    "permissionsFor": "Permissions for {{name}}",
+    "permissionForRole": "{{permission}} for {{role}}",
+    "roleNameAria": "Name of {{name}}",
+    "roleDescAria": "Description of {{name}}",
+    "roleName": "Role name",
+    "description": "Description",
+    "reactivate": "Reactivate",
+    "deactivate": "Deactivate",
+    "newRole": "New role",
+    "create": "Create role"
   },
   "auth": {
     "signIn": "Sign in",
@@ -168,7 +218,18 @@
     "captchaText": "Captcha text",
     "noAccount": "No account yet?",
     "captchaLoading": "Loading captcha…",
-    "captchaError": "Could not load the captcha"
+    "captchaError": "Could not load the captcha",
+    "createAccount": "Create account",
+    "name": "Name",
+    "username": "Username",
+    "usernameHint": "3 to 32 characters. Letters, numbers, dot and underscore.",
+    "email": "Email",
+    "confirmPassword": "Confirm password",
+    "passwordHint": "At least 8 characters, with letters and numbers.",
+    "passwordMismatch": "Passwords do not match",
+    "registerError": "Could not register",
+    "signUpSubmit": "Sign up",
+    "haveAccount": "Already have an account?"
   },
   "onboarding": {
     "chooseTitle": "How do you want to continue?",
@@ -176,7 +237,71 @@
     "waitInvite": "Wait for an invitation",
     "waitingTitle": "Waiting for an invitation",
     "preferCreate": "I'd rather create an organisation",
-    "back": "Back"
+    "back": "Back",
+    "greeting": "Hi, {{nombre}}",
+    "subtitle": "Your account is already created. You don't need an organization right now — you can set up your own or wait to be added to an existing one.",
+    "createOrgDescription": "If you coordinate a center, a soup kitchen or an institution. The collection point (receiving or sending donations) is added later, in its own section.",
+    "waitInviteDescription": "Someone from the organization adds you using the email {{correo}}. Until then you can sign in and check whether you've been added yet.",
+    "roleNote": "Whoever creates the organization becomes the collection Administrator. Whoever joins by invitation enters as a Volunteer.",
+    "name": "Name",
+    "email": "Email",
+    "type": "Type",
+    "typeDetail": "Type detail",
+    "typeDetailNote": "Only if the type is “Other”",
+    "typeDetailPlaceholder": "Community action board",
+    "phone": "Phone",
+    "phonePlaceholder": "+57 000 000 0000",
+    "description": "Description",
+    "descriptionPlaceholder": "What they do, where they operate, who they serve.",
+    "createOrgLede": "Just the basics (who they are and how to reach them). Collection centres —receiving or sending donations— are added in Acopios, once inside the panel.",
+    "createError": "Could not create the organisation"
+  },
+  "waitingRoom": {
+    "eyebrow": "No organisation",
+    "subtitle": "You don't belong to any organisation yet. Once someone adds you with {{correo}}, reload this screen and you'll get into the panel.",
+    "reload": "I've been invited, reload",
+    "reloadError": "Couldn't check the invitation",
+    "stillWaiting": "No invitation yet. Nobody has added you with that email yet — try again in a bit.",
+    "note": "There's no magic link or automatic email: whoever invites you has to type this exact email address from Users."
+  },
+  "landing": {
+    "homeAria": "{{appName}} — home",
+    "primaryNavAria": "Primary navigation",
+    "apiLink": "API",
+    "goToPanel": "Go to panel",
+    "hero": {
+      "logoAlt": "SOS Chocó · #JuntxsPorElChocó",
+      "eyebrow": "Logistics operations",
+      "lede": "Coordination of donations, collection centers and shipments. Create an account — the organization is optional until you set up your own or get invited."
+    },
+    "status": {
+      "api": "API",
+      "db": "PostgreSQL",
+      "checking": "Checking",
+      "ok": "Online",
+      "down": "No response",
+      "docsLink": "OpenAPI documentation"
+    },
+    "modules": {
+      "title": "Modules",
+      "soon": "Coming soon",
+      "acopios": {
+        "title": "Collection centers",
+        "body": "WMS warehouses: location, contact and operation for each site."
+      },
+      "usuarios": {
+        "title": "Users and roles",
+        "body": "Collaborators per organization, with role-based permissions."
+      },
+      "donaciones": {
+        "title": "Donations",
+        "body": "Tracking of donated aid registered by photo."
+      },
+      "envios": {
+        "title": "Shipments",
+        "body": "Dispatch and tracking of deliveries to communities. Upcoming module."
+      }
+    }
   },
   "session": {
     "loading": "Loading session…",
@@ -263,6 +388,44 @@
     "noResults": "No products match those filters.",
     "searchPlaceholder": "Name, brand, SKU…",
     "loadAcopiosError": "Error loading collection centres",
-    "loadError": "Error loading inventory"
+    "loadError": "Error loading inventory",
+    "subtitle": "Stock for the selected center. Products are deactivated, not deleted.",
+    "acopioPicker": "Storage center",
+    "activeProducts": "Active products",
+    "allCategories": "All",
+    "showInactive": "Show inactive",
+    "product": "Product",
+    "expires": "Expires",
+    "actions": "Actions",
+    "noResultsHint": "Try another term or clear a filter.",
+    "clearFilters": "Clear filters",
+    "inactiveBadge": "Inactive",
+    "reactivate": "Reactivate",
+    "emptyGateTitle": "Inventory lives in each storage center",
+    "emptyGateText": "Create a storage center first. Without at least one active, there is nowhere to record stock.",
+    "newSubtitle": "Add an item to the selected storage center.",
+    "editSubtitle": "Update details and quantities. The record is kept.",
+    "groupIdentification": "Identification",
+    "groupPresentation": "Presentation and recipient",
+    "groupQuantity": "Quantity and status",
+    "groupLocation": "Location and origin",
+    "productName": "Product / aid",
+    "brand": "Brand",
+    "sku": "SKU / code",
+    "presentation": "Presentation",
+    "size": "Size",
+    "unit": "Unit",
+    "expiry": "Expiry date",
+    "batch": "Batch",
+    "location": "Warehouse location",
+    "presentationPlaceholder": "500 g, 900 ml…",
+    "locationPlaceholder": "Shelf, aisle…",
+    "categoryDetailPlaceholder": "Only if applicable",
+    "unitDetailPlaceholder": "Only if the unit is “Other”",
+    "modalHint": "Esc closes without saving. The product starts active.",
+    "createProduct": "Create product",
+    "saveChanges": "Save changes",
+    "saveError": "Could not save",
+    "statusUpdateError": "Could not update status"
   }
 }

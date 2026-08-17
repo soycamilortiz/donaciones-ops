@@ -1,11 +1,6 @@
 import { parseLecturaProducto, toDataUrl } from '../parse.js';
 import { PROMPT_PRODUCTO_DONADO } from '../prompt.js';
-import type {
-  ImagenVision,
-  LecturaProducto,
-  VisionAdapter,
-  VisionLogger,
-} from '../types.js';
+import type { ImagenVision, LecturaProducto, VisionAdapter, VisionLogger } from '../types.js';
 
 export type OpenAiCompatibleConfig = {
   apiKey: string;
@@ -75,9 +70,7 @@ export class OpenAiCompatibleAdapter implements VisionAdapter {
       }
       return parseLecturaProducto(raw);
     } catch (err) {
-      this.config.logger?.warn(
-        `Visión falló: ${err instanceof Error ? err.message : 'error'}`,
-      );
+      this.config.logger?.warn(`Visión falló: ${err instanceof Error ? err.message : 'error'}`);
       return null;
     }
   }

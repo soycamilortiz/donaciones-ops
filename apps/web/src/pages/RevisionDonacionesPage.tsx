@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
 import { Spinner } from '@/components/atoms/Spinner';
 import { useOrg } from '@/components/OrgGate';
 import {
@@ -110,38 +111,54 @@ export default function RevisionDonacionesPage() {
           <Spinner /> {t('common.loading')}
         </p>
       ) : pendientes.length === 0 ? (
-        <div className="space-y-1 rounded-lg border border-border p-6 text-center">
-          <p className="text-sm font-medium text-foreground">{t('review.emptyTitle')}</p>
-          <p className="text-sm text-muted-foreground">{t('review.emptyHint')}</p>
+        <div className="space-y-3 rounded-lg border border-border bg-card px-10 py-14 text-center">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-pill bg-success-soft text-success">
+            <Icon name="check" size={28} />
+          </span>
+          <div className="space-y-1">
+            <p className="text-lg font-semibold text-foreground">{t('review.emptyTitle')}</p>
+            <p className="mx-auto max-w-md text-sm text-muted-foreground">
+              {t('review.emptyHint')}
+            </p>
+          </div>
+          {productos.length === 0 ? (
+            <div className="mx-auto flex max-w-md items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft p-4 text-left">
+              <Icon name="alert-circle" size={18} className="mt-0.5 shrink-0 text-warning" />
+              <p className="text-sm text-foreground">{t('review.emptyCatalog')}</p>
+            </div>
+          ) : null}
         </div>
       ) : (
         <ul className="space-y-4">
           {pendientes.map((imagen) => (
             <li
               key={imagen.id}
-              className="flex flex-col gap-4 rounded-lg border border-border p-4 sm:flex-row"
+              className="flex flex-wrap gap-5 rounded-lg border border-border bg-card p-5"
             >
-              <img
-                src={imagen.blobUrl}
-                alt={t('review.photoAlt')}
-                loading="lazy"
-                className="h-32 w-32 shrink-0 rounded object-cover"
-              />
+              <span className="grid h-32 w-32 shrink-0 place-items-center overflow-hidden rounded-md bg-secondary">
+                <img
+                  src={imagen.blobUrl}
+                  alt={t('review.photoAlt')}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </span>
 
-              <div className="flex-1 space-y-3">
+              <div className="min-w-64 flex-1 space-y-3">
                 {imagen.estado === DonacionImagenEstado.Fallida ? (
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <Badge variant="error">{t('review.failed')}</Badge>
                     {imagen.error ? (
                       <p className="text-xs text-muted-foreground">{imagen.error}</p>
                     ) : null}
                   </div>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <Badge variant="warning">{t('review.unidentified')}</Badge>
                     {imagen.textoOcr ? (
-                      <p className="text-xs text-muted-foreground">
-                        {t('review.ocrText')} <span className="font-mono">{imagen.textoOcr}</span>
+                      <p className="rounded-sm bg-muted px-3 py-2 text-xs text-muted-foreground">
+                        {t('review.ocrText')}{' '}
+                        <span className="font-mono text-foreground">{imagen.textoOcr}</span>
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground">{t('review.noText')}</p>
@@ -155,7 +172,7 @@ export default function RevisionDonacionesPage() {
                   </label>
                   <select
                     id={`producto-${imagen.id}`}
-                    className="min-h-11 cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="min-h-11 w-full cursor-pointer rounded-md border border-border bg-card px-3.5 text-sm font-medium text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-80"
                     defaultValue=""
                     disabled={guardando === imagen.id}
                     onChange={(event) => void asignar(imagen.id, event.target.value)}
@@ -174,10 +191,10 @@ export default function RevisionDonacionesPage() {
                     disabled={guardando === imagen.id}
                     onClick={() => void reintentar(imagen.id)}
                   >
-                    Reintentar reconocimiento
+                    {t('review.retryRecognition')}
                   </Button>
 
-                  {guardando === imagen.id ? <Spinner /> : null}
+                  {guardando === imagen.id ? <Spinner className="text-primary" /> : null}
                 </div>
 
                 {productos.length === 0 ? (

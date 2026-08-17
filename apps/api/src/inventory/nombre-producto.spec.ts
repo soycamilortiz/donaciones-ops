@@ -1,7 +1,7 @@
 import {
+  normalizarNombreProducto,
   similitudNombres,
   UMBRAL_MISMO_PRODUCTO,
-  normalizarNombreProducto,
 } from './nombre-producto';
 
 describe('nombre-producto', () => {

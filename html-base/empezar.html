@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Cómo querés seguir? — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .pending { min-height: 100vh; background: var(--sage); display: flex; flex-direction: column; align-items: center; }
+  .pending-bar { width: 100%; max-width: 760px; height: 64px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+  .pending-main { width: 100%; max-width: 760px; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 22px; }
+</style>
+</head>
+<body data-route="/empezar">
+
+<div class="pending">
+
+  <header class="pending-bar">
+    <a class="brand" href="index.html" aria-label="SOS Chocó — inicio"><img class="logo logo-auth" src="assets/logo-mark.png" alt="SOS Chocó" width="520" height="441"></a>
+    <a class="tb-action" href="index.html"><span data-ico="logout"></span>Salir</a>
+  </header>
+
+  <main class="pending-main">
+
+    <div class="auth-head">
+      <p class="eyebrow">Hola, Marta Palacios</p>
+      <h1 class="auth-title">¿Cómo querés seguir?</h1>
+      <p class="auth-sub">La cuenta ya está creada. No es obligatorio tener organización ahora: podés armar la tuya o esperar a que te sumen a una existente.</p>
+    </div>
+
+    <div class="choice-grid">
+
+      <div class="choice choice-dark">
+        <div class="choice-icon" data-ico="home"></div>
+        <h2 class="choice-title">Crear organización</h2>
+        <p class="choice-text">Si coordinás un centro, una olla o una institución. El acopio (recibir o enviar donaciones) se carga después, en su propia sección.</p>
+        <a class="btn btn-block" href="empezar-organizacion.html">Crear organización<span class="btn-cap" data-ico="arrowRight"></span></a>
+      </div>
+
+      <div class="choice">
+        <div class="choice-icon" data-ico="mail"></div>
+        <h2 class="choice-title">Esperar invitación</h2>
+        <p class="choice-text">Alguien de la organización te agrega con el correo <strong id="mi-correo"></strong>. Hasta entonces podés entrar y consultar si ya te sumaron.</p>
+        <a class="btn-ghost" href="pendiente.html" style="justify-content:space-between">Esperar invitación<span data-ico="arrowRight"></span></a>
+      </div>
+
+    </div>
+
+    <div class="note">
+      <span data-ico="info"></span>
+      <p class="note-text">Quien crea la organización queda como Administrador de acopio. Quien se suma por invitación entra como Voluntario.</p>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+  import { ME } from './assets/data.js';
+  document.getElementById('mi-correo').textContent = ME.correo;
+</script>
+
+</body>
+</html>

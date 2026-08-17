@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-route="/sign-in">
+
+<div class="auth">
+
+  <header class="auth-bar">
+    <a class="brand" href="index.html" aria-label="SOS Chocó — inicio"><img class="logo logo-auth" src="assets/logo-mark.png" alt="SOS Chocó" width="520" height="441"></a>
+    <span class="tb-lang"><span data-ico="globe"></span>ES</span>
+  </header>
+
+  <main class="auth-main">
+
+    <div class="auth-head">
+      <p class="eyebrow">Operación logística</p>
+      <h1 class="auth-title">Entrar</h1>
+      <p class="auth-sub">Coordinación de donaciones, centros de acopio y envíos.</p>
+    </div>
+
+    <form class="auth-card" id="form" novalidate>
+
+      <div class="alert alert-danger" id="err" hidden>
+        <span data-ico="alert"></span>
+        <div class="alert-copy">
+          <p class="alert-title" id="err-title">Credenciales inválidas</p>
+          <p class="alert-text" id="err-text">Revisá el usuario y la contraseña. El captcha se renovó: hay que escribirlo de nuevo.</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="usuario">Usuario o correo</label>
+        <input class="input" id="usuario" name="usuario" autocomplete="username" minlength="3" required value="marta.palacios">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="password">Contraseña</label>
+        <input class="input" id="password" name="password" type="password" autocomplete="current-password" minlength="8" required value="Cambiar123!">
+      </div>
+
+      <div class="captcha">
+        <div class="captcha-row">
+          <div class="captcha-img" id="cap"></div>
+          <button class="captcha-new" type="button" id="cap-new" aria-label="Otro captcha">
+            <span data-ico="refresh"></span><span>Otro</span>
+          </button>
+        </div>
+        <div class="field">
+          <label class="field-label" for="captcha">Texto del captcha</label>
+          <input class="input" id="captcha" name="captchaAnswer" placeholder="Escribe lo que ves" autocomplete="off" spellcheck="false" required>
+        </div>
+        <p class="field-hint" id="cap-hint" hidden>Captcha renovado automáticamente</p>
+      </div>
+
+      <button class="btn btn-lg btn-block" type="submit">Entrar<span class="btn-cap" data-ico="arrowRight"></span></button>
+
+      <p class="auth-foot">¿No tenés cuenta? <a class="link" href="sign-up.html">Registrate</a></p>
+    </form>
+
+    <div class="note">
+      <span data-ico="lock"></span>
+      <p class="note-text">La sesión dura 8 horas. El captcha vive 5 minutos y es de un solo uso: cada intento fallido genera uno nuevo.</p>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+  import { fill, captchaSvg, newCaptcha } from './assets/app.js';
+
+  const cap = document.getElementById('cap');
+  const capInput = document.getElementById('captcha');
+  const hint = document.getElementById('cap-hint');
+  const err = document.getElementById('err');
+  let actual = '';
+
+  function refresh(auto = false) {
+    actual = newCaptcha();
+    fill(cap, captchaSvg(actual));
+    capInput.value = '';
+    hint.hidden = !auto;
+  }
+  refresh();
+  document.getElementById('cap-new').addEventListener('click', () => refresh(false));
+
+  document.getElementById('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const usuario = document.getElementById('usuario').value.trim();
+    const pass = document.getElementById('password').value;
+    const resp = capInput.value.trim().toLowerCase();
+
+    // El API valida captcha primero, y devuelve un mensaje distinto por caso.
+    if (resp !== actual) {
+      show('Captcha incorrecto', 'El texto no coincide con la imagen. Se generó uno nuevo.');
+      return;
+    }
+    if (usuario.length < 3 || pass.length < 8) {
+      show('Credenciales inválidas', 'Revisá el usuario y la contraseña. El captcha se renovó: hay que escribirlo de nuevo.');
+      return;
+    }
+    location.href = 'app.html';
+  });
+
+  function show(title, text) {
+    document.getElementById('err-title').textContent = title;
+    document.getElementById('err-text').textContent = text;
+    err.hidden = false;
+    document.getElementById('usuario').classList.add('input-invalid');
+    document.getElementById('password').classList.add('input-invalid');
+    refresh(true);
+    capInput.focus();
+  }
+</script>
+
+</body>
+</html>
