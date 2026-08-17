@@ -76,8 +76,13 @@ export default function UsersPage() {
     }
   }
 
+  /** Cambia la fila al instante y la revierte si el API dice que no. */
   async function onRole(userId: string, roleSlug: string) {
     setError(null);
+    const previos = members;
+    setMembers((actuales) =>
+      actuales.map((row) => (row.userId === userId ? { ...row, roleSlug } : row)),
+    );
     try {
       await request(`/api/v1/organizations/${orgId}/members/${userId}`, {
         method: 'PATCH',
@@ -86,7 +91,10 @@ export default function UsersPage() {
       await load();
       avisar(t('users.roleChanged'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('users.roleError'));
+      setMembers(previos);
+      const mensaje = err instanceof Error ? err.message : t('users.roleError');
+      setError(mensaje);
+      avisar(mensaje, { tono: 'error' });
     }
   }
 

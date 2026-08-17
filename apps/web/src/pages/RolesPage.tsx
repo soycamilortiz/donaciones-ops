@@ -58,15 +58,41 @@ export default function RolesPage() {
 
   const selectedRole = roles.find((role) => role.id === rolMovil) ?? roles[0];
 
+  /**
+   * La casilla se marca antes de salir a la red y se desmarca sola si la
+   * petición falla.
+   *
+   * Sin esto la matriz no se movía hasta que volvía el ida y vuelta: sobre una
+   * conexión de campo son segundos mirando una casilla que no responde, así que
+   * se vuelve a pulsar y se manda la petición contraria. El error, además,
+   * aparecía en un `role="alert"` clavado arriba del panel, fuera de pantalla
+   * bajo catorce filas de permisos; ahora va también al aviso flotante.
+   */
   async function toggle(role: Role, slug: string, enabled: boolean) {
     if (!writable) {
       return;
     }
     setError(null);
     setSaving(true);
+    const previos = role.permissions;
     const next = enabled
       ? [...new Set([...role.permissions.map((item) => item.slug), slug])]
       : role.permissions.map((item) => item.slug).filter((item) => item !== slug);
+
+    const permiso = permissions.find((item) => item.slug === slug);
+    setRoles((current) =>
+      current.map((item) =>
+        item.id === role.id
+          ? {
+              ...item,
+              permissions: enabled
+                ? [...item.permissions, permiso ?? { slug, nombre: slug, descripcion: null }]
+                : item.permissions.filter((p) => p.slug !== slug),
+            }
+          : item,
+      ),
+    );
+
     try {
       const updated = await request<Role>(
         `/api/v1/organizations/${orgId}/roles/${role.id}/permissions`,
@@ -75,7 +101,13 @@ export default function RolesPage() {
       setRoles((current) => current.map((item) => (item.id === updated.id ? updated : item)));
       avisar(t('roles.permissionsSaved'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('roles.saveError'));
+      // Deshacer el salto optimista: la matriz vuelve a lo que la base dice.
+      setRoles((current) =>
+        current.map((item) => (item.id === role.id ? { ...item, permissions: previos } : item)),
+      );
+      const mensaje = err instanceof Error ? err.message : t('roles.saveError');
+      setError(mensaje);
+      avisar(mensaje, { tono: 'error' });
     } finally {
       setSaving(false);
     }
