@@ -46,6 +46,12 @@ export class CreateAcopioDto {
   @IsOptional()
   @IsString()
   @MaxLength(120)
+  departamento?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
   municipio?: string;
 
   @ApiPropertyOptional()
@@ -100,6 +106,12 @@ export class UpdateAcopioDto {
   @IsOptional()
   @IsString()
   @MaxLength(120)
+  departamento?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
   municipio?: string;
 
   @ApiPropertyOptional()
@@ -149,6 +161,9 @@ export class AcopioDto implements Acopio {
 
   @ApiPropertyOptional()
   descripcion?: string | null;
+
+  @ApiPropertyOptional()
+  departamento?: string | null;
 
   @ApiPropertyOptional()
   municipio?: string | null;

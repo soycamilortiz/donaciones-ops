@@ -224,6 +224,8 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 
 Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio.
 
+Alta/edición de acopios: departamento y municipio (DIVIPOLA Colombia), autocomplete Photon, geolocalización del navegador, pin Leaflet arrastrable y mapa para `lat`/`lng`. Componente `AddressLocationPicker`.
+
 ## Qué falta
 
 - Módulo de envíos (contenedor + API).

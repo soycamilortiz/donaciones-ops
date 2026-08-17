@@ -1,3 +1,4 @@
+export * from './AddressLocationPicker';
 export * from './ConfirmDialog';
 export * from './FormField';
 export * from './LanguageSwitcher';

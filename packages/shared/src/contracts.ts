@@ -84,6 +84,7 @@ export type Acopio = {
   flujo: AcopioFlujo;
   telefono?: string | null;
   descripcion?: string | null;
+  departamento?: string | null;
   municipio?: string | null;
   direccion?: string | null;
   lat?: number | null;

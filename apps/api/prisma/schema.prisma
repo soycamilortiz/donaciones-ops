@@ -74,6 +74,7 @@ model Acopio {
   flujo          AcopioFlujo @default(AMBOS)
   telefono       String?
   descripcion    String?
+  departamento   String?
   municipio      String?
   direccion      String?
   lat            Float?

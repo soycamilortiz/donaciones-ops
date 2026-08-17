@@ -1,10 +1,24 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonList } from '../components/atoms/Skeleton';
+import {
+  AddressLocationPicker,
+  type AddressLocationValue,
+} from '../components/molecules/AddressLocationPicker';
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
 import { useOrg } from '../components/OrgGate';
 import { ACOPIO_FLUJOS, type Acopio } from '../lib/api';
 import { useApi } from '../lib/useApi';
+
+function addressFromAcopio(row: Acopio | null): AddressLocationValue {
+  return {
+    departamento: row?.departamento ?? (row ? '' : 'Chocó'),
+    municipio: row?.municipio ?? '',
+    direccion: row?.direccion ?? '',
+    lat: row?.lat ?? null,
+    lng: row?.lng ?? null,
+  };
+}
 
 export default function AcopiosPage() {
   const { orgId, can } = useOrg();
@@ -13,17 +27,15 @@ export default function AcopiosPage() {
   const [rows, setRows] = useState<Acopio[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
-  // Id de la fila pendiente de confirmar; null = dialogo cerrado.
   const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
   const [editing, setEditing] = useState<Acopio | null>(null);
+  const [address, setAddress] = useState<AddressLocationValue>(() => addressFromAcopio(null));
 
   async function load() {
     try {
       setRows(await request<Acopio[]>(`/api/v1/organizations/${orgId}/acopios`));
     } finally {
-      // En `finally` para que un fallo no deje el esqueleto girando para siempre;
-      // el error se muestra aparte.
       setCargando(false);
     }
   }
@@ -35,22 +47,25 @@ export default function AcopiosPage() {
     });
   }, [orgId]);
 
+  useEffect(() => {
+    setAddress(addressFromAcopio(editing));
+  }, [editing]);
+
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     const form = event.currentTarget;
     const data = new FormData(form);
-    const latRaw = String(data.get('lat') ?? '').trim();
-    const lngRaw = String(data.get('lng') ?? '').trim();
     const payload = {
       nombre: String(data.get('nombre') ?? '').trim(),
       flujo: String(data.get('flujo') ?? 'AMBOS'),
       telefono: String(data.get('telefono') ?? '').trim() || undefined,
       descripcion: String(data.get('descripcion') ?? '').trim() || undefined,
-      municipio: String(data.get('municipio') ?? '').trim() || undefined,
-      direccion: String(data.get('direccion') ?? '').trim() || undefined,
-      lat: latRaw ? Number(latRaw) : undefined,
-      lng: lngRaw ? Number(lngRaw) : undefined,
+      departamento: address.departamento.trim() || undefined,
+      municipio: address.municipio.trim() || undefined,
+      direccion: address.direccion.trim() || undefined,
+      lat: address.lat ?? undefined,
+      lng: address.lng ?? undefined,
     };
     try {
       if (editing) {
@@ -65,6 +80,7 @@ export default function AcopiosPage() {
         });
       }
       setEditing(null);
+      setAddress(addressFromAcopio(null));
       form.reset();
       await load();
     } catch (err) {
@@ -125,14 +141,15 @@ export default function AcopiosPage() {
               <p className="muted">
                 {ACOPIO_FLUJOS.find((item) => item.value === row.flujo)?.label}
                 {' · '}
-                {[row.municipio, row.direccion, row.telefono].filter(Boolean).join(' · ') ||
-                  'Sin datos de ubicación'}
+                {[row.municipio, row.departamento, row.direccion, row.telefono]
+                  .filter(Boolean)
+                  .join(' · ') || t('acopios.noLocation')}
               </p>
             </div>
             {can('acopios:write') ? (
               <div className="row-actions">
                 <button type="button" className="linkish" onClick={() => setEditing(row)}>
-                  Editar
+                  {t('common.edit')}
                 </button>
                 {row.isActive === false ? (
                   <button
@@ -140,11 +157,11 @@ export default function AcopiosPage() {
                     className="linkish"
                     onClick={() => void onReactivate(row.id)}
                   >
-                    Reactivar
+                    {t('users.reactivate')}
                   </button>
                 ) : (
                   <button type="button" className="linkish" onClick={() => setPorConfirmar(row.id)}>
-                    Dar de baja
+                    {t('acopios.deactivate')}
                   </button>
                 )}
               </div>
@@ -154,9 +171,9 @@ export default function AcopiosPage() {
       </ul>
       {can('acopios:write') ? (
         <form className="form" key={editing?.id ?? 'new'} onSubmit={(event) => void onSave(event)}>
-          <h2>{editing ? 'Editar acopio' : 'Nuevo acopio'}</h2>
+          <h2>{editing ? t('acopios.editTitle') : t('acopios.newTitle')}</h2>
           <label className="field">
-            Nombre
+            {t('acopios.name')}
             <input
               name="nombre"
               required
@@ -165,7 +182,7 @@ export default function AcopiosPage() {
             />
           </label>
           <label className="field">
-            Flujo de donaciones
+            {t('acopios.flow')}
             <select name="flujo" defaultValue={editing?.flujo ?? 'RECIBIR'}>
               {ACOPIO_FLUJOS.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -174,50 +191,30 @@ export default function AcopiosPage() {
               ))}
             </select>
           </label>
+
+          <AddressLocationPicker value={address} onChange={setAddress} mapPosition="above" />
+
           <label className="field">
-            Municipio
-            <input name="municipio" defaultValue={editing?.municipio ?? ''} />
-          </label>
-          <label className="field">
-            Dirección
-            <input name="direccion" defaultValue={editing?.direccion ?? ''} />
-          </label>
-          <label className="field">
-            Teléfono
+            {t('acopios.phone')}
             <input name="telefono" defaultValue={editing?.telefono ?? ''} />
           </label>
           <label className="field">
-            Descripción
+            {t('acopios.description')}
             <textarea name="descripcion" rows={2} defaultValue={editing?.descripcion ?? ''} />
           </label>
-          <div className="inline-form">
-            <label className="field">
-              Lat
-              <input
-                name="lat"
-                type="number"
-                step="any"
-                inputMode="decimal"
-                defaultValue={editing?.lat ?? ''}
-              />
-            </label>
-            <label className="field">
-              Lng
-              <input
-                name="lng"
-                type="number"
-                step="any"
-                inputMode="decimal"
-                defaultValue={editing?.lng ?? ''}
-              />
-            </label>
-          </div>
           <button className="button" type="submit">
-            Guardar
+            {t('common.save')}
           </button>
           {editing ? (
-            <button type="button" className="linkish" onClick={() => setEditing(null)}>
-              Cancelar
+            <button
+              type="button"
+              className="linkish"
+              onClick={() => {
+                setEditing(null);
+                setAddress(addressFromAcopio(null));
+              }}
+            >
+              {t('common.cancel')}
             </button>
           ) : null}
         </form>
