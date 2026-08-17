@@ -7,11 +7,10 @@ import { FormField } from '@/components/molecules/FormField';
 import { AuthLayout } from '@/components/templates/AuthLayout';
 import { ROUTES } from '@/lib/constants';
 import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
-import { useSession } from '../lib/AuthProvider';
-import { type AuthSession, apiRequest } from '../lib/api';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import { apiRequest, type RegisterPendingVerification } from '../lib/api';
 
 export default function SignUpPage() {
-  const { setSession } = useSession();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const { t } = useTranslation();
@@ -28,19 +27,19 @@ export default function SignUpPage() {
       return;
     }
 
+    const correo = String(data.get('correo') ?? '').trim();
     try {
-      const session = await apiRequest<AuthSession>('/api/v1/auth/register', null, {
+      await apiRequest<RegisterPendingVerification>('/api/v1/auth/register', null, {
         method: 'POST',
         body: JSON.stringify({
           nombre: String(data.get('nombre') ?? '').trim(),
           usuario: String(data.get('usuario') ?? '').trim(),
-          correo: String(data.get('correo') ?? '').trim(),
+          correo,
           password,
           ...readCaptcha(data),
         }),
       });
-      setSession(session.accessToken);
-      navigate('/empezar');
+      navigate(`${ROUTES.verificarCorreo}?correo=${encodeURIComponent(correo)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth.registerError'));
       onSubmitFailed(event);
@@ -52,6 +51,8 @@ export default function SignUpPage() {
     // en max-w-md (una sola columna, mobile-first).
     <AuthLayout title={t('auth.createAccount')} className="sm:max-w-2xl">
       <form className="space-y-5" onSubmit={(event) => void onSubmit(event)}>
+        <GoogleSignInButton onError={setError} />
+        <p className="text-center text-sm text-muted-foreground">{t('auth.orEmail')}</p>
         {/* Mobile-first: una columna; a partir de sm, pares a dos columnas. */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t('auth.name')} htmlFor="nombre" required>

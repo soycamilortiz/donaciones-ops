@@ -10,8 +10,7 @@ export default function Dashboard() {
   const org = membership.organization;
 
   /* Module cards. Kept as data so adding one is a single entry, and so the
-     copy lives in the catalogue rather than inline in the markup. Donaciones
-     is intentionally left out of this grid — it already lives in the main nav. */
+     copy lives in the catalogue rather than inline in the markup. */
   const modules: Array<{ to: string; title: string; hint: string; icon: IconName }> = [
     { to: '/app/usuarios', title: t('nav.users'), hint: t('dashboard.usersHint'), icon: 'user' },
     { to: '/app/roles', title: t('nav.roles'), hint: t('dashboard.rolesHint'), icon: 'settings' },
@@ -21,6 +20,12 @@ export default function Dashboard() {
       title: t('nav.inventory'),
       hint: t('dashboard.inventoryHint'),
       icon: 'menu',
+    },
+    {
+      to: '/app/recepciones',
+      title: t('nav.receptions'),
+      hint: t('dashboard.receptionsHint'),
+      icon: 'swap',
     },
   ];
 

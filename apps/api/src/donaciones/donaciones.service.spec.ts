@@ -1,7 +1,9 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { DonacionImagenEstado } from '@soschoco/shared';
+import { CatalogoService } from '../catalogo/catalogo.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecepcionesService } from '../recepciones/recepciones.service';
 import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
 import { DonacionesService } from './donaciones.service';
@@ -20,6 +22,12 @@ describe('DonacionesService', () => {
     acopio: Record<string, jest.Mock>;
   };
   let inventario: { aplicarDonacionConfirmada: jest.Mock; coincidencias: jest.Mock };
+  let catalogo: {
+    coincidencias: jest.Mock;
+    crear: jest.Mock;
+    findOrCreateDesdeOff: jest.Mock;
+  };
+  let recepciones: { confirmarFoto: jest.Mock };
   let off: { buscarPorEan: jest.Mock };
   let cola: { encolarReconocimiento: jest.Mock };
   let r2: {
@@ -29,6 +37,7 @@ describe('DonacionesService', () => {
     presignPut: jest.Mock;
     publicUrlFor: jest.Mock;
     urlParaMostrar: jest.Mock;
+    headObject: jest.Mock;
     getObjectBytes: jest.Mock;
     bucket: string;
   };
@@ -39,8 +48,12 @@ describe('DonacionesService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
         findFirst: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
-        create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'img-1', ...data })),
-        update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'img-1', ...data })),
+        create: jest
+          .fn()
+          .mockImplementation(({ data }) => Promise.resolve({ id: 'img-1', ...data })),
+        update: jest
+          .fn()
+          .mockImplementation(({ data }) => Promise.resolve({ id: 'img-1', ...data })),
       },
       producto: {
         findUnique: jest.fn(),
@@ -55,6 +68,14 @@ describe('DonacionesService', () => {
       aplicarDonacionConfirmada: jest.fn().mockResolvedValue({ id: 'inv-1' }),
       coincidencias: jest.fn().mockResolvedValue([]),
     };
+    catalogo = {
+      coincidencias: jest.fn().mockResolvedValue([]),
+      crear: jest.fn().mockResolvedValue({ id: 'prod-1' }),
+      findOrCreateDesdeOff: jest.fn().mockResolvedValue({ id: 'prod-off' }),
+    };
+    recepciones = {
+      confirmarFoto: jest.fn().mockResolvedValue({ recepcionId: 'rec-1', itemId: 'item-1' }),
+    };
     off = { buscarPorEan: jest.fn().mockResolvedValue(null) };
     r2 = {
       isConfigured: jest.fn().mockReturnValue(true),
@@ -65,6 +86,9 @@ describe('DonacionesService', () => {
         .fn()
         .mockImplementation((key: string) => Promise.resolve(`https://pub.example/${key}`)),
       publicUrlFor: jest.fn().mockImplementation((key: string) => `https://pub.example/${key}`),
+      headObject: jest
+        .fn()
+        .mockResolvedValue({ contentLength: 400_000, contentType: 'image/jpeg' }),
       getObjectBytes: jest.fn(),
       bucket: 'sos-choco',
     };
@@ -76,6 +100,8 @@ describe('DonacionesService', () => {
         { provide: ColaService, useValue: cola },
         { provide: R2StorageService, useValue: r2 },
         { provide: InventoryService, useValue: inventario },
+        { provide: CatalogoService, useValue: catalogo },
+        { provide: RecepcionesService, useValue: recepciones },
         { provide: OpenFoodFactsService, useValue: off },
         {
           provide: VisionProductoService,
@@ -94,12 +120,16 @@ describe('DonacionesService', () => {
     });
 
     it('conserva la extensión del archivo', () => {
-      expect(service.rutaParaSubida(ORG, 'colgate.png')).toMatch(/\.png$/);
+      expect(service.rutaParaSubida(ORG, 'colgate.png', 'image/png')).toMatch(/\.png$/);
+    });
+
+    it('fuerza .jpg cuando el MIME es JPEG', () => {
+      expect(service.rutaParaSubida(ORG, 'foto.heic', 'image/jpeg')).toMatch(/\.jpg$/);
     });
 
     it('descarta extensiones que no lo parecen, para no heredar basura del cliente', () => {
       expect(service.rutaParaSubida(ORG, 'raro.eyJhbGciOiJIUzI1')).not.toContain('.eyJ');
-      expect(service.rutaParaSubida(ORG, 'sin-extension')).toMatch(/[0-9a-f-]{36}$/);
+      expect(service.rutaParaSubida(ORG, 'sin-extension')).toMatch(/\.jpg$/);
     });
 
     it('no reutiliza la misma ruta entre fotos', () => {
@@ -168,6 +198,12 @@ describe('DonacionesService', () => {
       await expect(service.registrarImagen(ORG, USUARIO, conSalto)).rejects.toThrow(
         /no corresponde a esta organización/,
       );
+    });
+
+    it('rechaza fotos demasiado pesadas en R2', async () => {
+      r2.headObject.mockResolvedValue({ contentLength: 2_000_000, contentType: 'image/jpeg' });
+
+      await expect(service.registrarImagen(ORG, USUARIO, dto)).rejects.toThrow(/supera/);
     });
 
     it('no registra la misma foto dos veces', async () => {
@@ -338,7 +374,7 @@ describe('DonacionesService', () => {
 
       expect(r.fuente).toBe('openfoodfacts');
       expect(r.nombre).toBe('Nutella');
-      expect(prisma.producto.create).toHaveBeenCalled();
+      expect(catalogo.findOrCreateDesdeOff).toHaveBeenCalled();
     });
 
     it('deja el formulario vacío si nadie conoce el código', async () => {
@@ -364,7 +400,7 @@ describe('DonacionesService', () => {
       expect(inventario.aplicarDonacionConfirmada).toHaveBeenCalled();
       expect(cola.encolarReconocimiento).not.toHaveBeenCalled();
       expect(r.inventoryItemId).toBe('inv-1');
-      expect(prisma.producto.create).toHaveBeenCalled();
+      expect(catalogo.crear).toHaveBeenCalled();
     });
   });
 });

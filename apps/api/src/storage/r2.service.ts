@@ -1,6 +1,7 @@
 import {
   GetObjectCommand,
   HeadBucketCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -33,6 +34,10 @@ export class R2StorageService {
       endpoint: normalizeR2Endpoint(rawEndpoint, this.bucket),
       credentials: { accessKeyId, secretAccessKey },
       forcePathStyle: true,
+      // AWS SDK v3 firma checksums por defecto; R2 no los espera y el GET
+      // presignado 403 en <img> del navegador.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
 
     const publicBase = this.config.get('R2_PUBLIC_BASE_URL', { infer: true });
@@ -108,6 +113,17 @@ export class R2StorageService {
     if (publica) return publica;
     if (esUrlPublicaUsable(blobUrlGuardada)) return blobUrlGuardada as string;
     return this.presignGet(pathname);
+  }
+
+  async headObject(key: string): Promise<{ contentLength: number; contentType: string | null }> {
+    if (!this.client) {
+      throw new Error(`R2 no configurado (${this.missingConfig().join(', ')})`);
+    }
+    const out = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+    return {
+      contentLength: Number(out.ContentLength ?? 0),
+      contentType: out.ContentType ?? null,
+    };
   }
 
   async getObjectBytes(key: string): Promise<{ bytes: Buffer; contentType: string }> {

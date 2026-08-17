@@ -7,8 +7,9 @@ import { FormField } from '@/components/molecules/FormField';
 import { AuthLayout } from '@/components/templates/AuthLayout';
 import { ROUTES } from '@/lib/constants';
 import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { useSession } from '../lib/AuthProvider';
-import { type AuthSession, apiRequest } from '../lib/api';
+import { ApiError, type AuthSession, apiRequest } from '../lib/api';
 
 export default function SignInPage() {
   const { setSession } = useSession();
@@ -33,6 +34,12 @@ export default function SignInPage() {
       setSession(session.accessToken);
       navigate('/app');
     } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        const identifier = String(data.get('usuario') ?? '').trim();
+        const q = identifier.includes('@') ? `?correo=${encodeURIComponent(identifier)}` : '';
+        navigate(`${ROUTES.verificarCorreo}${q}`);
+        return;
+      }
       setError(err instanceof Error ? err.message : 'No se pudo entrar');
       onSubmitFailed(event);
     }
@@ -41,6 +48,8 @@ export default function SignInPage() {
   return (
     <AuthLayout title={t('auth.signIn')}>
       <form className="space-y-5" onSubmit={(event) => void onSubmit(event)}>
+        <GoogleSignInButton onError={setError} />
+        <p className="text-center text-sm text-muted-foreground">{t('auth.orEmail')}</p>
         <FormField label={t('auth.userOrEmail')} htmlFor="usuario" required>
           <Input id="usuario" name="usuario" required minLength={3} autoComplete="username" />
         </FormField>

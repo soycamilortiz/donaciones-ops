@@ -80,6 +80,14 @@ export function confirmarDonacion(
     acopioId?: string;
     marca?: string;
     inventoryItemId?: string;
+    recepcionId?: string;
+    unidadLogisticaId?: string;
+    productoId?: string;
+    crearProducto?: boolean;
+    ean?: string;
+    presentacion?: string;
+    loteCodigoOrigen?: string;
+    vencimiento?: string;
   },
 ): Promise<DonacionImagen> {
   return request<DonacionImagen>(`${base(orgId)}/${id}/confirmar`, {
@@ -112,8 +120,8 @@ export function registrarEntrada(
 }
 
 /**
- * Sube la foto a R2 y la registra. Devuelve la imagen en PENDIENTE: el
- * reconocimiento ocurre en el worker.
+ * Sube la foto comprimida a R2 y la registra. Devuelve la imagen en PENDIENTE;
+ * el reconocimiento lo pide la PWA con interpretar.
  */
 export async function subirFoto(
   request: Peticion,

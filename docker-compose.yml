@@ -78,8 +78,14 @@ services:
       VISION_PROVIDER: ${VISION_PROVIDER:-openai}
       VISION_API_KEY: ${VISION_API_KEY:-}
       VISION_BASE_URL: ${VISION_BASE_URL:-https://api.openai.com/v1}
-      VISION_MODEL: ${VISION_MODEL:-gpt-4o-mini}
+      VISION_MODEL: ${VISION_MODEL:-gpt-4.1-nano}
       VISION_TIMEOUT_MS: ${VISION_TIMEOUT_MS:-45000}
+      EMAIL_VERIFICATION: ${EMAIL_VERIFICATION:-false}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: "${MAIL_FROM:-SOS Chocó <beth.t@example.com>}"
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -163,6 +169,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     depends_on:
       - api
     networks:

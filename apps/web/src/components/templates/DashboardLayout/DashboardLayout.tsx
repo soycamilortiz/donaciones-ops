@@ -9,7 +9,7 @@ import type { DashboardLayoutProps } from './DashboardLayout.types';
 
 const defaultNavItems: SidebarItem[] = [
   { href: ROUTES.home, label: 'Dashboard', icon: 'home' },
-  { href: ROUTES.donaciones, label: 'Donaciones', icon: 'heart' },
+  { href: ROUTES.recepciones, label: 'Recepciones', icon: 'swap' },
 ];
 
 export function DashboardLayout({

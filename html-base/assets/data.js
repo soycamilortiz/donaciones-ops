@@ -80,8 +80,8 @@ export const PERMISSIONS = [
   { slug: 'roles:write', nombre: 'Editar roles' },
   { slug: 'inventory:read', nombre: 'Ver inventario' },
   { slug: 'inventory:write', nombre: 'Gestionar inventario' },
-  { slug: 'donaciones:read', nombre: 'Ver donaciones' },
-  { slug: 'donaciones:write', nombre: 'Registrar donaciones' },
+  { slug: 'donaciones:read', nombre: 'Ver recepciones' },
+  { slug: 'donaciones:write', nombre: 'Registrar recepciones' },
 ];
 
 const ALL = PERMISSIONS.map((p) => p.slug);

@@ -9,12 +9,16 @@ import {
 } from '@nestjs/common';
 import {
   DonacionImagenEstado,
+  IMAGEN_FORMATO_ALMACENAMIENTO,
+  IMAGEN_PESO_MAX,
   MAX_IMAGEN_BYTES,
   normalizarTipoImagen,
   TIPOS_IMAGEN_ACEPTADOS,
 } from '@soschoco/shared';
+import { CatalogoService } from '../catalogo/catalogo.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecepcionesService } from '../recepciones/recepciones.service';
 import { R2StorageService } from '../storage/r2.service';
 import { ColaService } from './cola.service';
 import type {
@@ -34,7 +38,15 @@ export type OpcionesListado = {
 
 const IMAGEN_CON_PRODUCTO = {
   producto: {
-    select: { id: true, nombre: true, marca: true, categoria: true, ean: true, alias: true },
+    select: {
+      id: true,
+      sku: true,
+      nombre: true,
+      marca: true,
+      categoria: true,
+      ean: true,
+      alias: true,
+    },
   },
   // Sin el nombre, el acopioId no sirve para mostrar nada en pantalla.
   acopio: { select: { id: true, nombre: true, municipio: true } },
@@ -49,6 +61,8 @@ export class DonacionesService {
     private readonly inventario: InventoryService,
     private readonly off: OpenFoodFactsService,
     private readonly vision: VisionProductoService,
+    private readonly recepciones: RecepcionesService,
+    private readonly catalogo: CatalogoService,
   ) {}
 
   /**
@@ -67,7 +81,7 @@ export class DonacionesService {
       throw new BadRequestException(`Formato no aceptado: ${contentType || 'desconocido'}`);
     }
 
-    const pathname = this.rutaParaSubida(organizationId, nombreArchivo);
+    const pathname = this.rutaParaSubida(organizationId, nombreArchivo, tipo);
     const uploadUrl = await this.r2.presignPut(pathname, tipo);
     const publicUrl = await this.r2.urlParaMostrar(pathname);
 
@@ -77,13 +91,16 @@ export class DonacionesService {
       publicUrl,
       headers: { 'Content-Type': tipo },
       tiposAceptados: TIPOS_IMAGEN_ACEPTADOS,
-      maxBytes: MAX_IMAGEN_BYTES,
+      maxBytes: IMAGEN_PESO_MAX,
+      maxBytesEntrada: MAX_IMAGEN_BYTES,
     };
   }
 
   /** Ruta que la PWA debe pedir para una foto nueva. */
-  rutaParaSubida(organizationId: string, nombreArchivo: string): string {
-    return `donaciones/${organizationId}/${randomUUID()}${extensionDe(nombreArchivo)}`;
+  rutaParaSubida(organizationId: string, nombreArchivo: string, contentType?: string): string {
+    const tipo = contentType ?? normalizarTipoImagen(undefined, nombreArchivo);
+    const extension = tipo === IMAGEN_FORMATO_ALMACENAMIENTO ? '.jpg' : extensionDe(nombreArchivo);
+    return `donaciones/${organizationId}/${randomUUID()}${extension || '.jpg'}`;
   }
 
   /**
@@ -94,6 +111,15 @@ export class DonacionesService {
   async registrarImagen(organizationId: string, usuarioId: string, dto: RegistrarImagenDto) {
     if (!perteneceA(dto.pathname, organizationId)) {
       throw new ForbiddenException('La ruta no corresponde a esta organización');
+    }
+
+    if (this.r2.isConfigured()) {
+      const objeto = await this.r2.headObject(dto.pathname);
+      if (objeto.contentLength > IMAGEN_PESO_MAX) {
+        throw new BadRequestException(
+          `La foto supera ${Math.round(IMAGEN_PESO_MAX / 1024 / 1024)} MB tras subirla`,
+        );
+      }
     }
 
     const blobUrl = this.r2.publicUrlFor(dto.pathname) ?? `r2://${this.r2.bucket}/${dto.pathname}`;
@@ -206,9 +232,15 @@ export class DonacionesService {
   }
 
   /**
-   * El inventario solo se toca aquí: el OCR sugiere, el operador confirma.
+   * Identifica el producto y lo cuelga de una recepción. El inventario
+   * solo sube cuando se valida esa recepción.
    */
-  async confirmarDonacion(organizationId: string, id: string, dto: ConfirmarDonacionDto) {
+  async confirmarDonacion(
+    organizationId: string,
+    id: string,
+    usuarioId: string,
+    dto: ConfirmarDonacionDto,
+  ) {
     const imagen = await this.prisma.donacionImagen.findFirst({
       where: { id, organizationId },
     });
@@ -216,36 +248,25 @@ export class DonacionesService {
       throw new NotFoundException('Imagen no encontrada');
     }
     if (imagen.confirmadaEn) {
-      throw new ConflictException('Esta donación ya se confirmó y está en el inventario');
+      throw new ConflictException('Esta foto ya está en una recepción');
     }
     if (imagen.estado === DonacionImagenEstado.Fallida) {
       throw new BadRequestException('Reprocesá la foto antes de confirmarla');
     }
 
-    const acopioId = dto.acopioId ?? imagen.acopioId;
-    if (!acopioId) {
-      throw new BadRequestException('Elegí el acopio donde entra esta donación');
-    }
-    await this.verificarAcopio(organizationId, acopioId);
-
-    const item = await this.inventario.aplicarDonacionConfirmada(organizationId, acopioId, {
+    await this.recepciones.confirmarFoto(organizationId, id, usuarioId, {
       nombre: dto.nombre,
       cantidad: dto.cantidad,
+      acopioId: dto.acopioId,
       marca: dto.marca,
-      inventoryItemId: dto.inventoryItemId,
-    });
-
-    await this.prisma.donacionImagen.update({
-      where: { id },
-      data: {
-        acopioId,
-        nombreDetectado: dto.nombre.trim(),
-        cantidadDetectada: dto.cantidad,
-        confirmadaEn: new Date(),
-        inventoryItemId: item.id,
-        estado: DonacionImagenEstado.Procesada,
-        error: null,
-      },
+      recepcionId: dto.recepcionId,
+      unidadLogisticaId: dto.unidadLogisticaId,
+      productoId: dto.productoId,
+      crearProducto: dto.crearProducto,
+      ean: dto.ean,
+      presentacion: dto.presentacion,
+      loteCodigoOrigen: dto.loteCodigoOrigen,
+      vencimiento: dto.vencimiento,
     });
 
     return this.obtener(organizationId, id);
@@ -276,7 +297,7 @@ export class DonacionesService {
 
     const externo = await this.off.buscarPorEan(ean);
     if (externo) {
-      const guardado = await this.guardarProductoDesdeOff(externo);
+      const guardado = await this.catalogo.findOrCreateDesdeOff(externo);
       return {
         fuente: 'openfoodfacts' as const,
         ean: externo.ean,
@@ -348,14 +369,12 @@ export class DonacionesService {
     }
 
     const acopioId = dto.acopioId ?? imagen.acopioId;
-    const coincidencias =
-      acopioId && nombre
-        ? await this.inventario.coincidencias(organizationId, acopioId, nombre, marca)
-        : [];
+    const coincidencias = nombre ? await this.catalogo.coincidencias(nombre, marca) : [];
 
     await this.prisma.donacionImagen.update({
       where: { id },
       data: {
+        acopioId: acopioId ?? imagen.acopioId,
         nombreDetectado: nombre,
         cantidadDetectada: cantidad,
         estado: DonacionImagenEstado.Procesada,
@@ -392,16 +411,11 @@ export class DonacionesService {
         where: { ean: { in: variantesEan(ean) } },
       });
       if (!ya) {
-        await this.prisma.producto
-          .create({
-            data: {
-              nombre: dto.nombre.trim(),
-              marca: dto.marca?.trim() || null,
-              ean,
-              alias: [],
-            },
-          })
-          .catch(() => undefined);
+        await this.catalogo.crear({
+          nombre: dto.nombre.trim(),
+          marca: dto.marca,
+          ean,
+        });
       }
     }
 
@@ -411,33 +425,6 @@ export class DonacionesService {
       cantidad: dto.cantidad,
       ean,
     };
-  }
-
-  private async guardarProductoDesdeOff(externo: {
-    ean: string;
-    nombre: string;
-    marca: string | null;
-  }) {
-    const existente = await this.prisma.producto.findFirst({
-      where: { ean: { in: variantesEan(externo.ean) } },
-    });
-    if (existente) {
-      return existente;
-    }
-    try {
-      return await this.prisma.producto.create({
-        data: {
-          nombre: externo.nombre,
-          marca: externo.marca,
-          ean: externo.ean,
-          alias: [],
-        },
-      });
-    } catch {
-      return this.prisma.producto.findFirst({
-        where: { ean: { in: variantesEan(externo.ean) } },
-      });
-    }
   }
 
   private async conUrlVisible<

@@ -15,7 +15,7 @@ export const NAV = [
   { href: 'roles.html', route: '/app/roles', label: 'Roles', ico: 'shield' },
   { href: 'acopios.html', route: '/app/acopios', label: 'Acopios', ico: 'home' },
   { href: 'inventario.html', route: '/app/inventario', label: 'Inventario', ico: 'package' },
-  { href: 'donaciones.html', route: '/app/donaciones', label: 'Donaciones', ico: 'camera' },
+  { href: 'app.html', route: '/app/recepciones', label: 'Recepciones', ico: 'swap' },
 ];
 
 const SB_FOOT = {
@@ -24,7 +24,7 @@ const SB_FOOT = {
   '/app/roles': ['Alcance global', 'La matriz no es por organización: un cambio aplica a todas.'],
   '/app/acopios': ['Nada se borra', 'Los acopios se dan de baja. Uno en baja no admite inventario nuevo.'],
   '/app/inventario': ['Un inventario por acopio', 'Cambiar de bodega cambia todo lo de abajo. La elección se recuerda.'],
-  '/app/donaciones': ['Refresco automático', 'Si hay algo en cola, la lista se recarga sola cada 4 segundos.'],
+  '/app/recepciones': ['Foto desde la recepción', 'Identificás el producto en el pallet o suelto. El stock sube al validar.'],
 };
 
 /* -------------------------------------------------------------------- shell */

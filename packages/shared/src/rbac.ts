@@ -95,13 +95,13 @@ export const PERMISSION_CATALOG: Array<{
   },
   {
     slug: PermissionSlug.DonacionesRead,
-    nombre: 'Ver donaciones',
-    descripcion: 'Consultar las imagenes de productos donados y su reconocimiento',
+    nombre: 'Ver recepciones',
+    descripcion: 'Consultar recepciones, unidades y líneas identificadas',
   },
   {
     slug: PermissionSlug.DonacionesWrite,
-    nombre: 'Registrar donaciones',
-    descripcion: 'Subir fotos de productos donados y corregir el producto reconocido',
+    nombre: 'Registrar recepciones',
+    descripcion: 'Abrir una recepción, identificar productos con foto y validar el ingreso',
   },
 ];
 

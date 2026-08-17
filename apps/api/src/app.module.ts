@@ -10,6 +10,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RbacModule } from './rbac/rbac.module';
+import { RecepcionesModule } from './recepciones/recepciones.module';
 import { StorageModule } from './storage/storage.module';
 
 @Module({
@@ -28,6 +29,7 @@ import { StorageModule } from './storage/storage.module';
     AcopiosModule,
     InventoryModule,
     DonacionesModule,
+    RecepcionesModule,
   ],
   controllers: [AppController],
 })

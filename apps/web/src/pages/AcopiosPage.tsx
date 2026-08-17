@@ -6,9 +6,14 @@ import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { SkeletonList } from '@/components/atoms/Skeleton';
+import {
+  AddressLocationPicker,
+  type AddressLocationValue,
+} from '@/components/molecules/AddressLocationPicker';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { FormField } from '@/components/molecules/FormField';
 import { useOrg } from '@/components/OrgGate';
+import { DEFAULT_DEPARTAMENTO } from '@/features/geo/colombia';
 import { ACOPIO_FLUJOS, type Acopio } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { cn } from '@/lib/utils';
@@ -19,6 +24,16 @@ const selectClassName =
   'flex h-11 w-full cursor-pointer appearance-none rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground ring-offset-background transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 const textareaClassName =
   'flex min-h-[4.5rem] w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base md:text-sm text-foreground ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+
+function addressFromAcopio(row: Acopio | null): AddressLocationValue {
+  return {
+    departamento: row?.departamento ?? (row ? '' : DEFAULT_DEPARTAMENTO),
+    municipio: row?.municipio ?? '',
+    direccion: row?.direccion ?? '',
+    lat: row?.lat ?? null,
+    lng: row?.lng ?? null,
+  };
+}
 
 export default function AcopiosPage() {
   const { orgId, can } = useOrg();
@@ -31,6 +46,7 @@ export default function AcopiosPage() {
   const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
   const [editing, setEditing] = useState<Acopio | null>(null);
+  const [address, setAddress] = useState<AddressLocationValue>(() => addressFromAcopio(null));
   const nombreRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -62,22 +78,25 @@ export default function AcopiosPage() {
     nombreRef.current?.focus({ preventScroll: true });
   }, [editing?.id]);
 
+  useEffect(() => {
+    setAddress(addressFromAcopio(editing));
+  }, [editing]);
+
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     const form = event.currentTarget;
     const data = new FormData(form);
-    const latRaw = String(data.get('lat') ?? '').trim();
-    const lngRaw = String(data.get('lng') ?? '').trim();
     const payload = {
       nombre: String(data.get('nombre') ?? '').trim(),
       flujo: String(data.get('flujo') ?? AcopioFlujo.Recibir),
       telefono: String(data.get('telefono') ?? '').trim() || undefined,
       descripcion: String(data.get('descripcion') ?? '').trim() || undefined,
-      municipio: String(data.get('municipio') ?? '').trim() || undefined,
-      direccion: String(data.get('direccion') ?? '').trim() || undefined,
-      lat: latRaw ? Number(latRaw) : undefined,
-      lng: lngRaw ? Number(lngRaw) : undefined,
+      departamento: address.departamento.trim() || undefined,
+      municipio: address.municipio.trim() || undefined,
+      direccion: address.direccion.trim() || undefined,
+      lat: address.lat ?? undefined,
+      lng: address.lng ?? undefined,
     };
     try {
       if (editing) {
@@ -92,6 +111,7 @@ export default function AcopiosPage() {
         });
       }
       setEditing(null);
+      setAddress(addressFromAcopio(null));
       form.reset();
       await load();
     } catch (err) {
@@ -173,7 +193,7 @@ export default function AcopiosPage() {
             <ul className="space-y-3">
               {rows.map((row) => {
                 const inactive = row.isActive === false;
-                const meta = [row.municipio, row.direccion, row.telefono]
+                const meta = [row.municipio, row.departamento, row.direccion, row.telefono]
                   .filter(Boolean)
                   .join(' · ');
                 return (
@@ -276,23 +296,7 @@ export default function AcopiosPage() {
               </select>
             </FormField>
 
-            <FormField label={t('acopios.fields.municipality')} htmlFor="a-mun">
-              <Input
-                id="a-mun"
-                name="municipio"
-                placeholder={t('acopios.fields.municipalityPlaceholder')}
-                defaultValue={editing?.municipio ?? ''}
-              />
-            </FormField>
-
-            <FormField label={t('acopios.fields.address')} htmlFor="a-dir">
-              <Input
-                id="a-dir"
-                name="direccion"
-                placeholder={t('acopios.fields.addressPlaceholder')}
-                defaultValue={editing?.direccion ?? ''}
-              />
-            </FormField>
+            <AddressLocationPicker value={address} onChange={setAddress} mapPosition="above" />
 
             <FormField label={t('acopios.fields.phone')} htmlFor="a-tel">
               <Input
@@ -315,29 +319,6 @@ export default function AcopiosPage() {
                 className={textareaClassName}
               />
             </FormField>
-
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label={t('acopios.fields.lat')} htmlFor="a-lat">
-                <Input
-                  id="a-lat"
-                  name="lat"
-                  type="number"
-                  step="any"
-                  inputMode="decimal"
-                  defaultValue={editing?.lat ?? ''}
-                />
-              </FormField>
-              <FormField label={t('acopios.fields.lng')} htmlFor="a-lng">
-                <Input
-                  id="a-lng"
-                  name="lng"
-                  type="number"
-                  step="any"
-                  inputMode="decimal"
-                  defaultValue={editing?.lng ?? ''}
-                />
-              </FormField>
-            </div>
 
             <Button type="submit" className="w-full">
               {t('common.save')}

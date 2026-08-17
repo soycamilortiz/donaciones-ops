@@ -35,7 +35,7 @@ export default function AppShell() {
     { href: '/app/roles', label: t('nav.roles'), icon: 'shield' },
     { href: '/app/acopios', label: t('nav.acopios'), icon: 'home' },
     { href: '/app/inventario', label: t('nav.inventory'), icon: 'package' },
-    { href: '/app/donaciones', label: t('nav.donations'), icon: 'camera' },
+    { href: '/app/recepciones', label: t('nav.receptions'), icon: 'swap' },
   ];
 
   const initials =

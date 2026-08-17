@@ -16,19 +16,40 @@ enum OrganizationTipo {
 }
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  usuario      String   @unique
-  correo       String   @unique
-  nombre       String
-  passwordHash String   @map("password_hash")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                  String    @id @default(uuid()) @db.Uuid
+  usuario             String    @unique
+  correo              String    @unique
+  nombre              String
+  passwordHash        String?   @map("password_hash")
+  googleId            String?   @unique @map("google_id")
+  isActive            Boolean   @default(true) @map("is_active")
+  correoVerificadoAt  DateTime? @map("correo_verificado_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
-  memberships     Membership[]
-  imagenesSubidas DonacionImagen[]
+  memberships          Membership[]
+  imagenesSubidas      DonacionImagen[]
+  emailVerifications   EmailVerification[]
+  recepciones          Recepcion[]
 
   @@map("users")
+}
+
+model EmailVerification {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @map("token_hash")
+  codigoHash String    @map("codigo_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  lastSentAt DateTime  @default(now()) @map("last_sent_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verifications")
 }
 
 model CaptchaChallenge {
@@ -57,6 +78,9 @@ model Organization {
   memberships Membership[]
   acopios     Acopio[]
   imagenes    DonacionImagen[]
+  recepciones Recepcion[]
+  lotes       Lote[]
+  counters    OrgCounter[]
 
   @@map("organizations")
 }
@@ -74,6 +98,7 @@ model Acopio {
   flujo          AcopioFlujo @default(AMBOS)
   telefono       String?
   descripcion    String?
+  departamento   String?
   municipio      String?
   direccion      String?
   lat            Float?
@@ -85,6 +110,7 @@ model Acopio {
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   inventoryItems InventoryItem[]
   imagenes       DonacionImagen[]
+  recepciones    Recepcion[]
 
   @@index([organizationId])
   @@map("acopios")
@@ -221,14 +247,20 @@ model InventoryItem {
   isActive          Boolean              @default(true) @map("is_active")
   createdAt         DateTime             @default(now()) @map("created_at")
   updatedAt         DateTime             @updatedAt @map("updated_at")
+  productoId        String?              @map("producto_id") @db.Uuid
+  loteId            String?              @map("lote_id") @db.Uuid
 
-  acopio     Acopio            @relation(fields: [acopioId], references: [id], onDelete: Restrict)
-  donaciones DonacionImagen[]
+  acopio         Acopio          @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  donaciones     DonacionImagen[]
+  producto       Producto?       @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  lote           Lote?           @relation(fields: [loteId], references: [id], onDelete: SetNull)
+  recepcionItems RecepcionItem[]
 
   @@index([acopioId])
   @@index([acopioId, categoria])
   @@index([acopioId, nombre])
   @@index([acopioId, isActive])
+  @@index([acopioId, productoId, loteId])
   @@map("inventory_items")
 }
 
@@ -239,22 +271,33 @@ enum DonacionImagenEstado {
   FALLIDA
 }
 
-/// Catálogo contra el que el worker intenta resolver el texto que saca del OCR.
-/// `ean` queda listo para cuando se lea el código de barras desde la PWA.
+/// Catálogo maestro global. Un EAN = una fila. El SKU lo genera el sistema.
 model Producto {
-  id        String   @id @default(uuid()) @db.Uuid
-  nombre    String
-  marca     String?
-  categoria String?
-  ean       String?  @unique
-  /// Términos que, si aparecen en el texto reconocido, apuntan a este producto.
-  alias     String[] @default([])
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                   String              @id @default(uuid()) @db.Uuid
+  sku                  String              @unique
+  nombre               String
+  marca                String?
+  /// Etiqueta libre legado del seed (`Alimentos`). No es la clave de negocio.
+  categoria            String?
+  categoriaInventario  InventoryCategoria  @default(OTRO) @map("categoria_inventario")
+  ean                  String?             @unique
+  alias                String[]            @default([])
+  unidadBase           InventoryUnidad     @default(UNIDAD) @map("unidad_base")
+  presentacion         String?
+  requiereLote         Boolean             @default(false) @map("requiere_lote")
+  requiereVencimiento  Boolean             @default(false) @map("requiere_vencimiento")
+  esPerecedero         Boolean             @default(false) @map("es_perecedero")
+  isActive             Boolean             @default(true) @map("is_active")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
 
-  imagenes DonacionImagen[]
+  imagenes       DonacionImagen[]
+  lotes          Lote[]
+  recepcionItems RecepcionItem[]
+  inventoryItems InventoryItem[]
 
   @@index([marca])
+  @@index([isActive])
   @@map("productos")
 }
 
@@ -282,20 +325,203 @@ model DonacionImagen {
   cantidadDetectada  Decimal?  @map("cantidad_detectada") @db.Decimal(14, 3)
   confirmadaEn       DateTime? @map("confirmada_en")
   inventoryItemId    String?   @map("inventory_item_id") @db.Uuid
-  /// Null si no se pudo identificar contra el catálogo legado.
-  productoId String? @map("producto_id") @db.Uuid
+  productoId         String?   @map("producto_id") @db.Uuid
+  recepcionItemId    String?   @map("recepcion_item_id") @db.Uuid
 
   procesadaEn DateTime? @map("procesada_en")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  acopio       Acopio?      @relation(fields: [acopioId], references: [id], onDelete: SetNull)
-  subidaPor    User         @relation(fields: [subidaPorId], references: [id], onDelete: Restrict)
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio        Acopio?        @relation(fields: [acopioId], references: [id], onDelete: SetNull)
+  subidaPor     User           @relation(fields: [subidaPorId], references: [id], onDelete: Restrict)
   producto      Producto?      @relation(fields: [productoId], references: [id], onDelete: SetNull)
   inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  recepcionItem RecepcionItem? @relation(fields: [recepcionItemId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, estado])
   @@index([estado])
+  @@index([recepcionItemId])
   @@map("donacion_imagenes")
+}
+
+enum RecepcionTipo {
+  DONACION_INDIVIDUAL
+  DONACION_MASIVA
+  TRANSFERENCIA
+  COMPRA
+  DEVOLUCION
+  REUBICACION
+  OTRO
+}
+
+enum RecepcionPresentacion {
+  SUELTA
+  CAJAS
+  BULTOS
+  PALLETS
+  CONTENEDORES
+  MIXTA
+}
+
+enum RecepcionEstado {
+  BORRADOR
+  EN_RECEPCION
+  EN_INSPECCION
+  PENDIENTE_VALIDACION
+  VALIDADA
+  CERRADA
+  ANULADA
+}
+
+enum UnidadLogisticaTipo {
+  PALLET
+  CAJA
+  BULTO
+  SACO
+  CONTENEDOR
+  CANECA
+  BOLSA
+  PAQUETE
+  OTRO
+}
+
+enum UnidadLogisticaEstado {
+  RECIBIDA
+  ABIERTA
+  VACIA
+}
+
+enum RecepcionItemEstado {
+  PENDIENTE_ID
+  IDENTIFICADA
+  INSPECCIONADA
+  VALIDADA
+}
+
+/// Contadores humanos (REC, PAL, LOT, SKU). `organization_id` null = catálogo global.
+model OrgCounter {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String?  @map("organization_id") @db.Uuid
+  kind           String
+  periodo        String   @default("")
+  siguiente      Int      @default(0)
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@map("org_counters")
+}
+
+model Recepcion {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  codigo               String
+  organizationId       String                 @map("organization_id") @db.Uuid
+  acopioId             String                 @map("acopio_id") @db.Uuid
+  tipo                 RecepcionTipo
+  presentacionFisica   RecepcionPresentacion  @map("presentacion_fisica")
+  estado               RecepcionEstado        @default(EN_RECEPCION)
+  recibidaEn           DateTime               @default(now()) @map("recibida_en")
+  donanteNombre        String?                @map("donante_nombre")
+  donanteContacto      String?                @map("donante_contacto")
+  procedencia          String?
+  transportista        String?
+  vehiculoPlaca        String?                @map("vehiculo_placa")
+  documentoTransporte  String?                @map("documento_transporte")
+  observaciones        String?
+  responsableId        String                 @map("responsable_id") @db.Uuid
+  validadaEn           DateTime?              @map("validada_en")
+  isActive             Boolean                @default(true) @map("is_active")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio           Acopio            @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  responsable      User              @relation(fields: [responsableId], references: [id], onDelete: Restrict)
+  unidades         UnidadLogistica[]
+  items            RecepcionItem[]
+
+  @@unique([organizationId, codigo])
+  @@index([organizationId, createdAt])
+  @@index([acopioId])
+  @@index([organizationId, estado])
+  @@map("recepciones")
+}
+
+model UnidadLogistica {
+  id              String                 @id @default(uuid()) @db.Uuid
+  codigo          String
+  nroEnRecepcion  Int                    @map("nro_en_recepcion")
+  recepcionId     String                 @map("recepcion_id") @db.Uuid
+  tipo            UnidadLogisticaTipo
+  parentId        String?                @map("parent_id") @db.Uuid
+  estado          UnidadLogisticaEstado  @default(RECIBIDA)
+  observaciones   String?
+  isActive        Boolean                @default(true) @map("is_active")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  recepcion Recepcion         @relation(fields: [recepcionId], references: [id], onDelete: Restrict)
+  parent    UnidadLogistica?  @relation("UlArbol", fields: [parentId], references: [id], onDelete: SetNull)
+  children  UnidadLogistica[] @relation("UlArbol")
+  items     RecepcionItem[]
+
+  @@unique([recepcionId, nroEnRecepcion])
+  @@index([recepcionId])
+  @@index([codigo])
+  @@map("unidades_logisticas")
+}
+
+model Lote {
+  id             String    @id @default(uuid()) @db.Uuid
+  codigo         String
+  codigoOrigen   String?   @map("codigo_origen")
+  productoId     String    @map("producto_id") @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  vencimiento    DateTime? @db.Date
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  producto       Producto        @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  recepcionItems RecepcionItem[]
+  inventoryItems InventoryItem[]
+
+  @@unique([organizationId, codigo])
+  @@index([productoId])
+  @@index([organizationId])
+  @@map("lotes")
+}
+
+model RecepcionItem {
+  id                  String               @id @default(uuid()) @db.Uuid
+  recepcionId         String               @map("recepcion_id") @db.Uuid
+  unidadLogisticaId   String?              @map("unidad_logistica_id") @db.Uuid
+  productoId          String?              @map("producto_id") @db.Uuid
+  loteId              String?              @map("lote_id") @db.Uuid
+  inventoryItemId     String?              @map("inventory_item_id") @db.Uuid
+  cantidadRecibida    Decimal              @map("cantidad_recibida") @db.Decimal(14, 3)
+  cantidadAprobada    Decimal              @default(0) @map("cantidad_aprobada") @db.Decimal(14, 3)
+  cantidadCuarentena  Decimal              @default(0) @map("cantidad_cuarentena") @db.Decimal(14, 3)
+  cantidadRechazada   Decimal              @default(0) @map("cantidad_rechazada") @db.Decimal(14, 3)
+  unidad              InventoryUnidad      @default(UNIDAD)
+  pesoKg              Decimal?             @map("peso_kg") @db.Decimal(14, 3)
+  estadoLinea         RecepcionItemEstado  @default(PENDIENTE_ID) @map("estado_linea")
+  observaciones       String?
+  isActive            Boolean              @default(true) @map("is_active")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+
+  recepcion       Recepcion        @relation(fields: [recepcionId], references: [id], onDelete: Restrict)
+  unidadLogistica UnidadLogistica? @relation(fields: [unidadLogisticaId], references: [id], onDelete: SetNull)
+  producto        Producto?        @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  lote            Lote?            @relation(fields: [loteId], references: [id], onDelete: SetNull)
+  inventoryItem   InventoryItem?   @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  imagenes        DonacionImagen[]
+
+  @@index([recepcionId])
+  @@index([productoId])
+  @@index([unidadLogisticaId])
+  @@map("recepcion_items")
 }

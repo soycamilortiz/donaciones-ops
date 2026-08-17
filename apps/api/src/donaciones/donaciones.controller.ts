@@ -154,15 +154,16 @@ export class DonacionesController {
   @Post(':id/confirmar')
   @RequirePermission(PermissionSlug.DonacionesWrite)
   @ApiOperation({
-    summary: 'Confirmar lo que leyó el OCR y cargarlo al inventario del acopio',
+    summary: 'Confirmar el producto identificado y colgarlo de una recepción (no posta inventario)',
   })
   @ApiOkResponse({ type: DonacionImagenDto })
   confirmar(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() usuario: AuthUser,
     @Body() dto: ConfirmarDonacionDto,
   ) {
-    return this.donaciones.confirmarDonacion(orgId, id, dto);
+    return this.donaciones.confirmarDonacion(orgId, id, usuario.id, dto);
   }
 
   @Post(':id/reprocesar')

@@ -17,8 +17,8 @@ export function Footer({ className, ...props }: FooterProps): ReactElement {
           <Link to={ROUTES.home} className="hover:text-foreground">
             Dashboard
           </Link>
-          <Link to={ROUTES.donaciones} className="hover:text-foreground">
-            Donaciones
+          <Link to={ROUTES.recepciones} className="hover:text-foreground">
+            Recepciones
           </Link>
         </nav>
         <p className="text-xs text-muted-foreground">

@@ -19,6 +19,10 @@ describe('esUrlPublicaUsable', () => {
     expect(esUrlPublicaUsable('https://abc.r2.cloudflarestorage.com/sos-choco')).toBe(false);
   });
 
+  it('rechaza el placeholder interno r2:// (no es una URL de navegador)', () => {
+    expect(esUrlPublicaUsable('r2://sos-choco/donaciones/a.jpg')).toBe(false);
+  });
+
   it('acepta r2.dev y un custom domain', () => {
     expect(esUrlPublicaUsable('https://pub-x.r2.dev')).toBe(true);
     expect(esUrlPublicaUsable('https://media.ejemplo.org')).toBe(true);

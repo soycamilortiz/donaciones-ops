@@ -5,7 +5,17 @@
  * rompe la compilación en ambos lados.
  */
 
-import type { AcopioFlujo, OrganizationTipo } from './enums.js';
+import type { Producto } from './donaciones.js';
+import type {
+  AcopioFlujo,
+  OrganizationTipo,
+  RecepcionEstado,
+  RecepcionItemEstado,
+  RecepcionPresentacion,
+  RecepcionTipo,
+  UnidadLogisticaEstado,
+  UnidadLogisticaTipo,
+} from './enums.js';
 import type { PermissionSlug, RoleSlug } from './rbac.js';
 
 export type AuthUser = {
@@ -19,6 +29,23 @@ export type AuthSession = {
   accessToken: string;
   user: AuthUser;
 };
+
+export type RegisterPendingVerification = {
+  pendingVerification: true;
+  correo: string;
+};
+
+export type RegisterResult = AuthSession | RegisterPendingVerification;
+
+export type GoogleProfilePending = {
+  needsProfile: true;
+  profileToken: string;
+  correo: string;
+  nombre: string;
+  usuarioSugerido: string;
+};
+
+export type GoogleAuthResult = AuthSession | GoogleProfilePending;
 
 export type Captcha = {
   captchaId: string;
@@ -84,6 +111,7 @@ export type Acopio = {
   flujo: AcopioFlujo;
   telefono?: string | null;
   descripcion?: string | null;
+  departamento?: string | null;
   municipio?: string | null;
   direccion?: string | null;
   lat?: number | null;
@@ -113,6 +141,65 @@ export type InventoryItem = {
   donanteContacto?: string | null;
   observaciones?: string | null;
   isActive: boolean;
+};
+
+export type Recepcion = {
+  id: string;
+  codigo: string;
+  organizationId: string;
+  acopioId: string;
+  acopioNombre?: string;
+  tipo: RecepcionTipo;
+  presentacionFisica: RecepcionPresentacion;
+  estado: RecepcionEstado;
+  recibidaEn: string;
+  donanteNombre?: string | null;
+  donanteContacto?: string | null;
+  procedencia?: string | null;
+  transportista?: string | null;
+  vehiculoPlaca?: string | null;
+  documentoTransporte?: string | null;
+  observaciones?: string | null;
+  responsableId: string;
+  validadaEn?: string | null;
+  isActive: boolean;
+  unidades: UnidadLogistica[];
+  items: RecepcionItem[];
+};
+
+export type UnidadLogistica = {
+  id: string;
+  codigo: string;
+  nroEnRecepcion: number;
+  tipo: UnidadLogisticaTipo;
+  estado: UnidadLogisticaEstado;
+  observaciones?: string | null;
+};
+
+export type Lote = {
+  id: string;
+  codigo: string;
+  codigoOrigen?: string | null;
+  vencimiento?: string | null;
+};
+
+export type RecepcionItem = {
+  id: string;
+  unidadLogisticaId?: string | null;
+  productoId?: string | null;
+  loteId?: string | null;
+  inventoryItemId?: string | null;
+  cantidadRecibida: number;
+  cantidadAprobada: number;
+  cantidadCuarentena: number;
+  cantidadRechazada: number;
+  unidad: string;
+  pesoKg?: number | null;
+  estadoLinea: RecepcionItemEstado;
+  observaciones?: string | null;
+  producto?: Producto | null;
+  lote?: Lote | null;
+  unidadLogistica?: Pick<UnidadLogistica, 'id' | 'codigo' | 'nroEnRecepcion' | 'tipo'> | null;
 };
 
 /** Un permiso conocido del catálogo, o cualquier slug que llegue del servidor. */

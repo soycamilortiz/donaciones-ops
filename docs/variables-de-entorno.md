@@ -29,14 +29,17 @@ servicios con dirección pública.
 | `R2_*` | ✅ | ✅ | — | — |
 | `OPEN_FOOD_FACTS_*` | ✅ | — | — | — |
 | `VISION_*` | ✅ | — | — | — |
+| `EMAIL_VERIFICATION` / `RESEND_API_KEY` / `MAIL_FROM` / `PUBLIC_WEB_URL` | ✅ | — | — | — |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | ✅ | — | — | `VITE_GOOGLE_CLIENT_ID` |
 | `JOBS_USER` / `JOBS_PASSWORD` | — | — | ✅ | — |
 | `OCR_*` | — | ✅ | — | — |
 | `RBAC_SYNC_ON_BOOT` / `SWAGGER_ENABLED` | ✅ | — | — | — |
 
-El front **no lleva variables**: llama a `/api` en el mismo origen y el
-enrutamiento lo resuelve Traefik (en Docker) o un rewrite (en Vercel). Por eso
-tampoco hay secretos en el bundle, que es lo correcto — todo lo que va a un
-front es público.
+El front **casi no lleva variables**: llama a `/api` en el mismo origen y el
+enrutamiento lo resuelve Traefik (en Docker) o un rewrite (en Vercel). La
+excepción es `VITE_GOOGLE_CLIENT_ID` (público): habilita el botón de Google en
+login y registro. Todo lo demás que va al bundle es visible — los secretos van
+solo al API.
 
 El worker necesita `DATABASE_URL` porque escribe el resultado del
 reconocimiento, no solo consume la cola.
@@ -58,6 +61,27 @@ la construyen a partir de la misma variable. No hay que tocar nada más.
 cp .env.example .env
 docker compose up --build
 ```
+
+### Google Sign-In
+
+En [Google Cloud Console](https://console.cloud.google.com/) → APIs y servicios →
+Credenciales → cliente OAuth **Aplicación web**:
+
+| Campo | Valor local | Valor producción |
+| --- | --- | --- |
+| Orígenes autorizados de JavaScript | `http://localhost`, `http://127.0.0.1` | `https://tu-dominio` |
+| URIs de redirección | no hace falta (flujo ID token en el front) | — |
+
+En `.env` de la raíz (Docker Compose lee todo desde ahí):
+
+```env
+GOOGLE_CLIENT_ID=tu-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=...          # opcional hoy; reservado
+VITE_GOOGLE_CLIENT_ID=tu-client-id.apps.googleusercontent.com
+```
+
+El compose pasa `GOOGLE_CLIENT_ID` al API y `VITE_GOOGLE_CLIENT_ID` al build del
+front. Si falta el client ID, el botón de Google no se muestra.
 
 ## Apps en el host, infraestructura en Docker
 
@@ -116,7 +140,7 @@ serverless quien escucha es el runtime.
 | `VISION_PROVIDER` | `openai` (adapter) | |
 | `VISION_API_KEY` | clave del proveedor | ✅ |
 | `VISION_BASE_URL` | `https://api.openai.com/v1` | |
-| `VISION_MODEL` | `gpt-4o-mini` | |
+| `VISION_MODEL` | `gpt-4.1-nano` | |
 | `VISION_TIMEOUT_MS` | `45000` | |
 | `RBAC_SYNC_ON_BOOT` | `false` | |
 | `SWAGGER_ENABLED` | `false` | |
@@ -127,12 +151,17 @@ abre su propia conexión y no debe acaparar el pool.
 
 ### Proyecto `web` — Root Directory `apps/web`
 
-**Ninguna variable.** El front llama a `/api` en el mismo origen y el rewrite de
-`apps/web/vercel.json` lo reenvía al despliegue del API. Si la URL del API no es
-`https://donaciones-ops-api.vercel.app`, hay que corregir ese `destination`.
+| Variable | Valor | Secreto |
+| --- | --- | :-: |
+| `VITE_GOOGLE_CLIENT_ID` | mismo client ID que `GOOGLE_CLIENT_ID` del API | |
 
-Que no lleve variables es deliberado: todo lo que entra en un bundle de front es
-público, así que ahí no puede haber secretos.
+El resto no lleva variables: el front llama a `/api` en el mismo origen y el
+rewrite de `apps/web/vercel.json` lo reenvía al despliegue del API. Si la URL
+del API no es `https://donaciones-ops-api.vercel.app`, hay que corregir ese
+`destination`.
+
+`VITE_GOOGLE_CLIENT_ID` es público (el botón de Google lo necesita en build).
+No pongas secretos en el front.
 
 ### Proyecto `jobs` — Root Directory `apps/jobs`
 

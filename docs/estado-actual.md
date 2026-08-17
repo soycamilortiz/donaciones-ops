@@ -82,12 +82,18 @@ No hay proveedor externo. El API emite un JWT y el front lo guarda en `localStor
 
 | Pieza | Cómo está |
 | --- | --- |
-| Registro | `POST /api/v1/auth/register` — nombre, usuario (3–32, `[a-zA-Z0-9._]+`), correo, contraseña, captcha |
-| Login | `POST /api/v1/auth/login` — usuario **o** correo, contraseña y captcha |
+| Registro | `POST /api/v1/auth/register` — nombre, usuario, correo, contraseña, captcha. **No** emite JWT: queda pendiente de verificar el correo |
+| Verificar correo | `POST /api/v1/auth/verificar-correo` — token del enlace **o** correo + código de 6 dígitos. Emite JWT |
+| Reenviar código | `POST /api/v1/auth/verificar-correo/reenviar` — cooldown 60 s. No revela si el correo existe |
+| Login | `POST /api/v1/auth/login` — usuario **o** correo, contraseña y captcha. 403 si el correo no está verificado |
+| Google | `POST /api/v1/auth/google` — ID token del botón. Emite JWT o pide completar perfil |
+| Completar Google | `POST /api/v1/auth/google/completar` — usuario (y nombre opcional) tras el primer Google |
 | Captcha | `GET /api/v1/auth/captcha` — SVG, 5 minutos, un solo uso. La respuesta se guarda como SHA-256 |
 | Contraseña | bcrypt, 12 rounds. Nunca se persiste ni se devuelve en texto plano |
 | Sesión | `Authorization: Bearer <jwt>`. Default 8h (`JWT_EXPIRES_IN`) |
 | Rutas públicas | health, metadatos, Swagger, `/api/v1/auth/*` |
+
+`EMAIL_VERIFICATION=false` (default local): el API **no** llama a Resend e imprime `codigo=` y `url=` en los logs del contenedor `api`. `EMAIL_VERIFICATION=true` envía un HTML por Resend (`RESEND_API_KEY`, `MAIL_FROM`, `PUBLIC_WEB_URL`). Cuentas ya existentes se marcan verificadas en la migración.
 
 Flujo de producto: registrarse → elegir crear organización **o** esperar invitación (no es obligatorio tener org) → si crea org, los acopios (recibir / enviar donaciones) se cargan en `/app/acopios`.
 
@@ -95,13 +101,13 @@ Invitar personas: quien se suma **ya tiene que estar registrada** con ese correo
 
 ## Dominio (Prisma)
 
-`User` (usuario + correo únicos, `password_hash`), `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto`, `DonacionImagen`.
+`User` (usuario + correo únicos, `password_hash`, `correoVerificadoAt`), `EmailVerification`, `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto` (catálogo global con SKU), `DonacionImagen`, `Recepcion`, `UnidadLogistica`, `Lote`, `RecepcionItem`, `OrgCounter`.
 
 Roles semilla: administrador de acopio, auxiliar administrativo, líder de zona, finanzas, transportador, voluntario. Quien crea la org queda como administrador de acopio. El alta por defecto es voluntario. La matriz se edita en `/app/roles` (permiso `roles:write`). Los permisos nuevos de código aparecen como filas; no se pisan los tildes ya guardados.
 
 Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `inventory:read/write`, `donaciones:read/write`.
 
-Inventario: por centro de acopio. Dashboard en `/app/inventario`. Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol e ítem. Dar de baja no bloquea un alta nueva (el producto siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
+Inventario: por centro de acopio. Dashboard en `/app/inventario`. El alta de stock desde campo pasa por una **recepción**: confirmar una foto identifica el producto; **validar** la recepción incrementa `inventory_items` (solo `cantidad_aprobada`). Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol, producto, recepción e ítem. Dar de baja no bloquea un alta nueva (el producto de inventario siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
 
 ## API NestJS
 
@@ -109,7 +115,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 
 | Recurso | Ruta |
 | --- | --- |
-| Auth | `/api/v1/auth/captcha`, `/register`, `/login` |
+| Auth | `/api/v1/auth/captcha`, `/register`, `/login`, `/google`, `/google/completar`, `/verificar-correo`, `/verificar-correo/reenviar` |
 | Yo | `/api/v1/me` |
 | Organizaciones | `/api/v1/organizations` |
 | Miembros | `/api/v1/organizations/:orgId/members` |
@@ -118,6 +124,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
 | Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas/ruta`, `/productos`, `/ean/:codigo`, `/:id/interpretar`, `/:id/confirmar`) |
+| Recepciones | `/api/v1/organizations/:orgId/recepciones` (+ `/:id/unidades`, `/:id/items`, `/:id/items/:itemId/inspeccion`, `/:id/validar`, `/:id/anular`) |
 
 `GET /donaciones` está **paginado por cursor**, no por offset: las fotos se insertan sin parar desde el campo y con `OFFSET` una fila nueva desplaza la ventana, haciendo que se repitan o se salten registros entre páginas. Devuelve `{ items, siguienteCursor }`; `siguienteCursor` es `null` cuando ya no hay más. Acepta `?estado=`, `?cursor=` y `?limite=` (1–200, default 50).
 
@@ -147,8 +154,14 @@ Variables del API:
 | `VISION_PROVIDER` | Adapter: `openai` (default) o `noop`. Paquete `@soschoco/vision` |
 | `VISION_API_KEY` | Clave del proveedor. Sin ella cae a noop (formulario a mano) |
 | `VISION_BASE_URL` | Default `https://api.openai.com/v1` |
-| `VISION_MODEL` | Default `gpt-4o-mini` |
+| `VISION_MODEL` | Default `gpt-4.1-nano` (visión barata para etiquetas) |
 | `VISION_TIMEOUT_MS` | Default `45000` |
+| `EMAIL_VERIFICATION` | Default `false`. `true` envía con Resend; `false` deja código y link en logs del API |
+| `RESEND_API_KEY` | Clave de Resend. Solo hace falta con `EMAIL_VERIFICATION=true` |
+| `MAIL_FROM` | Default `SOS Chocó <beth.t@example.com>` (sandbox de Resend) |
+| `PUBLIC_WEB_URL` | Origen del front para el link. Default `http://localhost` |
+| `GOOGLE_CLIENT_ID` | OAuth Google (validar ID token). Mismo valor en `VITE_GOOGLE_CLIENT_ID` del front |
+| `GOOGLE_CLIENT_SECRET` | Opcional hoy; reservado para flujos server-side |
 | `RBAC_SYNC_ON_BOOT` | Default `true`. Ponelo en `false` en serverless |
 | `SWAGGER_ENABLED` | Default `true`. Ponelo en `false` en serverless |
 | `LOGS_TOKEN` | Opcional. Si está, `/logs` exige `?token=…` |
@@ -222,12 +235,15 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 
 ## Shell (`apps/web`)
 
-Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio.
+Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio. Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar). La foto de identificación vive en `/app/recepciones/:id/foto`. No hay módulo de Donaciones en el panel.
+
+Alta/edición de acopios: departamento y municipio (DIVIPOLA Colombia), autocomplete Photon, geolocalización del navegador, pin Leaflet arrastrable y mapa para `lat`/`lng`. Componente `AddressLocationPicker`.
 
 Sistema visual «html-base»: paleta verde (`#12331A`) + acento dorado (`#F2C230`) sobre fondo sage, tipografía Archivo (self-hosted vía `@fontsource-variable/archivo`) y radios tipo píldora. Los tokens viven en `src/styles/design-system.css` (`@theme` de Tailwind) y `src/styles.css` (`:root` de las páginas legacy); cambiarlos repinta toda la app. El CTA primario usa tinta verde sobre el dorado para cumplir WCAG AA.
 
 ## Qué falta
 
+- Recepción v1 **está**. Diseño: [recepcion.md](recepcion.md). Falta todavía: ubicaciones tipo pasillo, pallet de despacho, variantes (talla/gramaje), bloquear validación si falta lote (hoy va a cuarentena).
 - Módulo de envíos (contenedor + API).
 - Cookie httpOnly en lugar de `localStorage` si se endurece XSS.
 - Rate limit explícito en login (hoy el captcha cubre brute-force básico).
@@ -237,16 +253,20 @@ Sistema visual «html-base»: paleta verde (`#12331A`) + acento dorado (`#F2C230
 
 Un solo camino: **subir una foto** (envase o código de barras).
 
+0. La PWA lee el EAN sobre la foto original, **comprime** (lado largo ≤ 2048 px, JPEG ~600 KB objetivo, tope 1,5 MB) y sube a R2. HEIC se convierte a JPEG antes del PUT.
 1. La PWA intenta leer un EAN con `BarcodeDetector`. Si hay código: catálogo `productos.ean` y, si no, Open Food Facts. Si nadie lo conoce, el operador completa a mano.
 2. Si no hay EAN: el API baja la foto de R2 y llama a `@soschoco/vision` (adapter por `VISION_PROVIDER`). El operador confirma.
-3. Al confirmar, el inventario **fusiona** nombres parecidos en el mismo acopio (“Agua Brisa” vs “botella de agua brisa”) y muestra candidatos para que no nazcan 10 filas del mismo SKU. El EAN, cuando existe, es la clave canónica.
+3. Al confirmar, la foto se cuelga de un `recepcion_item` (se abre una donación individual si no había recepción). El inventario **no** se toca hasta `POST .../recepciones/:id/validar`. Coincidencias son del catálogo `productos`, no del stock. El EAN, cuando existe, es la clave canónica.
+
+Constantes compartidas en `@soschoco/shared`: `IMAGEN_LADO_MAX`, `IMAGEN_PESO_OBJETIVO`, `IMAGEN_PESO_MAX`, `MAX_IMAGEN_BYTES` (entrada cruda).
 
 Tesseract sigue en el worker para `reprocesar` fotos viejas; las altas nuevas no encolan OCR.
 
 | Pieza | Responsabilidad |
 | --- | --- |
-| `apps/api/src/donaciones` | Autoriza el PUT firmado a R2 y encola el job. La imagen no pasa por el API |
-| `apps/worker` | Consume la cola: descarga, preprocesa, OCR y emparejamiento |
+| `apps/web` (`comprimir-imagen.ts`) | EAN sobre original → comprimir → PUT a R2 |
+| `apps/api/src/donaciones` | Firma el PUT, valida peso al registrar, visión al interpretar |
+| `apps/worker` | Consume la cola: descarga, preprocesa, OCR y emparejamiento (solo reprocesar) |
 | `donacion_imagenes` | Guarda la URL pública de R2 y el FK al producto reconocido |
 | `productos` | Catálogo contra el que se resuelve el texto del OCR |
 

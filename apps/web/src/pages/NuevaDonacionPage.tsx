@@ -1,32 +1,36 @@
-import type { Acopio, InterpretacionDonacion } from '@soschoco/shared';
+import type { InterpretacionDonacion, UnidadLogistica } from '@soschoco/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import { useOrg } from '@/components/OrgGate';
-import { leerAcopioRecordado, recordarAcopio } from '@/features/donaciones/acopio-recordado';
 import {
   confirmarDonacion,
   interpretarImagen,
   subirFoto,
 } from '@/features/donaciones/donaciones-service';
 import { leerEanDeFoto } from '@/features/donaciones/leer-ean';
+import { obtenerRecepcion } from '@/features/recepciones/recepciones-service';
 import { readStoredToken } from '@/lib/api';
 import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
 import { cn } from '@/lib/utils';
 
-type Fase = 'inicio' | 'subiendo' | 'reconociendo' | 'listo' | 'error';
+type Fase = 'inicio' | 'optimizando' | 'subiendo' | 'reconociendo' | 'listo' | 'error';
+
+const UL_SUELTA = 'suelta';
 
 const fieldLabel = 'text-xs font-bold uppercase tracking-wider text-muted-foreground';
+const selectClassName =
+  'min-h-11 w-full cursor-pointer rounded-md border border-border bg-card px-3.5 text-sm font-medium text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 /**
- * Barras de progreso subir → reconocer → confirmar. Es presentacional: no lleva
- * estado propio, sólo lee la `fase` real de la máquina de estados.
+ * Progress bars upload → recognize → confirm. Presentational only: it reads
+ * the real state machine `fase`.
  */
 function Stepper({ activo }: { activo: number }) {
   return (
@@ -44,27 +48,80 @@ function Stepper({ activo }: { activo: number }) {
   );
 }
 
+function UnidadSelect({
+  unidades,
+  value,
+  onChange,
+}: {
+  unidades: UnidadLogistica[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <label className="flex flex-col gap-1.5" htmlFor="donacion-ul">
+      <span className={fieldLabel}>{t('newDonation.unitLabel')}</span>
+      <select
+        id="donacion-ul"
+        className={selectClassName}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        required
+      >
+        <option value="">{t('newDonation.unitPlaceholder')}</option>
+        <option value={UL_SUELTA}>{t('receptions.loose')}</option>
+        {unidades.map((ul) => (
+          <option key={ul.id} value={ul.id}>
+            {ul.codigo} · #{ul.nroEnRecepcion} · {t(`receptions.ulTipo.${ul.tipo}`)}
+          </option>
+        ))}
+      </select>
+      <span className="text-xs text-muted-foreground">{t('newDonation.unitHint')}</span>
+    </label>
+  );
+}
+
 export default function NuevaDonacionPage() {
   const navigate = useNavigate();
+  const { id: recepcionId = '' } = useParams();
+  const [params] = useSearchParams();
   const request = useApi();
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const ulId = params.get('ulId') ?? '';
 
   const [fase, setFase] = useState<Fase>('inicio');
   const [error, setError] = useState<string | null>(null);
   const [imagenId, setImagenId] = useState<string | null>(null);
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
-  const [acopios, setAcopios] = useState<Acopio[]>([]);
-  const [acopioId, setAcopioId] = useState<string>(() => leerAcopioRecordado(orgId));
+  const [acopioId, setAcopioId] = useState('');
+  const [acopioNombre, setAcopioNombre] = useState('');
   const [lectura, setLectura] = useState<InterpretacionDonacion | null>(null);
   const [eanManual, setEanManual] = useState('');
+  const [unidades, setUnidades] = useState<UnidadLogistica[]>([]);
+  const [unidadLogisticaId, setUnidadLogisticaId] = useState(ulId);
+  const [carga, setCarga] = useState<'pendiente' | 'ok' | 'error'>('pendiente');
   const entradaRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    void request<Acopio[]>(`/api/v1/organizations/${orgId}/acopios`)
-      .then(setAcopios)
-      .catch(() => setAcopios([]));
-  }, [request, orgId]);
+    if (!recepcionId) {
+      return;
+    }
+    void obtenerRecepcion(request, orgId, recepcionId)
+      .then((row) => {
+        setAcopioId(row.acopioId);
+        setAcopioNombre(row.acopioNombre ?? '');
+        setUnidades(row.unidades);
+        setUnidadLogisticaId((actual) => {
+          if (actual) {
+            return actual;
+          }
+          return row.unidades.length === 0 ? UL_SUELTA : '';
+        });
+        setCarga('ok');
+      })
+      .catch(() => setCarga('error'));
+  }, [request, orgId, recepcionId]);
 
   useEffect(() => {
     return () => {
@@ -82,19 +139,23 @@ export default function NuevaDonacionPage() {
       setError(null);
       setLectura(null);
       setVistaPrevia(URL.createObjectURL(archivo));
-      setFase('subiendo');
+      setFase('optimizando');
 
       try {
-        const creada = await subirFoto(request, orgId, archivo, {
+        const tipado = eanManual.replace(/\D/g, '');
+        const ean =
+          (tipado.length >= 8 && tipado.length <= 14 ? tipado : null) ??
+          (await leerEanDeFoto(archivo));
+
+        const { comprimirImagen } = await import('@/features/donaciones/comprimir-imagen');
+        const comprimida = await comprimirImagen(archivo);
+        setFase('subiendo');
+        const creada = await subirFoto(request, orgId, comprimida, {
           token: readStoredToken(),
           acopioId: acopioId || undefined,
         });
         setImagenId(creada.id);
         setFase('reconociendo');
-        const tipado = eanManual.replace(/\D/g, '');
-        const ean =
-          (tipado.length >= 8 && tipado.length <= 14 ? tipado : null) ??
-          (await leerEanDeFoto(archivo));
         const r = await interpretarImagen(request, orgId, creada.id, {
           ean: ean ?? undefined,
           acopioId: acopioId || undefined,
@@ -102,7 +163,29 @@ export default function NuevaDonacionPage() {
         setLectura(r);
         setFase('listo');
       } catch (err) {
-        setError(err instanceof Error ? err.message : t('newDonation.uploadError'));
+        const codigo = err instanceof Error ? err.message : '';
+        let mensaje: string;
+        if (codigo.startsWith('COMPRESS_') || codigo === 'HEIC_CONVERT_FAILED') {
+          switch (codigo) {
+            case 'COMPRESS_INPUT_TOO_LARGE':
+              mensaje = t('newDonation.compressInputTooLarge');
+              break;
+            case 'COMPRESS_OUTPUT_TOO_LARGE':
+              mensaje = t('newDonation.compressOutputTooLarge');
+              break;
+            case 'COMPRESS_UNSUPPORTED':
+              mensaje = t('newDonation.compressUnsupported');
+              break;
+            case 'HEIC_CONVERT_FAILED':
+              mensaje = t('newDonation.heicConvertFailed');
+              break;
+            default:
+              mensaje = t('newDonation.compressError');
+          }
+        } else {
+          mensaje = err instanceof Error ? err.message : t('newDonation.uploadError');
+        }
+        setError(mensaje);
         setFase('error');
       }
     },
@@ -121,53 +204,77 @@ export default function NuevaDonacionPage() {
     }
   };
 
+  if (!recepcionId) {
+    return <Navigate to={ROUTES.recepciones} replace />;
+  }
+
   if (!can('donaciones:write')) {
     return <p className="py-8 text-sm text-muted-foreground">{t('newDonation.noPermission')}</p>;
   }
 
-  // Paso activo del stepper derivado de la fase real (−1 = sin progreso visible).
+  if (carga === 'pendiente') {
+    return (
+      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+        <Spinner /> {t('common.loading')}
+      </p>
+    );
+  }
+
+  if (carga === 'error') {
+    return (
+      <p role="alert" className="py-8 text-sm text-error">
+        {t('receptions.notFound')}
+      </p>
+    );
+  }
+
   const pasoActivo =
-    fase === 'subiendo' ? 0 : fase === 'reconociendo' ? 1 : fase === 'listo' ? 2 : -1;
+    fase === 'optimizando' || fase === 'subiendo'
+      ? 0
+      : fase === 'reconociendo'
+        ? 1
+        : fase === 'listo'
+          ? 2
+          : -1;
+
+  const volverHref = ROUTES.recepcionDetalle(recepcionId);
+  const volverLabel = t('newDonation.viewReceptions');
 
   return (
     <div className="space-y-6 py-2">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-foreground">{t('newDonation.title')}</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">{t('newDonation.subtitle')}</p>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            {t('newDonation.subtitleRecepcion')}
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.donaciones)}>
+        <Button variant="outline" size="sm" onClick={() => navigate(volverHref)}>
           <Icon name="chevron-right" size={16} />
-          {t('newDonation.viewDonations')}
+          {volverLabel}
         </Button>
       </div>
 
       <div className="max-w-xl space-y-4">
-        {acopios.length > 0 ? (
-          <label className="flex flex-col gap-1.5">
+        {acopioNombre ? (
+          <p className="flex flex-col gap-1">
             <span className={fieldLabel}>{t('newDonation.acopioLabel')}</span>
-            <select
-              className="min-h-11 w-full cursor-pointer rounded-md border border-border bg-card px-3.5 text-sm font-medium text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              value={acopioId}
-              onChange={(event) => {
-                setAcopioId(event.target.value);
-                recordarAcopio(orgId, event.target.value);
-              }}
-            >
-              <option value="">{t('common.unspecified')}</option>
-              {acopios.map((acopio) => (
-                <option key={acopio.id} value={acopio.id}>
-                  {acopio.nombre}
-                  {acopio.municipio ? ` — ${acopio.municipio}` : ''}
-                </option>
-              ))}
-            </select>
-          </label>
+            <span className="text-sm font-medium text-foreground">{acopioNombre}</span>
+          </p>
         ) : null}
 
-        <label className="flex flex-col gap-1.5">
+        {unidades.length > 0 ? (
+          <UnidadSelect
+            unidades={unidades}
+            value={unidadLogisticaId}
+            onChange={setUnidadLogisticaId}
+          />
+        ) : null}
+
+        <label className="flex flex-col gap-1.5" htmlFor="donacion-ean">
           <span className={fieldLabel}>{t('newDonation.eanOptional')}</span>
           <Input
+            id="donacion-ean"
             inputMode="numeric"
             value={eanManual}
             onChange={(e) => setEanManual(e.target.value)}
@@ -214,14 +321,18 @@ export default function NuevaDonacionPage() {
           </button>
         ) : null}
 
-        {fase === 'subiendo' || fase === 'reconociendo' ? (
+        {fase === 'optimizando' || fase === 'subiendo' || fase === 'reconociendo' ? (
           <div
             role="status"
             className="flex items-center gap-3 rounded-lg border border-border bg-card p-4"
           >
             <Spinner className="text-primary" />
             <p className="text-sm font-semibold text-foreground">
-              {fase === 'subiendo' ? t('newDonation.uploading') : t('newDonation.recognizing')}
+              {fase === 'optimizando'
+                ? t('newDonation.optimizing')
+                : fase === 'subiendo'
+                  ? t('newDonation.uploading')
+                  : t('newDonation.recognizing')}
             </p>
           </div>
         ) : null}
@@ -233,6 +344,9 @@ export default function NuevaDonacionPage() {
             acopioId={acopioId}
             lectura={lectura}
             request={request}
+            recepcionId={recepcionId}
+            unidades={unidades}
+            unidadLogisticaId={unidadLogisticaId}
           />
         ) : null}
 
@@ -249,8 +363,8 @@ export default function NuevaDonacionPage() {
         {fase === 'listo' || fase === 'error' ? (
           <div className="flex flex-wrap gap-3">
             <Button onClick={reiniciar}>{t('newDonation.registerAnother')}</Button>
-            <Button variant="outline" onClick={() => navigate(ROUTES.donaciones)}>
-              {t('newDonation.viewDonations')}
+            <Button variant="outline" onClick={() => navigate(volverHref)}>
+              {volverLabel}
             </Button>
           </div>
         ) : null}
@@ -265,27 +379,30 @@ function Resultado({
   acopioId,
   lectura,
   request,
+  recepcionId,
+  unidades,
+  unidadLogisticaId,
 }: {
   imagenId: string;
   orgId: string;
   acopioId: string;
   lectura: InterpretacionDonacion | null;
   request: <T>(path: string, init?: RequestInit) => Promise<T>;
+  recepcionId: string;
+  unidades: UnidadLogistica[];
+  unidadLogisticaId: string;
 }) {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const mejor = lectura?.coincidencias[0];
   const [nombre, setNombre] = useState(lectura?.nombre ?? '');
   const [marca, setMarca] = useState(lectura?.marca ?? '');
   const [cantidad, setCantidad] = useState(String(lectura?.cantidad ?? 1));
-  const [inventoryItemId, setInventoryItemId] = useState(
-    mejor && mejor.score >= 0.82 ? mejor.id : '',
-  );
+  const [productoId, setProductoId] = useState(mejor && mejor.score >= 0.82 ? mejor.id : '');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmada, setConfirmada] = useState(false);
 
-  // Tono ok/warn del skin html-base, leído del score real del mejor match: el
-  // mismo umbral 0.82 que auto-selecciona la coincidencia. No altera la lógica.
   const score = mejor?.score ?? null;
   const alto = score !== null && score >= 0.82;
   const porcentaje = score !== null ? Math.round(score * 100) : null;
@@ -309,6 +426,10 @@ function Resultado({
       setError(t('newDonation.needAcopio'));
       return;
     }
+    if (unidades.length > 0 && !unidadLogisticaId) {
+      setError(t('newDonation.needUnit'));
+      return;
+    }
     setGuardando(true);
     setError(null);
     try {
@@ -317,9 +438,17 @@ function Resultado({
         cantidad: qty,
         acopioId,
         marca: marca.trim() || undefined,
-        inventoryItemId: inventoryItemId || undefined,
+        recepcionId: recepcionId || undefined,
+        unidadLogisticaId:
+          unidadLogisticaId && unidadLogisticaId !== UL_SUELTA ? unidadLogisticaId : undefined,
+        productoId: productoId || undefined,
+        crearProducto: !productoId,
+        ean: lectura?.ean ?? undefined,
       });
       setConfirmada(true);
+      if (recepcionId) {
+        navigate(ROUTES.recepcionDetalle(recepcionId));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('newDonation.confirmError'));
     } finally {
@@ -343,6 +472,17 @@ function Resultado({
           {lectura?.ean ? ` · EAN ${lectura.ean}` : ''}
           {lectura?.fuenteEan ? ` · ${t(`newDonation.eanSource.${lectura.fuenteEan}`)}` : ''}
         </p>
+        {recepcionId && unidades.length > 0 ? (
+          <p className="text-sm font-medium text-foreground">
+            {t('newDonation.unitAssigned', {
+              unit:
+                unidadLogisticaId === UL_SUELTA
+                  ? t('receptions.loose')
+                  : (unidades.find((ul) => ul.id === unidadLogisticaId)?.codigo ??
+                    t('newDonation.unitPlaceholder')),
+            })}
+          </p>
+        ) : null}
       </div>
 
       {porcentaje !== null ? (
@@ -368,8 +508,8 @@ function Resultado({
             <input
               type="radio"
               name="merge"
-              checked={!inventoryItemId}
-              onChange={() => setInventoryItemId('')}
+              checked={!productoId}
+              onChange={() => setProductoId('')}
             />
             {t('newDonation.mergeNew')}
           </label>
@@ -378,30 +518,31 @@ function Resultado({
               <input
                 type="radio"
                 name="merge"
-                checked={inventoryItemId === c.id}
+                checked={productoId === c.id}
                 onChange={() => {
-                  setInventoryItemId(c.id);
+                  setProductoId(c.id);
                   setNombre(c.nombre);
                   setMarca(c.marca ?? '');
                 }}
               />
-              {t('newDonation.mergeExisting', { name: c.nombre, qty: c.cantidad })}
+              {t('newDonation.mergeExisting', { name: c.nombre })}
             </label>
           ))}
         </fieldset>
       ) : null}
 
-      <label className="flex flex-col gap-1.5">
+      <label className="flex flex-col gap-1.5" htmlFor="donacion-nombre">
         <span className={fieldLabel}>{t('newDonation.productName')}</span>
-        <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <Input id="donacion-nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
       </label>
-      <label className="flex flex-col gap-1.5">
+      <label className="flex flex-col gap-1.5" htmlFor="donacion-marca">
         <span className={fieldLabel}>{t('newDonation.brand')}</span>
-        <Input value={marca} onChange={(e) => setMarca(e.target.value)} />
+        <Input id="donacion-marca" value={marca} onChange={(e) => setMarca(e.target.value)} />
       </label>
-      <label className="flex flex-col gap-1.5">
+      <label className="flex flex-col gap-1.5" htmlFor="donacion-cantidad">
         <span className={fieldLabel}>{t('newDonation.quantity')}</span>
         <Input
+          id="donacion-cantidad"
           type="number"
           min={1}
           step={1}

@@ -23,14 +23,13 @@ const MODULES = [
     bodyKey: 'landing.modules.usuarios.body',
   },
   {
-    path: ROUTES.donaciones,
-    titleKey: 'landing.modules.donaciones.title',
-    bodyKey: 'landing.modules.donaciones.body',
+    path: ROUTES.recepciones,
+    titleKey: 'landing.modules.recepciones.title',
+    bodyKey: 'landing.modules.recepciones.body',
   },
 ] as const;
 
-// Envíos no tiene ruta todavía: la tarjeta queda sin enlace ("próximamente"),
-// igual que hacía /donaciones antes de que DonacionesPage existiera.
+// Envíos no tiene ruta todavía: la tarjeta queda sin enlace ("próximamente").
 const UPCOMING_MODULE = {
   path: '/app/envios',
   titleKey: 'landing.modules.envios.title',

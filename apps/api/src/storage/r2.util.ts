@@ -14,8 +14,10 @@ export function publicObjectUrl(publicBaseUrl: string, key: string): string {
   return `${base}/${path}`;
 }
 
-/** El S3 API exige firma; un GET anónimo da 400. No sirve para <img> ni para el worker. */
+/** El S3 API exige firma; un GET anónimo da 400. Tampoco sirve `r2://`. */
 export function esUrlPublicaUsable(url: string | undefined | null): url is string {
   if (!url) return false;
-  return !url.includes('r2.cloudflarestorage.com');
+  const trimmed = url.trim();
+  if (!/^https?:\/\//i.test(trimmed)) return false;
+  return !trimmed.includes('r2.cloudflarestorage.com');
 }
