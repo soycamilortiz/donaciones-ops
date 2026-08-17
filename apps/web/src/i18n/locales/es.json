@@ -21,7 +21,9 @@
     "roles": "Roles",
     "acopios": "Acopios",
     "inventory": "Inventario",
-    "donations": "Donaciones"
+    "donations": "Donaciones",
+    "skipToContent": "Saltar al contenido",
+    "primary": "Navegación principal"
   },
   "donations": {
     "title": "Donaciones",
@@ -142,7 +144,32 @@
     "subtitle": "Acá se registran las bodegas: si reciben donaciones, si las envían a zona, o ambas. No se crean al armar la organización.",
     "empty": "Todavía no hay centros de acopio. Creá el primero con el formulario de abajo.",
     "inactive": "Baja",
-    "deleteError": "No se pudo eliminar"
+    "deleteError": "No se pudo eliminar",
+    "emptyTitle": "Todavía no hay centros de acopio",
+    "noLocation": "Sin datos de ubicación",
+    "listTitle": "Registrados",
+    "count": "{{active}} activos · {{inactive}} en baja",
+    "newTitle": "Nuevo acopio",
+    "editTitle": "Editar acopio",
+    "reactivate": "Reactivar",
+    "deactivate": "Dar de baja",
+    "reactivateError": "No se pudo reactivar",
+    "saveError": "No se pudo guardar",
+    "fields": {
+      "name": "Nombre",
+      "namePlaceholder": "Bodega, punto o sede",
+      "flow": "Flujo de donaciones",
+      "municipality": "Municipio",
+      "municipalityPlaceholder": "Quibdó, Nuquí, Istmina…",
+      "address": "Dirección",
+      "addressPlaceholder": "Calle, carrera, referencia",
+      "phone": "Teléfono",
+      "phonePlaceholder": "+57 000 000 0000",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Horario, responsable, qué se recibe…",
+      "lat": "Lat",
+      "lng": "Lng"
+    }
   },
   "users": {
     "title": "Usuarios",
@@ -150,14 +177,37 @@
     "inviteRole": "Rol que tendrá",
     "add": "Agregar",
     "reactivate": "Reactivar",
-    "removeError": "No se pudo dar de baja"
+    "removeError": "No se pudo dar de baja",
+    "subtitle": "Miembros de la organización y el rol con el que entran.",
+    "inviteHint": "La persona debe tener una cuenta creada con ese correo antes de agregarla.",
+    "inactiveBadge": "Baja",
+    "columns": {
+      "name": "Nombre",
+      "username": "Usuario",
+      "email": "Correo",
+      "role": "Rol",
+      "actions": "Acciones"
+    }
   },
   "roles": {
     "title": "Roles y permisos",
     "subtitle": "La matriz es del sistema: un cambio aplica a todas las organizaciones. Cuando se agreguen módulos (donaciones, envíos) aparecerán filas nuevas.",
     "permission": "Permiso",
     "deleteError": "No se pudo eliminar",
-    "yes": "Sí"
+    "yes": "Sí",
+    "lockedTitle": "El administrador de acopio no se puede modificar",
+    "lockedText": "Es el único rol que garantiza acceso total a la organización: ni se le quitan permisos ni se da de baja.",
+    "pickRole": "Elegí un rol",
+    "permissionsFor": "Permisos de {{name}}",
+    "permissionForRole": "{{permission}} para {{role}}",
+    "roleNameAria": "Nombre de {{name}}",
+    "roleDescAria": "Descripción de {{name}}",
+    "roleName": "Nombre del rol",
+    "description": "Descripción",
+    "reactivate": "Reactivar",
+    "deactivate": "Dar de baja",
+    "newRole": "Nuevo rol",
+    "create": "Crear rol"
   },
   "auth": {
     "signIn": "Entrar",
@@ -187,7 +237,71 @@
     "waitInvite": "Esperar invitación",
     "waitingTitle": "Esperando invitación",
     "preferCreate": "Prefiero crear una organización",
-    "back": "Volver"
+    "back": "Volver",
+    "greeting": "Hola, {{nombre}}",
+    "subtitle": "La cuenta ya está creada. No es obligatorio tener organización ahora: podés armar la tuya o esperar a que te sumen a una existente.",
+    "createOrgDescription": "Si coordinás un centro, una olla o una institución. El acopio (recibir o enviar donaciones) se carga después, en su propia sección.",
+    "waitInviteDescription": "Alguien de la organización te agrega con el correo {{correo}}. Hasta entonces podés entrar y consultar si ya te sumaron.",
+    "roleNote": "Quien crea la organización queda como Administrador de acopio. Quien se suma por invitación entra como Voluntario.",
+    "name": "Nombre",
+    "email": "Correo",
+    "type": "Tipo",
+    "typeDetail": "Detalle del tipo",
+    "typeDetailNote": "Solo si el tipo es «Otro»",
+    "typeDetailPlaceholder": "Junta de acción comunal",
+    "phone": "Teléfono",
+    "phonePlaceholder": "+57 000 000 0000",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Qué hacen, dónde operan, a quién atienden.",
+    "createOrgLede": "Solo caracterización (quiénes son y cómo contactarlos). Los centros de acopio —recibir o enviar donaciones— se cargan en Acopios, ya dentro del panel.",
+    "createError": "No se pudo crear la organización"
+  },
+  "waitingRoom": {
+    "eyebrow": "Sin organización",
+    "subtitle": "Todavía no pertenecés a ninguna organización. Cuando te agreguen con {{correo}}, recargá esta pantalla y vas a entrar al panel.",
+    "reload": "Ya me invitaron, recargar",
+    "reloadError": "No se pudo comprobar la invitación",
+    "stillWaiting": "Todavía no hay invitación. Nadie te agregó aún con ese correo — probá de nuevo en un rato.",
+    "note": "No hay enlace mágico ni correo automático: quien invita tiene que escribir exactamente este correo desde Usuarios."
+  },
+  "landing": {
+    "homeAria": "{{appName}} — inicio",
+    "primaryNavAria": "Navegación principal",
+    "apiLink": "API",
+    "goToPanel": "Ir al panel",
+    "hero": {
+      "logoAlt": "SOS Chocó · #JuntxsPorElChocó",
+      "eyebrow": "Operación logística",
+      "lede": "Coordinación de donaciones, centros de acopio y envíos. Creá una cuenta; la organización es opcional hasta que armes la tuya o te inviten."
+    },
+    "status": {
+      "api": "API",
+      "db": "PostgreSQL",
+      "checking": "Comprobando",
+      "ok": "En línea",
+      "down": "Sin respuesta",
+      "docsLink": "Documentación OpenAPI"
+    },
+    "modules": {
+      "title": "Módulos",
+      "soon": "Próximamente",
+      "acopios": {
+        "title": "Centros de acopio",
+        "body": "Bodegas WMS: ubicación, contacto y operación de cada sede."
+      },
+      "usuarios": {
+        "title": "Usuarios y roles",
+        "body": "Colaboradores por organización, con permisos por rol."
+      },
+      "donaciones": {
+        "title": "Donaciones",
+        "body": "Registro y seguimiento de ayudas donadas por foto."
+      },
+      "envios": {
+        "title": "Envíos",
+        "body": "Despacho y seguimiento de entregas a comunidades. Próximo módulo."
+      }
+    }
   },
   "session": {
     "loading": "Cargando sesión…",
@@ -274,6 +388,44 @@
     "noResults": "No hay productos con esos filtros.",
     "searchPlaceholder": "Nombre, marca, SKU…",
     "loadAcopiosError": "Error al cargar acopios",
-    "loadError": "Error al cargar inventario"
+    "loadError": "Error al cargar inventario",
+    "subtitle": "Existencias del centro seleccionado. Los productos se dan de baja; no se borran.",
+    "acopioPicker": "Centro de acopio",
+    "activeProducts": "Productos activos",
+    "allCategories": "Todas",
+    "showInactive": "Ver dados de baja",
+    "product": "Producto",
+    "expires": "Vence",
+    "actions": "Acciones",
+    "noResultsHint": "Probá con otro término o quitá un filtro.",
+    "clearFilters": "Quitar filtros",
+    "inactiveBadge": "Baja",
+    "reactivate": "Reactivar",
+    "emptyGateTitle": "El inventario vive en cada centro de acopio",
+    "emptyGateText": "Primero creá un acopio. Sin al menos uno activo no hay dónde registrar existencias.",
+    "newSubtitle": "Cargá un ítem al centro de acopio seleccionado.",
+    "editSubtitle": "Actualizá ficha y cantidades. El registro se conserva.",
+    "groupIdentification": "Identificación",
+    "groupPresentation": "Presentación y destinatario",
+    "groupQuantity": "Cantidad y estado",
+    "groupLocation": "Ubicación y origen",
+    "productName": "Producto / ayuda",
+    "brand": "Marca",
+    "sku": "SKU / código",
+    "presentation": "Presentación",
+    "size": "Talla",
+    "unit": "Unidad",
+    "expiry": "Vencimiento",
+    "batch": "Lote",
+    "location": "Ubicación en bodega",
+    "presentationPlaceholder": "500 g, 900 ml…",
+    "locationPlaceholder": "Estante, pasillo…",
+    "categoryDetailPlaceholder": "Solo si aplica",
+    "unitDetailPlaceholder": "Solo si la unidad es «Otra»",
+    "modalHint": "Esc cierra sin guardar. El producto nace activo.",
+    "createProduct": "Crear producto",
+    "saveChanges": "Guardar cambios",
+    "saveError": "No se pudo guardar",
+    "statusUpdateError": "No se pudo actualizar el estado"
   }
 }
