@@ -29,6 +29,7 @@ describe('DonacionesService', () => {
     presignPut: jest.Mock;
     publicUrlFor: jest.Mock;
     urlParaMostrar: jest.Mock;
+    headObject: jest.Mock;
     getObjectBytes: jest.Mock;
     bucket: string;
   };
@@ -65,6 +66,7 @@ describe('DonacionesService', () => {
         .fn()
         .mockImplementation((key: string) => Promise.resolve(`https://pub.example/${key}`)),
       publicUrlFor: jest.fn().mockImplementation((key: string) => `https://pub.example/${key}`),
+      headObject: jest.fn().mockResolvedValue({ contentLength: 400_000, contentType: 'image/jpeg' }),
       getObjectBytes: jest.fn(),
       bucket: 'sos-choco',
     };
@@ -91,12 +93,16 @@ describe('DonacionesService', () => {
     });
 
     it('conserva la extensión del archivo', () => {
-      expect(service.rutaParaSubida(ORG, 'colgate.png')).toMatch(/\.png$/);
+      expect(service.rutaParaSubida(ORG, 'colgate.png', 'image/png')).toMatch(/\.png$/);
+    });
+
+    it('fuerza .jpg cuando el MIME es JPEG', () => {
+      expect(service.rutaParaSubida(ORG, 'foto.heic', 'image/jpeg')).toMatch(/\.jpg$/);
     });
 
     it('descarta extensiones que no lo parecen, para no heredar basura del cliente', () => {
       expect(service.rutaParaSubida(ORG, 'raro.eyJhbGciOiJIUzI1')).not.toContain('.eyJ');
-      expect(service.rutaParaSubida(ORG, 'sin-extension')).toMatch(/[0-9a-f-]{36}$/);
+      expect(service.rutaParaSubida(ORG, 'sin-extension')).toMatch(/\.jpg$/);
     });
 
     it('no reutiliza la misma ruta entre fotos', () => {
@@ -165,6 +171,12 @@ describe('DonacionesService', () => {
       await expect(service.registrarImagen(ORG, USUARIO, conSalto)).rejects.toThrow(
         /no corresponde a esta organización/,
       );
+    });
+
+    it('rechaza fotos demasiado pesadas en R2', async () => {
+      r2.headObject.mockResolvedValue({ contentLength: 2_000_000, contentType: 'image/jpeg' });
+
+      await expect(service.registrarImagen(ORG, USUARIO, dto)).rejects.toThrow(/supera/);
     });
 
     it('no registra la misma foto dos veces', async () => {

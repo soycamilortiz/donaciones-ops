@@ -59,7 +59,10 @@ export type RutaSubida = {
   publicUrl: string;
   headers: Record<string, string>;
   tiposAceptados: readonly string[];
+  /** Tope del objeto ya comprimido que se sube a R2. */
   maxBytes: number;
+  /** Tope del archivo crudo del móvil antes de comprimir en la PWA. */
+  maxBytesEntrada?: number;
 };
 
 /**
@@ -74,7 +77,26 @@ export type Reconocimiento = {
   cantidadDetectada: number | null;
 };
 
+/** Tamaño máximo del archivo crudo del móvil antes de comprimir en la PWA. */
 export const MAX_IMAGEN_BYTES = 10 * 1024 * 1024;
+
+/** Lado largo máximo tras comprimir (px). Suficiente para etiquetas y visión. */
+export const IMAGEN_LADO_MAX = 2048;
+
+/** Calidad JPEG inicial al comprimir (0..1). */
+export const IMAGEN_CALIDAD_JPEG = 0.82;
+
+/** Calidades progresivas si el peso objetivo no se alcanza. */
+export const IMAGEN_CALIDADES_FALLBACK = [0.82, 0.8, 0.75, 0.7] as const;
+
+/** MIME único guardado en R2 tras comprimir en cliente. */
+export const IMAGEN_FORMATO_ALMACENAMIENTO = 'image/jpeg' as const;
+
+/** Peso objetivo por foto en R2 (~600 KB). */
+export const IMAGEN_PESO_OBJETIVO = 600 * 1024;
+
+/** Tope duro tras comprimir; la PWA rechaza y el API valida en registro. */
+export const IMAGEN_PESO_MAX = Math.floor(1.5 * 1024 * 1024);
 
 export const TIPOS_IMAGEN_ACEPTADOS = [
   'image/jpeg',

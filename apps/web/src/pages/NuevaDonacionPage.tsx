@@ -18,7 +18,7 @@ import { readStoredToken } from '@/lib/api';
 import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
 
-type Fase = 'inicio' | 'subiendo' | 'reconociendo' | 'listo' | 'error';
+type Fase = 'inicio' | 'optimizando' | 'subiendo' | 'reconociendo' | 'listo' | 'error';
 
 export default function NuevaDonacionPage() {
   const navigate = useNavigate();
@@ -58,19 +58,23 @@ export default function NuevaDonacionPage() {
       setError(null);
       setLectura(null);
       setVistaPrevia(URL.createObjectURL(archivo));
-      setFase('subiendo');
+      setFase('optimizando');
 
       try {
-        const creada = await subirFoto(request, orgId, archivo, {
+        const tipado = eanManual.replace(/\D/g, '');
+        const ean =
+          (tipado.length >= 8 && tipado.length <= 14 ? tipado : null) ??
+          (await leerEanDeFoto(archivo));
+
+        const { comprimirImagen } = await import('@/features/donaciones/comprimir-imagen');
+        const comprimida = await comprimirImagen(archivo);
+        setFase('subiendo');
+        const creada = await subirFoto(request, orgId, comprimida, {
           token: readStoredToken(),
           acopioId: acopioId || undefined,
         });
         setImagenId(creada.id);
         setFase('reconociendo');
-        const tipado = eanManual.replace(/\D/g, '');
-        const ean =
-          (tipado.length >= 8 && tipado.length <= 14 ? tipado : null) ??
-          (await leerEanDeFoto(archivo));
         const r = await interpretarImagen(request, orgId, creada.id, {
           ean: ean ?? undefined,
           acopioId: acopioId || undefined,
@@ -78,7 +82,29 @@ export default function NuevaDonacionPage() {
         setLectura(r);
         setFase('listo');
       } catch (err) {
-        setError(err instanceof Error ? err.message : t('newDonation.uploadError'));
+        const codigo = err instanceof Error ? err.message : '';
+        let mensaje: string;
+        if (codigo.startsWith('COMPRESS_') || codigo === 'HEIC_CONVERT_FAILED') {
+          switch (codigo) {
+            case 'COMPRESS_INPUT_TOO_LARGE':
+              mensaje = t('newDonation.compressInputTooLarge');
+              break;
+            case 'COMPRESS_OUTPUT_TOO_LARGE':
+              mensaje = t('newDonation.compressOutputTooLarge');
+              break;
+            case 'COMPRESS_UNSUPPORTED':
+              mensaje = t('newDonation.compressUnsupported');
+              break;
+            case 'HEIC_CONVERT_FAILED':
+              mensaje = t('newDonation.heicConvertFailed');
+              break;
+            default:
+              mensaje = t('newDonation.compressError');
+          }
+        } else {
+          mensaje = err instanceof Error ? err.message : t('newDonation.uploadError');
+        }
+        setError(mensaje);
         setFase('error');
       }
     },
@@ -165,10 +191,14 @@ export default function NuevaDonacionPage() {
         <Button onClick={() => entradaRef.current?.click()}>{t('newDonation.takePhoto')}</Button>
       ) : null}
 
-      {fase === 'subiendo' || fase === 'reconociendo' ? (
+      {fase === 'optimizando' || fase === 'subiendo' || fase === 'reconociendo' ? (
         <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
           <Spinner />{' '}
-          {fase === 'subiendo' ? t('newDonation.uploading') : t('newDonation.recognizing')}
+          {fase === 'optimizando'
+            ? t('newDonation.optimizing')
+            : fase === 'subiendo'
+              ? t('newDonation.uploading')
+              : t('newDonation.recognizing')}
         </p>
       ) : null}
 

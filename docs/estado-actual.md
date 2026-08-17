@@ -249,16 +249,20 @@ Alta/edición de acopios: departamento y municipio (DIVIPOLA Colombia), autocomp
 
 Un solo camino: **subir una foto** (envase o código de barras).
 
+0. La PWA lee el EAN sobre la foto original, **comprime** (lado largo ≤ 2048 px, JPEG ~600 KB objetivo, tope 1,5 MB) y sube a R2. HEIC se convierte a JPEG antes del PUT.
 1. La PWA intenta leer un EAN con `BarcodeDetector`. Si hay código: catálogo `productos.ean` y, si no, Open Food Facts. Si nadie lo conoce, el operador completa a mano.
 2. Si no hay EAN: el API baja la foto de R2 y llama a `@soschoco/vision` (adapter por `VISION_PROVIDER`). El operador confirma.
 3. Al confirmar, el inventario **fusiona** nombres parecidos en el mismo acopio (“Agua Brisa” vs “botella de agua brisa”) y muestra candidatos para que no nazcan 10 filas del mismo SKU. El EAN, cuando existe, es la clave canónica.
+
+Constantes compartidas en `@soschoco/shared`: `IMAGEN_LADO_MAX`, `IMAGEN_PESO_OBJETIVO`, `IMAGEN_PESO_MAX`, `MAX_IMAGEN_BYTES` (entrada cruda).
 
 Tesseract sigue en el worker para `reprocesar` fotos viejas; las altas nuevas no encolan OCR.
 
 | Pieza | Responsabilidad |
 | --- | --- |
-| `apps/api/src/donaciones` | Autoriza el PUT firmado a R2 y encola el job. La imagen no pasa por el API |
-| `apps/worker` | Consume la cola: descarga, preprocesa, OCR y emparejamiento |
+| `apps/web` (`comprimir-imagen.ts`) | EAN sobre original → comprimir → PUT a R2 |
+| `apps/api/src/donaciones` | Firma el PUT, valida peso al registrar, visión al interpretar |
+| `apps/worker` | Consume la cola: descarga, preprocesa, OCR y emparejamiento (solo reprocesar) |
 | `donacion_imagenes` | Guarda la URL pública de R2 y el FK al producto reconocido |
 | `productos` | Catálogo contra el que se resuelve el texto del OCR |
 

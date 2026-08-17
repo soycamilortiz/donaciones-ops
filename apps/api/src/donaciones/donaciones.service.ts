@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import {
   DonacionImagenEstado,
+  IMAGEN_FORMATO_ALMACENAMIENTO,
+  IMAGEN_PESO_MAX,
   MAX_IMAGEN_BYTES,
   normalizarTipoImagen,
   TIPOS_IMAGEN_ACEPTADOS,
@@ -67,7 +69,7 @@ export class DonacionesService {
       throw new BadRequestException(`Formato no aceptado: ${contentType || 'desconocido'}`);
     }
 
-    const pathname = this.rutaParaSubida(organizationId, nombreArchivo);
+    const pathname = this.rutaParaSubida(organizationId, nombreArchivo, tipo);
     const uploadUrl = await this.r2.presignPut(pathname, tipo);
     const publicUrl = await this.r2.urlParaMostrar(pathname);
 
@@ -77,13 +79,17 @@ export class DonacionesService {
       publicUrl,
       headers: { 'Content-Type': tipo },
       tiposAceptados: TIPOS_IMAGEN_ACEPTADOS,
-      maxBytes: MAX_IMAGEN_BYTES,
+      maxBytes: IMAGEN_PESO_MAX,
+      maxBytesEntrada: MAX_IMAGEN_BYTES,
     };
   }
 
   /** Ruta que la PWA debe pedir para una foto nueva. */
-  rutaParaSubida(organizationId: string, nombreArchivo: string): string {
-    return `donaciones/${organizationId}/${randomUUID()}${extensionDe(nombreArchivo)}`;
+  rutaParaSubida(organizationId: string, nombreArchivo: string, contentType?: string): string {
+    const tipo = contentType ?? normalizarTipoImagen(undefined, nombreArchivo);
+    const extension =
+      tipo === IMAGEN_FORMATO_ALMACENAMIENTO ? '.jpg' : extensionDe(nombreArchivo);
+    return `donaciones/${organizationId}/${randomUUID()}${extension || '.jpg'}`;
   }
 
   /**
@@ -94,6 +100,15 @@ export class DonacionesService {
   async registrarImagen(organizationId: string, usuarioId: string, dto: RegistrarImagenDto) {
     if (!perteneceA(dto.pathname, organizationId)) {
       throw new ForbiddenException('La ruta no corresponde a esta organización');
+    }
+
+    if (this.r2.isConfigured()) {
+      const objeto = await this.r2.headObject(dto.pathname);
+      if (objeto.contentLength > IMAGEN_PESO_MAX) {
+        throw new BadRequestException(
+          `La foto supera ${Math.round(IMAGEN_PESO_MAX / 1024 / 1024)} MB tras subirla`,
+        );
+      }
     }
 
     const blobUrl =

@@ -1,4 +1,10 @@
-import { GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  HeadBucketCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -105,6 +111,17 @@ export class R2StorageService {
     if (publica) return publica;
     if (esUrlPublicaUsable(blobUrlGuardada)) return blobUrlGuardada as string;
     return this.presignGet(pathname);
+  }
+
+  async headObject(key: string): Promise<{ contentLength: number; contentType: string | null }> {
+    if (!this.client) {
+      throw new Error(`R2 no configurado (${this.missingConfig().join(', ')})`);
+    }
+    const out = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+    return {
+      contentLength: Number(out.ContentLength ?? 0),
+      contentType: out.ContentType ?? null,
+    };
   }
 
   async getObjectBytes(key: string): Promise<{ bytes: Buffer; contentType: string }> {

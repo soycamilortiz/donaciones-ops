@@ -108,8 +108,8 @@ export function registrarEntrada(
 }
 
 /**
- * Sube la foto a R2 y la registra. Devuelve la imagen en PENDIENTE: el
- * reconocimiento ocurre en el worker.
+ * Sube la foto comprimida a R2 y la registra. Devuelve la imagen en PENDIENTE;
+ * el reconocimiento lo pide la PWA con interpretar.
  */
 export async function subirFoto(
   request: Peticion,
