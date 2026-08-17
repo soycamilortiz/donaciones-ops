@@ -325,7 +325,9 @@
     "googleCompleteSubmit": "Create account",
     "googleCompleting": "Saving…",
     "googleCompleteError": "Could not complete registration",
-    "signInError": "Could not sign in"
+    "signInError": "Could not sign in",
+    "signingIn": "Signing in…",
+    "registering": "Creating account…"
   },
   "verifyEmail": {
     "title": "Verify your email",
@@ -414,7 +416,8 @@
   "session": {
     "loading": "Loading session…",
     "noActiveOrg": "No active organisation.",
-    "profileError": "Could not load the profile"
+    "profileError": "Could not load the profile",
+    "noActiveOrgAction": "Choose an organisation"
   },
   "dashboard": {
     "roleLine": "Type {{tipo}} · your role is {{rol}}",

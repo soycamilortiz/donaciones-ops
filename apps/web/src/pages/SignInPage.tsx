@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
+import { Spinner } from '@/components/atoms/Spinner';
 import { FormField } from '@/components/molecules/FormField';
 import { AuthLayout } from '@/components/templates/AuthLayout';
 import { ROUTES } from '@/lib/constants';
@@ -15,13 +16,21 @@ export default function SignInPage() {
   const { setSession } = useSession();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  // UX-017: the captcha is single-use, so a second submit while the first is in
+  // flight always fails with «captcha inválido» and looks like a wrong password.
+  const [enviando, setEnviando] = useState(false);
   const { t } = useTranslation();
   const { refreshKey, onSubmitFailed } = useCaptchaRefresh();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (enviando) {
+      return;
+    }
     setError(null);
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setEnviando(true);
     try {
       const session = await apiRequest<AuthSession>('/api/v1/auth/login', null, {
         method: 'POST',
@@ -41,7 +50,9 @@ export default function SignInPage() {
         return;
       }
       setError(err instanceof Error ? err.message : t('auth.signInError'));
-      onSubmitFailed(event);
+      onSubmitFailed(form);
+    } finally {
+      setEnviando(false);
     }
   }
 
@@ -69,8 +80,10 @@ export default function SignInPage() {
             {error}
           </p>
         ) : null}
-        <Button type="submit" size="lg" className="w-full">
-          {t('auth.signIn')}
+        <Button type="submit" size="lg" className="w-full" disabled={enviando}>
+          {/* The button label already announces the pending state. */}
+          {enviando ? <Spinner aria-hidden="true" className="h-4 w-4" /> : null}
+          {enviando ? t('auth.signingIn') : t('auth.signIn')}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           {t('auth.noAccount')}{' '}

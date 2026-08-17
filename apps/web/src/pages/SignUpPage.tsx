@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
+import { Spinner } from '@/components/atoms/Spinner';
 import { FormField } from '@/components/molecules/FormField';
 import { AuthLayout } from '@/components/templates/AuthLayout';
 import { ROUTES } from '@/lib/constants';
@@ -13,13 +14,20 @@ import { apiRequest, type RegisterPendingVerification } from '../lib/api';
 export default function SignUpPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  // UX-017: the captcha is single-use, so a second submit while the first is in
+  // flight always fails with «captcha inválido» and looks like a rejected form.
+  const [enviando, setEnviando] = useState(false);
   const { t } = useTranslation();
   const { refreshKey, onSubmitFailed } = useCaptchaRefresh();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (enviando) {
+      return;
+    }
     setError(null);
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     const password = String(data.get('password') ?? '');
     const confirm = String(data.get('confirm') ?? '');
     if (password !== confirm) {
@@ -28,6 +36,7 @@ export default function SignUpPage() {
     }
 
     const correo = String(data.get('correo') ?? '').trim();
+    setEnviando(true);
     try {
       await apiRequest<RegisterPendingVerification>('/api/v1/auth/register', null, {
         method: 'POST',
@@ -42,7 +51,9 @@ export default function SignUpPage() {
       navigate(`${ROUTES.verificarCorreo}?correo=${encodeURIComponent(correo)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth.registerError'));
-      onSubmitFailed(event);
+      onSubmitFailed(form);
+    } finally {
+      setEnviando(false);
     }
   }
 
@@ -112,8 +123,10 @@ export default function SignUpPage() {
             {error}
           </p>
         ) : null}
-        <Button type="submit" size="lg" className="w-full">
-          {t('auth.signUpSubmit')}
+        <Button type="submit" size="lg" className="w-full" disabled={enviando}>
+          {/* The button label already announces the pending state. */}
+          {enviando ? <Spinner aria-hidden="true" className="h-4 w-4" /> : null}
+          {enviando ? t('auth.registering') : t('auth.signUpSubmit')}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           {t('auth.haveAccount')}{' '}
