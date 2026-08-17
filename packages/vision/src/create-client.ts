@@ -36,7 +36,7 @@ export function createVisionClient(options: CreateVisionClientOptions = {}): Vis
     return new OpenAiCompatibleAdapter({
       apiKey,
       baseUrl: options.baseUrl ?? 'https://api.openai.com/v1',
-      model: options.model ?? 'gpt-4o-mini',
+      model: options.model ?? 'gpt-4.1-nano',
       timeoutMs: options.timeoutMs ?? 45_000,
       logger: options.logger,
       fetchImpl: options.fetchImpl,

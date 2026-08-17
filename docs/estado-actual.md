@@ -153,7 +153,7 @@ Variables del API:
 | `VISION_PROVIDER` | Adapter: `openai` (default) o `noop`. Paquete `@soschoco/vision` |
 | `VISION_API_KEY` | Clave del proveedor. Sin ella cae a noop (formulario a mano) |
 | `VISION_BASE_URL` | Default `https://api.openai.com/v1` |
-| `VISION_MODEL` | Default `gpt-4o-mini` |
+| `VISION_MODEL` | Default `gpt-4.1-nano` (visión barata para etiquetas) |
 | `VISION_TIMEOUT_MS` | Default `45000` |
 | `EMAIL_VERIFICATION` | Default `false`. `true` envía con Resend; `false` deja código y link en logs del API |
 | `RESEND_API_KEY` | Clave de Resend. Solo hace falta con `EMAIL_VERIFICATION=true` |

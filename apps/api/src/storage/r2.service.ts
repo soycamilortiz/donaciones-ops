@@ -34,6 +34,10 @@ export class R2StorageService {
       endpoint: normalizeR2Endpoint(rawEndpoint, this.bucket),
       credentials: { accessKeyId, secretAccessKey },
       forcePathStyle: true,
+      // AWS SDK v3 firma checksums por defecto; R2 no los espera y el GET
+      // presignado 403 en <img> del navegador.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
 
     const publicBase = this.config.get('R2_PUBLIC_BASE_URL', { infer: true });

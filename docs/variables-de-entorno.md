@@ -140,7 +140,7 @@ serverless quien escucha es el runtime.
 | `VISION_PROVIDER` | `openai` (adapter) | |
 | `VISION_API_KEY` | clave del proveedor | ✅ |
 | `VISION_BASE_URL` | `https://api.openai.com/v1` | |
-| `VISION_MODEL` | `gpt-4o-mini` | |
+| `VISION_MODEL` | `gpt-4.1-nano` | |
 | `VISION_TIMEOUT_MS` | `45000` | |
 | `RBAC_SYNC_ON_BOOT` | `false` | |
 | `SWAGGER_ENABLED` | `false` | |

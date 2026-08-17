@@ -91,6 +91,7 @@ export default function DonacionesPage() {
           src={fila.blobUrl}
           alt={t('donations.columns.photo')}
           loading="lazy"
+          referrerPolicy="no-referrer"
           className="h-12 w-12 rounded object-cover"
         />
       ),

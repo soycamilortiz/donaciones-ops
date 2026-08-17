@@ -99,7 +99,7 @@ export const envSchema = z.object({
   VISION_BASE_URL: z
     .preprocess(emptyToUndefined, z.string().url().optional())
     .transform((v) => v ?? 'https://api.openai.com/v1'),
-  VISION_MODEL: z.string().min(1).default('gpt-4o-mini'),
+  VISION_MODEL: z.string().min(1).default('gpt-4.1-nano'),
   VISION_TIMEOUT_MS: z.coerce.number().int().positive().max(120000).default(45000),
 
   /**

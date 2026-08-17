@@ -125,6 +125,7 @@ export default function RevisionDonacionesPage() {
                 src={imagen.blobUrl}
                 alt={t('review.photoAlt')}
                 loading="lazy"
+                referrerPolicy="no-referrer"
                 className="h-32 w-32 shrink-0 rounded object-cover"
               />
 
