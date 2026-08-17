@@ -416,7 +416,8 @@
   "session": {
     "loading": "Cargando sesión…",
     "noActiveOrg": "No hay organización activa.",
-    "profileError": "No se pudo cargar el perfil"
+    "profileError": "No se pudo cargar el perfil",
+    "noActiveOrgAction": "Elegir organización"
   },
   "dashboard": {
     "roleLine": "Tipo {{tipo}} · tu rol es {{rol}}",

@@ -416,7 +416,8 @@
   "session": {
     "loading": "Loading session…",
     "noActiveOrg": "No active organisation.",
-    "profileError": "Could not load the profile"
+    "profileError": "Could not load the profile",
+    "noActiveOrgAction": "Choose an organisation"
   },
   "dashboard": {
     "roleLine": "Type {{tipo}} · your role is {{rol}}",
