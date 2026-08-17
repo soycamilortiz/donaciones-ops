@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Badge, type BadgeVariant } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
 import { Spinner } from '@/components/atoms/Spinner';
 import { StatCard } from '@/components/molecules/StatCard';
 import { useOrg } from '@/components/OrgGate';
@@ -87,12 +88,14 @@ export default function DonacionesPage() {
       key: 'blobUrl',
       header: t('donations.columns.photo'),
       render: (fila) => (
-        <img
-          src={fila.blobUrl}
-          alt={t('donations.columns.photo')}
-          loading="lazy"
-          className="h-12 w-12 rounded object-cover"
-        />
+        <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-md bg-secondary">
+          <img
+            src={fila.blobUrl}
+            alt={t('donations.columns.photo')}
+            loading="lazy"
+            className="h-full w-full object-cover"
+          />
+        </span>
       ),
     },
     {
@@ -112,7 +115,7 @@ export default function DonacionesPage() {
         fila.acopio ? (
           fila.acopio.nombre
         ) : (
-          <span className="text-muted-foreground">Sin especificar</span>
+          <span className="text-muted-foreground">{t('common.unspecified')}</span>
         ),
     },
     {
@@ -169,7 +172,12 @@ export default function DonacionesPage() {
           value={String(procesadas.length - porRevisar)}
           icon="check"
         />
-        <StatCard label={t('donations.stats.toReview')} value={String(porRevisar)} icon="info" />
+        <StatCard
+          label={t('donations.stats.toReview')}
+          value={String(porRevisar)}
+          icon="info"
+          className={porRevisar > 0 ? 'border-warning/30 bg-warning-soft' : undefined}
+        />
         <StatCard
           label={t('donations.stats.queued')}
           value={String(Math.max(enCola, 0))}
@@ -178,12 +186,14 @@ export default function DonacionesPage() {
       </div>
 
       {porRevisar > 0 && can('donaciones:write') ? (
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-4">
-          <p className="text-sm text-foreground">
+        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-warning/30 bg-warning-soft p-4">
+          <Icon name="info" className="shrink-0 text-warning" />
+          <p className="flex-1 text-sm font-semibold text-foreground">
             {t('donations.pendingReview', { count: porRevisar })}
           </p>
           <Button variant="outline" onClick={() => navigate(ROUTES.revisionDonaciones)}>
-            Revisar
+            {t('donations.reviewAction')}
+            <Icon name="chevron-right" size={16} />
           </Button>
         </div>
       ) : null}
@@ -196,7 +206,7 @@ export default function DonacionesPage() {
 
       {cargando ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner /> Cargando…
+          <Spinner /> {t('common.loading')}
         </p>
       ) : (
         <>
