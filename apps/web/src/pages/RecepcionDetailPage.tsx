@@ -92,9 +92,9 @@ export default function RecepcionDetailPage() {
     );
   }
 
-  const fotoHref = `${ROUTES.nuevaDonacion}?recepcionId=${recepcion.id}&acopioId=${recepcion.acopioId}${
-    manualUl ? `&ulId=${manualUl}` : ''
-  }`;
+  const fotoQuery = (ulId?: string) => {
+    return `${ROUTES.recepcionFoto(recepcion.id)}${ulId ? `?ulId=${ulId}` : ''}`;
+  };
 
   return (
     <div className="space-y-8 py-2">
@@ -136,12 +136,27 @@ export default function RecepcionDetailPage() {
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {recepcion.unidades.map((ul) => (
-              <li key={ul.id} className="rounded border border-border px-3 py-2 text-sm">
-                <span className="font-medium">{ul.codigo}</span>
-                <span className="text-muted-foreground">
-                  {' '}
-                  · #{ul.nroEnRecepcion} · {t(`receptions.ulTipo.${ul.tipo}`)}
-                </span>
+              <li
+                key={ul.id}
+                className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-sm"
+              >
+                <div>
+                  <span className="font-medium text-foreground">{ul.codigo}</span>
+                  <span className="text-muted-foreground">
+                    {' '}
+                    · #{ul.nroEnRecepcion} · {t(`receptions.ulTipo.${ul.tipo}`)}
+                  </span>
+                </div>
+                {writable ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(fotoQuery(ul.id))}
+                  >
+                    {t('receptions.addPhotoOnUnit')}
+                  </Button>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -195,7 +210,14 @@ export default function RecepcionDetailPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-medium text-foreground">{t('receptions.lines')}</h2>
           {writable ? (
-            <Button onClick={() => navigate(fotoHref)}>{t('receptions.addPhoto')}</Button>
+            <Button
+              onClick={() => navigate(fotoQuery())}
+              variant={recepcion.unidades.length > 0 ? 'outline' : 'primary'}
+            >
+              {recepcion.unidades.length > 0
+                ? t('receptions.addPhotoLoose')
+                : t('receptions.addPhoto')}
+            </Button>
           ) : null}
         </div>
 

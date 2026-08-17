@@ -7,6 +7,7 @@ export type IconName =
   | 'search'
   | 'chevron-down'
   | 'chevron-right'
+  | 'chevronRight'
   | 'check'
   | 'user'
   | 'home'
@@ -18,7 +19,27 @@ export type IconName =
   | 'alert-circle'
   | 'info'
   | 'logout'
-  | 'heart';
+  | 'heart'
+  // html-base glyph set (Feather-style, stroke 2.2, round caps)
+  | 'grid'
+  | 'users'
+  | 'shield'
+  | 'package'
+  | 'camera'
+  | 'arrowRight'
+  | 'arrowLeft'
+  | 'x'
+  | 'refresh'
+  | 'lock'
+  | 'alert'
+  | 'triangle'
+  | 'globe'
+  | 'mail'
+  | 'book'
+  | 'clock'
+  | 'swap'
+  | 'wifiOff'
+  | 'calendar';
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName;

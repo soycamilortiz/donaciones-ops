@@ -3,8 +3,9 @@ import { Icon } from '@/components/atoms/Icon';
 import { cn } from '@/lib/utils';
 import type { AvatarProps, AvatarSize } from './Avatar.types';
 
+// Skin html-base: disco con degradado verde e iniciales en crema.
 const base =
-  'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-muted-foreground select-none';
+  'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary-panel to-primary text-primary-foreground font-bold select-none';
 
 const sizes: Record<AvatarSize, string> = {
   sm: 'h-8 w-8 text-xs',

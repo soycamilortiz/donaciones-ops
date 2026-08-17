@@ -11,19 +11,24 @@ export function DataTable<T extends Record<string, unknown>>({
   rowKey,
 }: DataTableProps<T>): ReactElement {
   return (
-    <div className={cn('w-full overflow-x-auto rounded-lg border border-border', className)}>
+    <div
+      className={cn(
+        'ds-datatable w-full overflow-x-auto rounded-lg border border-border bg-card',
+        className,
+      )}
+    >
       <table className="w-full caption-bottom text-sm">
         {caption ? (
           <caption className="mt-4 text-xs text-muted-foreground">{caption}</caption>
         ) : null}
-        <thead className="border-b border-border bg-muted/50">
+        <thead className="border-b border-border bg-secondary">
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
                 scope="col"
                 className={cn(
-                  'h-11 px-4 text-left align-middle font-medium text-muted-foreground',
+                  'h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground',
                   col.align === 'right' && 'text-right',
                   col.align === 'center' && 'text-center',
                   col.className,
@@ -45,13 +50,14 @@ export function DataTable<T extends Record<string, unknown>>({
             data.map((row, index) => (
               <tr
                 key={rowKey?.(row, index) ?? claveDe(row, index)}
-                className="border-b border-border transition-colors hover:bg-muted/50"
+                className="border-b border-border transition-colors last:border-0 hover:bg-secondary/50"
               >
                 {columns.map((col) => (
                   <td
                     key={col.key}
+                    data-label={col.header}
                     className={cn(
-                      'px-4 py-3 align-middle',
+                      'px-4 py-3.5 align-middle',
                       col.align === 'right' && 'text-right',
                       col.align === 'center' && 'text-center',
                       col.className,

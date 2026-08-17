@@ -1,15 +1,17 @@
 :root {
   color-scheme: light;
-  --bg: #f3efe6;
-  --ink: #1c241c;
-  --muted: #5c6759;
-  --line: #d9d2c3;
-  --panel: #fffdf8;
-  --accent: #1f4d3a;
-  --ok: #2f7d4a;
-  --down: #a33b2b;
-  --wait: #8a7a3a;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  --bg: #e9ede2; /* sage */
+  --ink: #1b241c;
+  --muted: #5e6b5e;
+  --line: #dfe3d6;
+  --panel: #fffdf8; /* white */
+  --accent: #12331a; /* green */
+  --gold: #f2c230;
+  --gold-deep: #9c7208;
+  --ok: #1d7a46;
+  --down: #b3261e;
+  --wait: #b7791f;
+  font-family: "Archivo Variable", "Archivo", "Helvetica Neue", Arial, sans-serif;
   line-height: 1.5;
   color: var(--ink);
   background: var(--bg);

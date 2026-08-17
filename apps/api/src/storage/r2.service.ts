@@ -93,11 +93,9 @@ export class R2StorageService {
     if (!this.client) {
       throw new Error(`R2 no configurado (${this.missingConfig().join(', ')})`);
     }
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
-      { expiresIn },
-    );
+    return getSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
+      expiresIn,
+    });
   }
 
   publicUrlFor(key: string): string | null {

@@ -22,44 +22,11 @@
     "acopios": "Acopios",
     "inventory": "Inventario",
     "receptions": "Recepciones",
-    "donations": "Donaciones"
-  },
-  "donations": {
-    "title": "Donaciones",
-    "subtitle": "Productos donados, reconocidos a partir de la foto.",
-    "register": "Registrar producto",
-    "stats": {
-      "photos": "Fotos registradas",
-      "recognized": "Reconocidas",
-      "toReview": "Por revisar",
-      "queued": "En cola"
-    },
-    "columns": {
-      "photo": "Foto",
-      "product": "Producto",
-      "acopio": "Acopio",
-      "confidence": "Certeza",
-      "status": "Estado",
-      "date": "Fecha"
-    },
-    "status": {
-      "PENDIENTE": "En cola",
-      "PROCESANDO": "Procesando",
-      "PROCESADA": "Procesada",
-      "FALLIDA": "Fallida"
-    },
-    "unidentified": "Sin identificar",
-    "pendingReview_one": "Hay {{count}} foto sin producto identificado.",
-    "pendingReview_other": "Hay {{count}} fotos sin producto identificado.",
-    "reviewAction": "Revisar",
-    "loadMore": "Cargar más",
-    "loadError": "No se pudieron cargar las donaciones",
-    "loadMoreError": "No se pudieron cargar más donaciones",
-    "tableCaption": "Fotos de productos donados",
-    "emptyTable": "Todavía no se ha registrado ninguna foto. Usá «Registrar producto» para tomar la primera."
+    "skipToContent": "Saltar al contenido",
+    "primary": "Navegación principal"
   },
   "newDonation": {
-    "title": "Registrar producto donado",
+    "title": "Identificar producto",
     "subtitle": "Tomá una foto del envase. Identifica el producto dentro de una recepción: el inventario solo sube al validar.",
     "subtitleRecepcion": "Esta foto se cuelga de la recepción abierta. Confirmar identifica el producto; no suma stock todavía.",
     "acopioLabel": "¿En qué acopio se recibió?",
@@ -74,11 +41,10 @@
     "compressOutputTooLarge": "La foto sigue siendo muy pesada después de optimizarla. Probá con mejor luz o más cerca del producto.",
     "compressUnsupported": "Formato de imagen no aceptado",
     "heicConvertFailed": "No se pudo convertir la foto HEIC. Guardala como JPEG e intentá de nuevo.",
-    "registerAnother": "Registrar otro",
-    "viewDonations": "Ver donaciones",
+    "registerAnother": "Identificar otro",
     "viewReceptions": "Ver recepción",
     "uploadError": "No se pudo subir la foto",
-    "noPermission": "No tienes permiso para registrar donaciones.",
+    "noPermission": "No tienes permiso para identificar productos en una recepción.",
     "eanOptional": "Código de barras (opcional)",
     "eanOptionalHint": "Si la foto no se lee sola, escribí el EAN: así va a catálogo / Open Food Facts y no a la IA.",
     "eanSource": {
@@ -97,7 +63,7 @@
     "brand": "Marca",
     "result": {
       "failed": "No se pudo procesar",
-      "failedHint": "La foto quedó guardada. Puedes reintentarla desde la lista de donaciones.",
+      "failedHint": "Volvé a la recepción e intentá de nuevo.",
       "needsConfirm": "Revisá lo que leímos",
       "needsConfirmHint": "La foto identifica el producto. El inventario no se toca hasta validar la recepción.",
       "confirmed": "Identificado en la recepción",
@@ -110,7 +76,12 @@
     "confirm": "Confirmar e identificar",
     "confirmInvalid": "Completá un nombre y una cantidad mayor a cero.",
     "needAcopio": "Elegí el acopio antes de confirmar.",
-    "confirmError": "No se pudo confirmar la donación"
+    "unitLabel": "¿En qué unidad va este producto?",
+    "unitPlaceholder": "Elegí pallet, caja o suelta",
+    "unitHint": "El código (PAL-…, CAJ-…) lo genera el sistema. Si no está en un contenedor, elegí suelta.",
+    "unitAssigned": "Va a {{unit}}",
+    "needUnit": "Elegí el pallet, la caja o suelta antes de confirmar.",
+    "confirmError": "No se pudo confirmar la identificación"
   },
   "receptions": {
     "title": "Recepciones",
@@ -126,7 +97,7 @@
     "saveError": "No se pudo guardar",
     "notFound": "Recepción no encontrada",
     "tableCaption": "Recepciones de la organización",
-    "empty": "Todavía no hay recepciones. Abrí la primera o identificá un producto con foto.",
+    "empty": "Todavía no hay recepciones. Abrí la primera.",
     "presentation": "Cómo llegó",
     "donor": "Donante",
     "donorContact": "Contacto del donante",
@@ -141,6 +112,8 @@
     "lines": "Líneas",
     "noLines": "Todavía no hay productos. Identificá con foto o cargá una línea a mano.",
     "addPhoto": "Identificar con foto",
+    "addPhotoOnUnit": "Foto",
+    "addPhotoLoose": "Foto suelta",
     "addManual": "Agregar a mano",
     "addLine": "Agregar línea",
     "loose": "Suelta",
@@ -207,25 +180,6 @@
       "VALIDADA": "Validada"
     }
   },
-  "review": {
-    "title": "Revisión de donaciones",
-    "subtitle": "Fotos que el reconocimiento no resolvió con suficiente certeza.",
-    "noPermission": "No tienes permiso para revisar donaciones.",
-    "emptyTitle": "No hay nada pendiente de revisar.",
-    "emptyHint": "Todas las fotos se reconocieron con suficiente certeza. Vuelven a aparecer aquí si alguna queda sin identificar.",
-    "photoAlt": "Producto por identificar",
-    "failed": "Falló el procesamiento",
-    "unidentified": "Sin identificar",
-    "ocrText": "Texto leído:",
-    "noText": "No se leyó texto en la foto.",
-    "chooseProduct": "Elegir producto…",
-    "correctProduct": "Producto correcto",
-    "retryRecognition": "Reintentar reconocimiento",
-    "emptyCatalog": "El catálogo de productos está vacío: sin productos cargados no hay nada que asignar ni el reconocimiento puede acertar.",
-    "loadError": "No se pudo cargar la revisión",
-    "saveError": "No se pudo guardar la corrección",
-    "retryError": "No se pudo reintentar"
-  },
   "confirm": {
     "deleteAcopioTitle": "Eliminar este centro de acopio",
     "deleteAcopioDescription": "Se borra de forma permanente. Las donaciones ya registradas en él quedan sin acopio asignado.",
@@ -246,15 +200,36 @@
     "subtitle": "Acá se registran las bodegas: si reciben donaciones, si las envían a zona, o ambas. No se crean al armar la organización.",
     "empty": "Todavía no hay centros de acopio. Creá el primero con el formulario de abajo.",
     "inactive": "Baja",
-    "deactivate": "Dar de baja",
     "deleteError": "No se pudo eliminar",
+    "emptyTitle": "Todavía no hay centros de acopio",
     "noLocation": "Sin datos de ubicación",
+    "listTitle": "Registrados",
+    "count": "{{active}} activos · {{inactive}} en baja",
     "newTitle": "Nuevo acopio",
     "editTitle": "Editar acopio",
+    "reactivate": "Reactivar",
+    "deactivate": "Dar de baja",
+    "reactivateError": "No se pudo reactivar",
+    "saveError": "No se pudo guardar",
     "name": "Nombre",
     "flow": "Flujo de donaciones",
     "phone": "Teléfono",
-    "description": "Descripción"
+    "description": "Descripción",
+    "fields": {
+      "name": "Nombre",
+      "namePlaceholder": "Bodega, punto o sede",
+      "flow": "Flujo de donaciones",
+      "municipality": "Municipio",
+      "municipalityPlaceholder": "Quibdó, Nuquí, Istmina…",
+      "address": "Dirección",
+      "addressPlaceholder": "Calle, carrera, referencia",
+      "phone": "Teléfono",
+      "phonePlaceholder": "+57 000 000 0000",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Horario, responsable, qué se recibe…",
+      "lat": "Lat",
+      "lng": "Lng"
+    }
   },
   "address": {
     "departamento": "Departamento",
@@ -282,14 +257,37 @@
     "inviteRole": "Rol que tendrá",
     "add": "Agregar",
     "reactivate": "Reactivar",
-    "removeError": "No se pudo dar de baja"
+    "removeError": "No se pudo dar de baja",
+    "subtitle": "Miembros de la organización y el rol con el que entran.",
+    "inviteHint": "La persona debe tener una cuenta creada con ese correo antes de agregarla.",
+    "inactiveBadge": "Baja",
+    "columns": {
+      "name": "Nombre",
+      "username": "Usuario",
+      "email": "Correo",
+      "role": "Rol",
+      "actions": "Acciones"
+    }
   },
   "roles": {
     "title": "Roles y permisos",
-    "subtitle": "La matriz es del sistema: un cambio aplica a todas las organizaciones. Cuando se agreguen módulos (donaciones, envíos) aparecerán filas nuevas.",
+    "subtitle": "La matriz es del sistema: un cambio aplica a todas las organizaciones. Cuando se agreguen módulos (envíos) aparecerán filas nuevas.",
     "permission": "Permiso",
     "deleteError": "No se pudo eliminar",
-    "yes": "Sí"
+    "yes": "Sí",
+    "lockedTitle": "El administrador de acopio no se puede modificar",
+    "lockedText": "Es el único rol que garantiza acceso total a la organización: ni se le quitan permisos ni se da de baja.",
+    "pickRole": "Elegí un rol",
+    "permissionsFor": "Permisos de {{name}}",
+    "permissionForRole": "{{permission}} para {{role}}",
+    "roleNameAria": "Nombre de {{name}}",
+    "roleDescAria": "Descripción de {{name}}",
+    "roleName": "Nombre del rol",
+    "description": "Descripción",
+    "reactivate": "Reactivar",
+    "deactivate": "Dar de baja",
+    "newRole": "Nuevo rol",
+    "create": "Crear rol"
   },
   "auth": {
     "signIn": "Entrar",
@@ -298,27 +296,27 @@
     "password": "Contraseña",
     "captchaImage": "Otro captcha",
     "captchaText": "Texto del captcha",
+    "captchaLoading": "Cargando captcha…",
+    "captchaError": "No se pudo cargar el captcha",
     "noAccount": "¿No tenés cuenta?",
-    "hasAccount": "¿Ya tenés cuenta?",
+    "haveAccount": "¿Ya tenés cuenta?",
     "createAccount": "Crear cuenta",
     "name": "Nombre",
     "username": "Usuario",
-    "usernameHint": "Letras, números, punto y guion bajo",
+    "usernameHint": "3 a 32 caracteres. Letras, números, punto y guion bajo.",
     "email": "Correo",
     "confirmPassword": "Confirmar contraseña",
     "passwordHint": "Mínimo 8 caracteres, con letras y números.",
-    "submitSignUp": "Registrarme",
-    "passwordsMismatch": "Las contraseñas no coinciden",
-    "signUpError": "No se pudo registrar",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "registerError": "No se pudo registrar",
+    "signUpSubmit": "Registrarme",
     "orEmail": "o con correo y contraseña",
     "googleError": "No se pudo entrar con Google",
     "googleCompleteTitle": "Completá tu cuenta",
     "googleCompleteSubtitle": "Elegí un usuario para SOS Chocó. El correo ya viene de Google.",
     "googleCompleteSubmit": "Crear cuenta",
     "googleCompleting": "Guardando…",
-    "googleCompleteError": "No se pudo completar el registro",
-    "captchaLoading": "Cargando captcha…",
-    "captchaError": "No se pudo cargar el captcha"
+    "googleCompleteError": "No se pudo completar el registro"
   },
   "verifyEmail": {
     "title": "Verificá tu correo",
@@ -338,7 +336,71 @@
     "waitInvite": "Esperar invitación",
     "waitingTitle": "Esperando invitación",
     "preferCreate": "Prefiero crear una organización",
-    "back": "Volver"
+    "back": "Volver",
+    "greeting": "Hola, {{nombre}}",
+    "subtitle": "La cuenta ya está creada. No es obligatorio tener organización ahora: podés armar la tuya o esperar a que te sumen a una existente.",
+    "createOrgDescription": "Si coordinás un centro, una olla o una institución. El acopio (recibir o enviar donaciones) se carga después, en su propia sección.",
+    "waitInviteDescription": "Alguien de la organización te agrega con el correo {{correo}}. Hasta entonces podés entrar y consultar si ya te sumaron.",
+    "roleNote": "Quien crea la organización queda como Administrador de acopio. Quien se suma por invitación entra como Voluntario.",
+    "name": "Nombre",
+    "email": "Correo",
+    "type": "Tipo",
+    "typeDetail": "Detalle del tipo",
+    "typeDetailNote": "Solo si el tipo es «Otro»",
+    "typeDetailPlaceholder": "Junta de acción comunal",
+    "phone": "Teléfono",
+    "phonePlaceholder": "+57 000 000 0000",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Qué hacen, dónde operan, a quién atienden.",
+    "createOrgLede": "Solo caracterización (quiénes son y cómo contactarlos). Los centros de acopio —recibir o enviar donaciones— se cargan en Acopios, ya dentro del panel.",
+    "createError": "No se pudo crear la organización"
+  },
+  "waitingRoom": {
+    "eyebrow": "Sin organización",
+    "subtitle": "Todavía no pertenecés a ninguna organización. Cuando te agreguen con {{correo}}, recargá esta pantalla y vas a entrar al panel.",
+    "reload": "Ya me invitaron, recargar",
+    "reloadError": "No se pudo comprobar la invitación",
+    "stillWaiting": "Todavía no hay invitación. Nadie te agregó aún con ese correo — probá de nuevo en un rato.",
+    "note": "No hay enlace mágico ni correo automático: quien invita tiene que escribir exactamente este correo desde Usuarios."
+  },
+  "landing": {
+    "homeAria": "{{appName}} — inicio",
+    "primaryNavAria": "Navegación principal",
+    "apiLink": "API",
+    "goToPanel": "Ir al panel",
+    "hero": {
+      "logoAlt": "SOS Chocó · #JuntxsPorElChocó",
+      "eyebrow": "Operación logística",
+      "lede": "Coordinación de donaciones, centros de acopio y envíos. Creá una cuenta; la organización es opcional hasta que armes la tuya o te inviten."
+    },
+    "status": {
+      "api": "API",
+      "db": "PostgreSQL",
+      "checking": "Comprobando",
+      "ok": "En línea",
+      "down": "Sin respuesta",
+      "docsLink": "Documentación OpenAPI"
+    },
+    "modules": {
+      "title": "Módulos",
+      "soon": "Próximamente",
+      "acopios": {
+        "title": "Centros de acopio",
+        "body": "Bodegas WMS: ubicación, contacto y operación de cada sede."
+      },
+      "usuarios": {
+        "title": "Usuarios y roles",
+        "body": "Colaboradores por organización, con permisos por rol."
+      },
+      "recepciones": {
+        "title": "Recepciones",
+        "body": "El camión o la donación que llega: identificás productos y el stock sube al validar."
+      },
+      "envios": {
+        "title": "Envíos",
+        "body": "Despacho y seguimiento de entregas a comunidades. Próximo módulo."
+      }
+    }
   },
   "session": {
     "loading": "Cargando sesión…",
@@ -352,7 +414,8 @@
     "usersHint": "Sumar personas ya registradas y asignar roles.",
     "rolesHint": "Matriz editable: roles, permisos y altas nuevas.",
     "acopiosHint": "Bodegas para recibir o enviar donaciones.",
-    "inventoryHint": "Existencias por centro de acopio: producto, lote y vencimiento."
+    "inventoryHint": "Existencias por centro de acopio: producto, lote y vencimiento.",
+    "receptionsHint": "Abrir el evento de llegada, identificar productos y validar el ingreso."
   },
   "inventoryCategories": {
     "ALIMENTOS_NO_PERECEDEROS": "Alimentos no perecederos",
@@ -425,6 +488,44 @@
     "noResults": "No hay productos con esos filtros.",
     "searchPlaceholder": "Nombre, marca, SKU…",
     "loadAcopiosError": "Error al cargar acopios",
-    "loadError": "Error al cargar inventario"
+    "loadError": "Error al cargar inventario",
+    "subtitle": "Existencias del centro seleccionado. Los productos se dan de baja; no se borran.",
+    "acopioPicker": "Centro de acopio",
+    "activeProducts": "Productos activos",
+    "allCategories": "Todas",
+    "showInactive": "Ver dados de baja",
+    "product": "Producto",
+    "expires": "Vence",
+    "actions": "Acciones",
+    "noResultsHint": "Probá con otro término o quitá un filtro.",
+    "clearFilters": "Quitar filtros",
+    "inactiveBadge": "Baja",
+    "reactivate": "Reactivar",
+    "emptyGateTitle": "El inventario vive en cada centro de acopio",
+    "emptyGateText": "Primero creá un acopio. Sin al menos uno activo no hay dónde registrar existencias.",
+    "newSubtitle": "Cargá un ítem al centro de acopio seleccionado.",
+    "editSubtitle": "Actualizá ficha y cantidades. El registro se conserva.",
+    "groupIdentification": "Identificación",
+    "groupPresentation": "Presentación y destinatario",
+    "groupQuantity": "Cantidad y estado",
+    "groupLocation": "Ubicación y origen",
+    "productName": "Producto / ayuda",
+    "brand": "Marca",
+    "sku": "SKU / código",
+    "presentation": "Presentación",
+    "size": "Talla",
+    "unit": "Unidad",
+    "expiry": "Vencimiento",
+    "batch": "Lote",
+    "location": "Ubicación en bodega",
+    "presentationPlaceholder": "500 g, 900 ml…",
+    "locationPlaceholder": "Estante, pasillo…",
+    "categoryDetailPlaceholder": "Solo si aplica",
+    "unitDetailPlaceholder": "Solo si la unidad es «Otra»",
+    "modalHint": "Esc cierra sin guardar. El producto nace activo.",
+    "createProduct": "Crear producto",
+    "saveChanges": "Guardar cambios",
+    "saveError": "No se pudo guardar",
+    "statusUpdateError": "No se pudo actualizar el estado"
   }
 }

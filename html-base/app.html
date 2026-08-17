@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resumen — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-route="/app">
+
+<div class="shell">
+  <div data-shell></div>
+
+  <div class="main">
+    <header class="topbar" data-topbar></header>
+
+    <main class="content">
+
+      <div class="page-head">
+        <div class="page-head-copy">
+          <p class="eyebrow">Resumen</p>
+          <h1 class="page-title" id="org-nombre"></h1>
+          <p class="page-sub" id="rol-linea"></p>
+        </div>
+      </div>
+
+      <div class="note">
+        <span data-ico="swap"></span>
+        <p class="note-text" id="switch-nota"></p>
+      </div>
+
+      <h2 class="section-label">Módulos</h2>
+      <div class="module-grid" id="modulos"></div>
+
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  import { el, fill, icon } from './assets/app.js';
+  import { ORG, ME, roleName, ORGANIZATION_TIPOS, label } from './assets/data.js';
+
+  document.getElementById('org-nombre').textContent = ORG.nombre;
+  document.getElementById('rol-linea').textContent =
+    `Tipo ${ORG.tipo} · tu rol es ${roleName(ME.roleSlug)}`;
+  document.getElementById('switch-nota').textContent =
+    `${ME.nombre} (${ME.correo}) puede cambiar de organización si tiene varias membresías.`;
+
+  // Dashboard.tsx lista cuatro módulos; Donaciones queda fuera del panel
+  // aunque sí está en el menú. Registrado en GAPS.md #12.
+  const MODULOS = [
+    ['usuarios.html', 'users', 'Usuarios', 'Sumar personas ya registradas y asignar roles.'],
+    ['roles.html', 'shield', 'Roles', 'Matriz editable: roles, permisos y altas nuevas.'],
+    ['acopios.html', 'home', 'Acopios', 'Bodegas para recibir o enviar donaciones.'],
+    ['inventario.html', 'package', 'Inventario', 'Existencias por centro de acopio: producto, lote y vencimiento.'],
+  ];
+
+  fill(document.getElementById('modulos'), MODULOS.map(([href, ico, titulo, hint]) =>
+    el('a', { class: 'module', href }, [
+      el('div', { class: 'module-icon' }, icon(ico)),
+      el('h3', { class: 'module-title', text: titulo }),
+      el('p', { class: 'module-text', text: hint }),
+      el('span', { class: 'module-open' }, [
+        'Abrir',
+        el('span', { class: 'module-open-cap' }, icon('arrowRight', 'ico', 2.6)),
+      ]),
+    ])
+  ));
+</script>
+
+</body>
+</html>

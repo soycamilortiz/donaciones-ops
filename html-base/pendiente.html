@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esperando invitación — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .pending { min-height: 100vh; background: var(--sage); display: flex; flex-direction: column; align-items: center; }
+  .pending-bar { width: 100%; max-width: 560px; height: 64px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+  .pending-main { width: 100%; max-width: 560px; padding: 32px 24px 64px; display: flex; flex-direction: column; gap: 22px; }
+  .wait-art { height: 168px; background: var(--green); border-radius: 20px; display: flex; align-items: center; justify-content: center; }
+  .mail-box { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: var(--white); border: 1px solid var(--line); border-radius: 12px; }
+  .mail-box svg { width: 16px; height: 16px; color: var(--green); }
+  .mail-text { font-size: 13px; font-weight: 700; letter-spacing: -0.005em; }
+</style>
+</head>
+<body data-route="/pendiente">
+
+<div class="pending">
+
+  <header class="pending-bar">
+    <a class="brand" href="index.html" aria-label="SOS Chocó — inicio"><img class="logo logo-auth" src="assets/logo-mark.png" alt="SOS Chocó" width="520" height="441"></a>
+    <a class="tb-action" href="index.html"><span data-ico="logout"></span>Salir</a>
+  </header>
+
+  <main class="pending-main">
+
+    <div class="wait-art">
+      <svg width="342" height="168" viewBox="0 0 342 168" fill="none" aria-hidden="true">
+        <circle cx="171" cy="84" r="76" stroke="#1A4224" stroke-width="1.5"/>
+        <circle cx="171" cy="84" r="58" stroke="#1A4224" stroke-width="1.5"/>
+        <circle cx="171" cy="84" r="40" stroke="#2A5733" stroke-width="1.5"/>
+        <circle cx="171" cy="84" r="22" fill="#1A4224"/>
+        <path d="M162 79h18a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-18a1.5 1.5 0 0 1-1.5-1.5v-9a1.5 1.5 0 0 1 1.5-1.5z" stroke="#F2C230" stroke-width="1.8"/>
+        <polyline points="160.5,80 171,87.5 181.5,80" stroke="#F2C230" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+
+    <div class="auth-head">
+      <p class="eyebrow">Sin organización</p>
+      <h1 class="auth-title">Esperando invitación</h1>
+      <p class="auth-sub">Todavía no pertenecés a ninguna organización. Cuando te agreguen con este correo, recargá esta pantalla y vas a entrar al panel.</p>
+    </div>
+
+    <div class="mail-box">
+      <span data-ico="mail"></span>
+      <span class="mail-text" id="mi-correo"></span>
+    </div>
+
+    <button class="btn btn-lg btn-block" id="recargar" type="button">Ya me invitaron, recargar<span class="btn-cap" data-ico="refresh"></span></button>
+    <a class="link" href="empezar-organizacion.html" style="text-align:center;font-size:13px">Prefiero crear una organización</a>
+
+    <div class="note">
+      <span data-ico="info"></span>
+      <p class="note-text">No hay enlace mágico ni correo automático: quien invita tiene que escribir exactamente este correo desde Usuarios.</p>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+  import { toast, spinner, fill } from './assets/app.js';
+  import { ME } from './assets/data.js';
+
+  document.getElementById('mi-correo').textContent = ME.correo;
+
+  const btn = document.getElementById('recargar');
+  let intentos = 0;
+
+  btn.addEventListener('click', () => {
+    intentos++;
+    const cap = btn.querySelector('.btn-cap');
+    fill(cap, spinner());
+    btn.disabled = true;
+
+    // GET /api/v1/me: si no hay membresías activas, se queda acá.
+    setTimeout(() => {
+      btn.disabled = false;
+      if (intentos < 2) {
+        toast({ title: 'Todavía no hay invitación.', text: 'Nadie te agregó aún con ese correo. Volvé a intentar en un rato.', ico: 'clock' });
+        location.reload();
+      } else {
+        location.href = 'app.html';
+      }
+    }, 900);
+  });
+</script>
+
+</body>
+</html>

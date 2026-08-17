@@ -235,9 +235,11 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 
 ## Shell (`apps/web`)
 
-Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio. Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar) y foto en `/app/donaciones/nueva`.
+Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio. Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar). La foto de identificación vive en `/app/recepciones/:id/foto`. No hay módulo de Donaciones en el panel.
 
 Alta/edición de acopios: departamento y municipio (DIVIPOLA Colombia), autocomplete Photon, geolocalización del navegador, pin Leaflet arrastrable y mapa para `lat`/`lng`. Componente `AddressLocationPicker`.
+
+Sistema visual «html-base»: paleta verde (`#12331A`) + acento dorado (`#F2C230`) sobre fondo sage, tipografía Archivo (self-hosted vía `@fontsource-variable/archivo`) y radios tipo píldora. Los tokens viven en `src/styles/design-system.css` (`@theme` de Tailwind) y `src/styles.css` (`:root` de las páginas legacy); cambiarlos repinta toda la app. El CTA primario usa tinta verde sobre el dorado para cumplir WCAG AA.
 
 ## Qué falta
 

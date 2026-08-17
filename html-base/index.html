@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOS Chocó — Logística humanitaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-route="/">
+
+<div class="public">
+
+  <header class="public-bar">
+    <a class="brand" href="index.html" aria-label="SOS Chocó — inicio"><img class="logo logo-auth" src="assets/logo-mark.png" alt="SOS Chocó" width="520" height="441"></a>
+    <nav class="public-actions">
+      <a href="#" style="font-size:13.5px;font-weight:600;color:var(--muted)">API</a>
+      <a class="link" href="sign-in.html" style="font-size:13.5px">Entrar</a>
+      <a class="btn btn-dark" href="sign-up.html">Registrarse<span class="btn-cap" data-ico="arrowRight"></span></a>
+    </nav>
+  </header>
+
+  <main class="public-body">
+
+    <section class="hero">
+      <h1 style="margin:0">
+        <img class="logo logo-hero" src="assets/logo-full.png"
+             alt="SOS Chocó · #JuntxsPorElChocó" width="720" height="704">
+      </h1>
+      <div class="hero-copy">
+        <p class="eyebrow">Operación logística</p>
+        <p class="hero-lede">Coordinación de donaciones, centros de acopio y envíos. Creá una cuenta; la organización es opcional hasta que armes la tuya o te inviten.</p>
+        <a class="btn btn-lg" href="sign-up.html" style="align-self:flex-start">Crear cuenta<span class="btn-cap" data-ico="arrowRight"></span></a>
+      </div>
+    </section>
+
+    <section class="status-strip" aria-live="polite">
+      <div class="status-item">
+        <span class="status-name">API</span>
+        <span class="status-value" id="s-api">Comprobando</span>
+      </div>
+      <div class="status-item">
+        <span class="status-name">PostgreSQL</span>
+        <span class="status-value" id="s-db">Comprobando</span>
+      </div>
+      <a class="status-docs" href="#"><span data-ico="book"></span>Documentación OpenAPI</a>
+    </section>
+
+    <section class="col gap-16">
+      <h2 class="section-label">Módulos</h2>
+      <div class="module-grid">
+        <a class="module" href="acopios.html">
+          <p class="module-path">/app/acopios</p>
+          <h3 class="module-title">Centros de acopio</h3>
+          <p class="module-text">Bodegas WMS: ubicación, contacto y operación de cada sede.</p>
+        </a>
+        <a class="module" href="usuarios.html">
+          <p class="module-path">/app/usuarios</p>
+          <h3 class="module-title">Usuarios y roles</h3>
+          <p class="module-text">Colaboradores por organización, con permisos por rol.</p>
+        </a>
+        <div class="module module-soon">
+          <p class="module-path">/donaciones</p>
+          <h3 class="module-title">Donaciones</h3>
+          <p class="module-text">Registro y seguimiento de ayudas. Próximo módulo.</p>
+          <p class="module-flag">Contenedor pendiente</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script type="module">
+  import { toast } from './assets/app.js';
+
+  // El health-check real es asíncrono: /api/health y /api/health/ready.
+  setTimeout(() => {
+    document.getElementById('s-api').textContent = 'En línea';
+    document.getElementById('s-db').textContent = 'En línea';
+  }, 700);
+
+  // El service worker avisa una sola vez por sesión.
+  if (!sessionStorage.getItem('pwa-avisado')) {
+    setTimeout(() => {
+      toast({ title: 'La app ya funciona sin conexión.', text: 'El service worker cacheó la interfaz. Los datos siguen necesitando red.' });
+      sessionStorage.setItem('pwa-avisado', '1');
+    }, 1600);
+  }
+</script>
+
+</body>
+</html>

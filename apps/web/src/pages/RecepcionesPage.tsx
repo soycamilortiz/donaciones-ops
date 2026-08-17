@@ -105,12 +105,7 @@ export default function RecepcionesPage() {
           <p className="text-sm text-muted-foreground">{t('receptions.subtitle')}</p>
         </div>
         {can('donaciones:write') ? (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => navigate(ROUTES.nuevaDonacion)}>
-              {t('receptions.photo')}
-            </Button>
-            <Button onClick={() => navigate(ROUTES.nuevaRecepcion)}>{t('receptions.open')}</Button>
-          </div>
+          <Button onClick={() => navigate(ROUTES.nuevaRecepcion)}>{t('receptions.open')}</Button>
         ) : null}
       </div>
 

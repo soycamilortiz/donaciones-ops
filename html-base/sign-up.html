@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crear cuenta — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-route="/sign-up">
+
+<div class="auth">
+
+  <header class="auth-bar">
+    <a class="brand" href="index.html" aria-label="SOS Chocó — inicio"><img class="logo logo-auth" src="assets/logo-mark.png" alt="SOS Chocó" width="520" height="441"></a>
+    <span class="tb-lang"><span data-ico="globe"></span>ES</span>
+  </header>
+
+  <main class="auth-main">
+
+    <div class="auth-head">
+      <p class="eyebrow">Acceso</p>
+      <h1 class="auth-title">Crear cuenta</h1>
+      <p class="auth-sub">La organización es opcional: podés armar la tuya después o esperar a que te inviten.</p>
+    </div>
+
+    <form class="auth-card" id="form" novalidate>
+
+      <div class="alert alert-danger" id="err" hidden>
+        <span data-ico="alert"></span>
+        <div class="alert-copy">
+          <p class="alert-title" id="err-title"></p>
+          <p class="alert-text" id="err-text"></p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="nombre">Nombre</label>
+        <input class="input" id="nombre" minlength="2" autocomplete="name" required>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="usuario">Usuario</label>
+        <input class="input" id="usuario" minlength="3" maxlength="32" pattern="[a-zA-Z0-9._]+" autocomplete="username" required>
+        <p class="field-hint">3 a 32 caracteres. Letras, números, punto y guion bajo.</p>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="correo">Correo</label>
+        <input class="input" id="correo" type="email" autocomplete="email" required>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="password">Contraseña</label>
+        <input class="input" id="password" type="password" minlength="8" autocomplete="new-password" required>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="confirm">Confirmar contraseña</label>
+        <input class="input" id="confirm" type="password" minlength="8" autocomplete="new-password" required>
+      </div>
+
+      <div class="note">
+        <span data-ico="info"></span>
+        <p class="note-text">Mínimo 8 caracteres, con letras y números.</p>
+      </div>
+
+      <div class="captcha">
+        <div class="captcha-row">
+          <div class="captcha-img" id="cap"></div>
+          <button class="captcha-new" type="button" id="cap-new" aria-label="Otro captcha">
+            <span data-ico="refresh"></span><span>Otro</span>
+          </button>
+        </div>
+        <div class="field">
+          <label class="field-label" for="captcha">Texto del captcha</label>
+          <input class="input" id="captcha" placeholder="Escribe lo que ves" autocomplete="off" spellcheck="false" required>
+        </div>
+      </div>
+
+      <button class="btn btn-lg btn-block" type="submit">Registrarme<span class="btn-cap" data-ico="arrowRight"></span></button>
+
+      <p class="auth-foot">¿Ya tenés cuenta? <a class="link" href="sign-in.html">Entrar</a></p>
+    </form>
+
+    <div class="note">
+      <span data-ico="mail"></span>
+      <p class="note-text">Para que te sumen a una organización, quien invita usa este mismo correo. No hay enlace mágico.</p>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+  import { fill, captchaSvg, newCaptcha } from './assets/app.js';
+  import { CUENTAS_REGISTRADAS } from './assets/data.js';
+
+  const cap = document.getElementById('cap');
+  const capInput = document.getElementById('captcha');
+  const err = document.getElementById('err');
+  let actual = '';
+
+  const refresh = () => { actual = newCaptcha(); fill(cap, captchaSvg(actual)); capInput.value = ''; };
+  refresh();
+  document.getElementById('cap-new').addEventListener('click', refresh);
+
+  document.getElementById('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = (id) => document.getElementById(id).value.trim();
+    const pass = document.getElementById('password').value;
+    const conf = document.getElementById('confirm').value;
+
+    if (!v('nombre') || v('usuario').length < 3 || !v('correo')) {
+      return show('Faltan datos', 'Nombre, usuario y correo son obligatorios.', ['nombre', 'usuario', 'correo']);
+    }
+    if (!/^[a-zA-Z0-9._]+$/.test(v('usuario'))) {
+      return show('Usuario inválido', 'Solo letras, números, punto y guion bajo.', ['usuario']);
+    }
+    if (pass.length < 8) return show('Contraseña muy corta', 'Mínimo 8 caracteres, con letras y números.', ['password']);
+    // Validación de cliente: SignUpPage.tsx:19-22
+    if (pass !== conf) return show('Las contraseñas no coinciden', 'Escribí la misma en los dos campos.', ['password', 'confirm']);
+    if (capInput.value.trim().toLowerCase() !== actual) {
+      refresh();
+      return show('Captcha incorrecto', 'El texto no coincide con la imagen. Se generó uno nuevo.', []);
+    }
+    // El API responde 409 si el usuario o el correo ya existen.
+    if (CUENTAS_REGISTRADAS.includes(v('correo').toLowerCase())) {
+      refresh();
+      return show('El usuario o el correo ya están registrados',
+        'El API no dice cuál de los dos, a propósito: revelarlo permitiría enumerar cuentas.', ['correo']);
+    }
+    location.href = 'empezar.html';
+  });
+
+  function show(title, text, campos) {
+    document.getElementById('err-title').textContent = title;
+    document.getElementById('err-text').textContent = text;
+    err.hidden = false;
+    document.querySelectorAll('.input-invalid').forEach((i) => i.classList.remove('input-invalid'));
+    campos.forEach((id) => document.getElementById(id).classList.add('input-invalid'));
+    err.scrollIntoView({ block: 'nearest' });
+  }
+</script>
+
+</body>
+</html>

@@ -196,7 +196,7 @@ BORRADOR
   crear recepción (acopio, tipo, donante, placa…)
 EN_RECEPCION
   ¿cómo llegó? → generar N unidades logísticas (opcional)
-  por UL o suelta: foto / EAN / manual → producto → cantidad → lote
+  por UL o suelta: Foto en el pallet/caja, o el selector al confirmar → producto → cantidad → lote
 EN_INSPECCION
   partir cantidades (aprobada / cuarentena / rechazada)
   evidencias (más fotos)
@@ -227,7 +227,7 @@ Misma foto de hoy; cambia el *dónde* se guarda el resultado.
 
 1. Recepción masiva, placa ABC123, `presentacion_fisica = PALLETS`, cantidad de pallets = 18.
 2. Sistema crea `PAL-000101` … `PAL-000118` (`nro_en_recepcion` 1…18).
-3. Operador abre PAL-001, foto/EAN de cada SKU distinto, cantidades, lotes (origen o generado).
+3. Operador toca **Foto** en PAL-001 (o elige la unidad al confirmar la foto), EAN/visión de cada SKU distinto, cantidades, lotes (origen o generado).
 4. PAL-004: 100 cajas, 90 / 7 / 3 en la línea (no `estado = dañado` sobre 100).
 5. Validar: solo aprobadas a stock; cuarentena queda trazable en la línea; rechazadas no pickeables.
 
@@ -260,4 +260,4 @@ Si no hay ni cabecera, no hay trazabilidad. El mínimo viable profesional es **a
 
 ## English
 
-Reception becomes its own event (`recepciones`) with optional logistic units (`PAL-…` auto), lines, lots (`LOT-…` auto), and photos as ID/evidence. `productos` stays the catalog: if vision/EAN finds nothing, the operator confirms a new row (no silent dupes). `inventory_items` is kept and only increases after validation (approved qty). One model covers a single box, an 18-pallet truck, and “log the truck now, count later”.
+Reception becomes its own event (`recepciones`) with optional logistic units (`PAL-…` auto), lines, lots (`LOT-…` auto), and photos as ID/evidence. A photo must be assigned to a unit (or marked loose) before confirm. `productos` stays the catalog: if vision/EAN finds nothing, the operator confirms a new row (no silent dupes). `inventory_items` is kept and only increases after validation (approved qty). One model covers a single box, an 18-pallet truck, and “log the truck now, count later”.

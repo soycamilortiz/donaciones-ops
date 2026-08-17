@@ -11,11 +11,15 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
+import { FormField } from '@/components/molecules/FormField';
 import { useOrg } from '@/components/OrgGate';
 import { leerAcopioRecordado, recordarAcopio } from '@/features/donaciones/acopio-recordado';
 import { crearRecepcion } from '@/features/recepciones/recepciones-service';
 import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
+
+const selectClassName =
+  'flex h-11 w-full cursor-pointer appearance-none rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground ring-offset-background transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 export default function NuevaRecepcionPage() {
   const navigate = useNavigate();
@@ -80,135 +84,134 @@ export default function NuevaRecepcionPage() {
     <form className="space-y-6 py-2" onSubmit={(event) => void onSubmit(event)}>
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground">{t('receptions.newTitle')}</h1>
-        <p className="text-sm text-muted-foreground">{t('receptions.newSubtitle')}</p>
+        <p className="max-w-2xl text-sm text-muted-foreground">{t('receptions.newSubtitle')}</p>
       </div>
 
-      <label className="block space-y-1">
-        <span className="text-sm font-medium text-foreground">{t('newDonation.acopioLabel')}</span>
-        <select
-          className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm"
-          value={acopioId}
-          onChange={(event) => {
-            setAcopioId(event.target.value);
-            recordarAcopio(orgId, event.target.value);
-          }}
-          required
-        >
-          <option value="">{t('common.unspecified')}</option>
-          {acopios.map((acopio) => (
-            <option key={acopio.id} value={acopio.id}>
-              {acopio.nombre}
-              {acopio.municipio ? ` — ${acopio.municipio}` : ''}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="block space-y-1">
-        <span className="text-sm font-medium text-foreground">{t('receptions.columns.type')}</span>
-        <select
-          className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm"
-          value={tipo}
-          onChange={(event) => setTipo(event.target.value)}
-        >
-          {RECEPCION_TIPOS.map((item) => (
-            <option key={item.value} value={item.value}>
-              {t(`receptions.tipo.${item.value}`)}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="block space-y-1">
-        <span className="text-sm font-medium text-foreground">{t('receptions.presentation')}</span>
-        <select
-          className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm"
-          value={presentacion}
-          onChange={(event) => setPresentacion(event.target.value)}
-        >
-          {RECEPCION_PRESENTACIONES.map((item) => (
-            <option key={item.value} value={item.value}>
-              {t(`receptions.presentacion.${item.value}`)}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="block space-y-1" htmlFor="recepcion-donante">
-        <span className="text-sm font-medium text-foreground">{t('receptions.donor')}</span>
-        <Input
-          id="recepcion-donante"
-          value={donanteNombre}
-          onChange={(e) => setDonanteNombre(e.target.value)}
-        />
-      </label>
-      <label className="block space-y-1" htmlFor="recepcion-contacto">
-        <span className="text-sm font-medium text-foreground">{t('receptions.donorContact')}</span>
-        <Input
-          id="recepcion-contacto"
-          value={donanteContacto}
-          onChange={(e) => setDonanteContacto(e.target.value)}
-        />
-      </label>
-      <label className="block space-y-1" htmlFor="recepcion-placa">
-        <span className="text-sm font-medium text-foreground">{t('receptions.plate')}</span>
-        <Input
-          id="recepcion-placa"
-          value={vehiculoPlaca}
-          onChange={(e) => setVehiculoPlaca(e.target.value)}
-        />
-      </label>
-      <label className="block space-y-1" htmlFor="recepcion-notas">
-        <span className="text-sm font-medium text-foreground">{t('receptions.notes')}</span>
-        <Input
-          id="recepcion-notas"
-          value={observaciones}
-          onChange={(e) => setObservaciones(e.target.value)}
-        />
-      </label>
-
-      <fieldset className="space-y-3 rounded-lg border border-border p-4">
-        <legend className="text-sm font-medium text-foreground">{t('receptions.unitsHint')}</legend>
-        <label className="block space-y-1" htmlFor="recepcion-ul-cantidad">
-          <span className="text-sm font-medium text-foreground">{t('receptions.unitCount')}</span>
-          <Input
-            id="recepcion-ul-cantidad"
-            type="number"
-            min={0}
-            max={200}
-            value={cantidadUnidades}
-            onChange={(e) => setCantidadUnidades(e.target.value)}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium text-foreground">{t('receptions.unitType')}</span>
+      <div className="max-w-xl space-y-4 rounded-lg border border-border bg-card p-5">
+        <FormField label={t('newDonation.acopioLabel')} htmlFor="recepcion-acopio" required>
           <select
-            className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm"
-            value={tipoUnidad}
-            onChange={(e) => setTipoUnidad(e.target.value)}
+            id="recepcion-acopio"
+            className={selectClassName}
+            value={acopioId}
+            onChange={(event) => {
+              setAcopioId(event.target.value);
+              recordarAcopio(orgId, event.target.value);
+            }}
+            required
           >
-            {UNIDAD_LOGISTICA_TIPOS.map((item) => (
-              <option key={item.value} value={item.value}>
-                {t(`receptions.ulTipo.${item.value}`)}
+            <option value="">{t('common.unspecified')}</option>
+            {acopios.map((acopio) => (
+              <option key={acopio.id} value={acopio.id}>
+                {acopio.nombre}
+                {acopio.municipio ? ` — ${acopio.municipio}` : ''}
               </option>
             ))}
           </select>
-        </label>
-      </fieldset>
+        </FormField>
 
-      {error ? (
-        <p role="alert" className="text-sm text-error">
-          {error}
-        </p>
-      ) : null}
+        <FormField label={t('receptions.columns.type')} htmlFor="recepcion-tipo">
+          <select
+            id="recepcion-tipo"
+            className={selectClassName}
+            value={tipo}
+            onChange={(event) => setTipo(event.target.value)}
+          >
+            {RECEPCION_TIPOS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {t(`receptions.tipo.${item.value}`)}
+              </option>
+            ))}
+          </select>
+        </FormField>
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="submit" disabled={guardando}>
-          {guardando ? t('common.saving') : t('receptions.open')}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => navigate(ROUTES.recepciones)}>
-          {t('common.cancel')}
-        </Button>
+        <FormField label={t('receptions.presentation')} htmlFor="recepcion-presentacion">
+          <select
+            id="recepcion-presentacion"
+            className={selectClassName}
+            value={presentacion}
+            onChange={(event) => setPresentacion(event.target.value)}
+          >
+            {RECEPCION_PRESENTACIONES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {t(`receptions.presentacion.${item.value}`)}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField label={t('receptions.donor')} htmlFor="recepcion-donante">
+          <Input
+            id="recepcion-donante"
+            value={donanteNombre}
+            onChange={(e) => setDonanteNombre(e.target.value)}
+          />
+        </FormField>
+        <FormField label={t('receptions.donorContact')} htmlFor="recepcion-contacto">
+          <Input
+            id="recepcion-contacto"
+            value={donanteContacto}
+            onChange={(e) => setDonanteContacto(e.target.value)}
+          />
+        </FormField>
+        <FormField label={t('receptions.plate')} htmlFor="recepcion-placa">
+          <Input
+            id="recepcion-placa"
+            value={vehiculoPlaca}
+            onChange={(e) => setVehiculoPlaca(e.target.value)}
+          />
+        </FormField>
+        <FormField label={t('receptions.notes')} htmlFor="recepcion-notas">
+          <Input
+            id="recepcion-notas"
+            value={observaciones}
+            onChange={(e) => setObservaciones(e.target.value)}
+          />
+        </FormField>
+
+        <fieldset className="space-y-3 rounded-md border border-border p-4">
+          <legend className="px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {t('receptions.unitsHint')}
+          </legend>
+          <FormField label={t('receptions.unitCount')} htmlFor="recepcion-ul-cantidad">
+            <Input
+              id="recepcion-ul-cantidad"
+              type="number"
+              min={0}
+              max={200}
+              value={cantidadUnidades}
+              onChange={(e) => setCantidadUnidades(e.target.value)}
+            />
+          </FormField>
+          <FormField label={t('receptions.unitType')} htmlFor="recepcion-ul-tipo">
+            <select
+              id="recepcion-ul-tipo"
+              className={selectClassName}
+              value={tipoUnidad}
+              onChange={(e) => setTipoUnidad(e.target.value)}
+            >
+              {UNIDAD_LOGISTICA_TIPOS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {t(`receptions.ulTipo.${item.value}`)}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </fieldset>
+
+        {error ? (
+          <p role="alert" className="text-sm font-medium text-error">
+            {error}
+          </p>
+        ) : null}
+
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit" disabled={guardando}>
+            {guardando ? t('common.saving') : t('receptions.open')}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate(ROUTES.recepciones)}>
+            {t('common.cancel')}
+          </Button>
+        </div>
       </div>
     </form>
   );

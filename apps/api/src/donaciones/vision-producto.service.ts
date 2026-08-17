@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  createVisionClient,
-  type LecturaProducto,
-  type VisionAdapter,
-} from '@soschoco/vision';
+import { createVisionClient, type LecturaProducto, type VisionAdapter } from '@soschoco/vision';
 import type { Env } from '../config/env.schema';
 
 export type LecturaVision = LecturaProducto;

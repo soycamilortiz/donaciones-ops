@@ -12,7 +12,7 @@ export function Header({ className, sticky = false, ...props }: HeaderProps): Re
   return (
     <header
       className={cn(
-        'flex h-16 items-center gap-4 border-b border-border bg-background px-4',
+        'flex h-16 items-center gap-4 border-b border-border bg-card px-6',
         sticky && 'sticky top-0 z-40',
         className,
       )}

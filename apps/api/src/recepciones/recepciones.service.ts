@@ -451,7 +451,7 @@ export class RecepcionesService {
     }
 
     const porNombre = await this.catalogo.resolverPorNombre(entrada.nombre, entrada.marca);
-    if (porNombre && !entrada.crearProducto) {
+    if (porNombre) {
       return porNombre;
     }
 

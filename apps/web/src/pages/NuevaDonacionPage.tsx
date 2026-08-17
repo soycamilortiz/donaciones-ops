@@ -1,52 +1,127 @@
-import type { Acopio, InterpretacionDonacion } from '@soschoco/shared';
+import type { InterpretacionDonacion, UnidadLogistica } from '@soschoco/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import { useOrg } from '@/components/OrgGate';
-import { leerAcopioRecordado, recordarAcopio } from '@/features/donaciones/acopio-recordado';
 import {
   confirmarDonacion,
   interpretarImagen,
   subirFoto,
 } from '@/features/donaciones/donaciones-service';
 import { leerEanDeFoto } from '@/features/donaciones/leer-ean';
+import { obtenerRecepcion } from '@/features/recepciones/recepciones-service';
 import { readStoredToken } from '@/lib/api';
 import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
+import { cn } from '@/lib/utils';
 
 type Fase = 'inicio' | 'optimizando' | 'subiendo' | 'reconociendo' | 'listo' | 'error';
 
+const UL_SUELTA = 'suelta';
+
+const fieldLabel = 'text-xs font-bold uppercase tracking-wider text-muted-foreground';
+const selectClassName =
+  'min-h-11 w-full cursor-pointer rounded-md border border-border bg-card px-3.5 text-sm font-medium text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+
+/**
+ * Progress bars upload → recognize → confirm. Presentational only: it reads
+ * the real state machine `fase`.
+ */
+function Stepper({ activo }: { activo: number }) {
+  return (
+    <div aria-hidden className="flex gap-2">
+      {[0, 1, 2].map((paso) => (
+        <span
+          key={paso}
+          className={cn(
+            'h-1 flex-1 rounded-pill',
+            paso < activo ? 'bg-success' : paso === activo ? 'bg-accent' : 'bg-muted',
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+function UnidadSelect({
+  unidades,
+  value,
+  onChange,
+}: {
+  unidades: UnidadLogistica[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <label className="flex flex-col gap-1.5" htmlFor="donacion-ul">
+      <span className={fieldLabel}>{t('newDonation.unitLabel')}</span>
+      <select
+        id="donacion-ul"
+        className={selectClassName}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        required
+      >
+        <option value="">{t('newDonation.unitPlaceholder')}</option>
+        <option value={UL_SUELTA}>{t('receptions.loose')}</option>
+        {unidades.map((ul) => (
+          <option key={ul.id} value={ul.id}>
+            {ul.codigo} · #{ul.nroEnRecepcion} · {t(`receptions.ulTipo.${ul.tipo}`)}
+          </option>
+        ))}
+      </select>
+      <span className="text-xs text-muted-foreground">{t('newDonation.unitHint')}</span>
+    </label>
+  );
+}
+
 export default function NuevaDonacionPage() {
   const navigate = useNavigate();
+  const { id: recepcionId = '' } = useParams();
   const [params] = useSearchParams();
   const request = useApi();
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
-  const recepcionId = params.get('recepcionId') ?? '';
   const ulId = params.get('ulId') ?? '';
-  const acopioDesdeRecepcion = params.get('acopioId') ?? '';
 
   const [fase, setFase] = useState<Fase>('inicio');
   const [error, setError] = useState<string | null>(null);
   const [imagenId, setImagenId] = useState<string | null>(null);
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
-  const [acopios, setAcopios] = useState<Acopio[]>([]);
-  const [acopioId, setAcopioId] = useState<string>(
-    () => acopioDesdeRecepcion || leerAcopioRecordado(orgId),
-  );
+  const [acopioId, setAcopioId] = useState('');
+  const [acopioNombre, setAcopioNombre] = useState('');
   const [lectura, setLectura] = useState<InterpretacionDonacion | null>(null);
   const [eanManual, setEanManual] = useState('');
+  const [unidades, setUnidades] = useState<UnidadLogistica[]>([]);
+  const [unidadLogisticaId, setUnidadLogisticaId] = useState(ulId);
+  const [carga, setCarga] = useState<'pendiente' | 'ok' | 'error'>('pendiente');
   const entradaRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    void request<Acopio[]>(`/api/v1/organizations/${orgId}/acopios`)
-      .then(setAcopios)
-      .catch(() => setAcopios([]));
-  }, [request, orgId]);
+    if (!recepcionId) {
+      return;
+    }
+    void obtenerRecepcion(request, orgId, recepcionId)
+      .then((row) => {
+        setAcopioId(row.acopioId);
+        setAcopioNombre(row.acopioNombre ?? '');
+        setUnidades(row.unidades);
+        setUnidadLogisticaId((actual) => {
+          if (actual) {
+            return actual;
+          }
+          return row.unidades.length === 0 ? UL_SUELTA : '';
+        });
+        setCarga('ok');
+      })
+      .catch(() => setCarga('error'));
+  }, [request, orgId, recepcionId]);
 
   useEffect(() => {
     return () => {
@@ -129,121 +204,171 @@ export default function NuevaDonacionPage() {
     }
   };
 
+  if (!recepcionId) {
+    return <Navigate to={ROUTES.recepciones} replace />;
+  }
+
   if (!can('donaciones:write')) {
     return <p className="py-8 text-sm text-muted-foreground">{t('newDonation.noPermission')}</p>;
   }
 
+  if (carga === 'pendiente') {
+    return (
+      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+        <Spinner /> {t('common.loading')}
+      </p>
+    );
+  }
+
+  if (carga === 'error') {
+    return (
+      <p role="alert" className="py-8 text-sm text-error">
+        {t('receptions.notFound')}
+      </p>
+    );
+  }
+
+  const pasoActivo =
+    fase === 'optimizando' || fase === 'subiendo'
+      ? 0
+      : fase === 'reconociendo'
+        ? 1
+        : fase === 'listo'
+          ? 2
+          : -1;
+
+  const volverHref = ROUTES.recepcionDetalle(recepcionId);
+  const volverLabel = t('newDonation.viewReceptions');
+
   return (
     <div className="space-y-6 py-2">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">{t('newDonation.title')}</h1>
-        <p className="text-sm text-muted-foreground">
-          {recepcionId ? t('newDonation.subtitleRecepcion') : t('newDonation.subtitle')}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-foreground">{t('newDonation.title')}</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            {t('newDonation.subtitleRecepcion')}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => navigate(volverHref)}>
+          <Icon name="chevron-right" size={16} />
+          {volverLabel}
+        </Button>
       </div>
 
-      {acopios.length > 0 ? (
-        <label className="block space-y-1">
-          <span className="text-sm font-medium text-foreground">
-            {t('newDonation.acopioLabel')}
-          </span>
-          <select
-            className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            value={acopioId}
-            onChange={(event) => {
-              setAcopioId(event.target.value);
-              recordarAcopio(orgId, event.target.value);
-            }}
-          >
-            <option value="">{t('common.unspecified')}</option>
-            {acopios.map((acopio) => (
-              <option key={acopio.id} value={acopio.id}>
-                {acopio.nombre}
-                {acopio.municipio ? ` — ${acopio.municipio}` : ''}
-              </option>
-            ))}
-          </select>
+      <div className="max-w-xl space-y-4">
+        {acopioNombre ? (
+          <p className="flex flex-col gap-1">
+            <span className={fieldLabel}>{t('newDonation.acopioLabel')}</span>
+            <span className="text-sm font-medium text-foreground">{acopioNombre}</span>
+          </p>
+        ) : null}
+
+        {unidades.length > 0 ? (
+          <UnidadSelect
+            unidades={unidades}
+            value={unidadLogisticaId}
+            onChange={setUnidadLogisticaId}
+          />
+        ) : null}
+
+        <label className="flex flex-col gap-1.5" htmlFor="donacion-ean">
+          <span className={fieldLabel}>{t('newDonation.eanOptional')}</span>
+          <Input
+            id="donacion-ean"
+            inputMode="numeric"
+            value={eanManual}
+            onChange={(e) => setEanManual(e.target.value)}
+            placeholder="3017620422003"
+            disabled={fase !== 'inicio'}
+          />
+          <span className="text-xs text-muted-foreground">{t('newDonation.eanOptionalHint')}</span>
         </label>
-      ) : null}
 
-      <label className="block space-y-1" htmlFor="donacion-ean">
-        <span className="text-sm font-medium text-foreground">{t('newDonation.eanOptional')}</span>
-        <Input
-          id="donacion-ean"
-          inputMode="numeric"
-          value={eanManual}
-          onChange={(e) => setEanManual(e.target.value)}
-          placeholder="3017620422003"
-          disabled={fase !== 'inicio'}
+        <input
+          ref={entradaRef}
+          type="file"
+          accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp"
+          capture="environment"
+          className="sr-only"
+          id="foto-producto"
+          aria-label={t('newDonation.cameraLabel')}
+          onChange={(event) => void onArchivo(event.target.files?.[0])}
         />
-        <span className="text-xs text-muted-foreground">{t('newDonation.eanOptionalHint')}</span>
-      </label>
 
-      <input
-        ref={entradaRef}
-        type="file"
-        accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp"
-        capture="environment"
-        className="sr-only"
-        id="foto-producto"
-        aria-label={t('newDonation.cameraLabel')}
-        onChange={(event) => void onArchivo(event.target.files?.[0])}
-      />
+        {vistaPrevia ? (
+          <img
+            src={vistaPrevia}
+            alt={t('newDonation.photoAlt')}
+            className="aspect-[4/3] max-h-72 w-full rounded-lg bg-muted object-contain"
+          />
+        ) : null}
 
-      {vistaPrevia ? (
-        <img
-          src={vistaPrevia}
-          alt={t('newDonation.photoAlt')}
-          className="aspect-[4/3] max-h-72 w-full rounded-lg bg-muted object-contain"
-        />
-      ) : null}
+        {pasoActivo >= 0 ? <Stepper activo={pasoActivo} /> : null}
 
-      {fase === 'inicio' ? (
-        <Button onClick={() => entradaRef.current?.click()}>{t('newDonation.takePhoto')}</Button>
-      ) : null}
-
-      {fase === 'optimizando' || fase === 'subiendo' || fase === 'reconociendo' ? (
-        <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner />{' '}
-          {fase === 'optimizando'
-            ? t('newDonation.optimizing')
-            : fase === 'subiendo'
-              ? t('newDonation.uploading')
-              : t('newDonation.recognizing')}
-        </p>
-      ) : null}
-
-      {fase === 'listo' && imagenId ? (
-        <Resultado
-          imagenId={imagenId}
-          orgId={orgId}
-          acopioId={acopioId}
-          lectura={lectura}
-          request={request}
-          recepcionId={recepcionId}
-          unidadLogisticaId={ulId}
-        />
-      ) : null}
-
-      {error ? (
-        <p role="alert" className="text-sm text-error">
-          {error}
-        </p>
-      ) : null}
-
-      {fase === 'listo' || fase === 'error' ? (
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={reiniciar}>{t('newDonation.registerAnother')}</Button>
-          <Button
-            variant="outline"
-            onClick={() =>
-              navigate(recepcionId ? ROUTES.recepcionDetalle(recepcionId) : ROUTES.recepciones)
-            }
+        {fase === 'inicio' ? (
+          <button
+            type="button"
+            onClick={() => entradaRef.current?.click()}
+            aria-label={t('newDonation.cameraLabel')}
+            className="flex min-h-[220px] w-full flex-col items-center justify-center gap-3.5 rounded-xl border-2 border-dashed border-border bg-card p-7 text-center transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            {t('newDonation.viewReceptions')}
-          </Button>
-        </div>
-      ) : null}
+            <span className="flex h-16 w-16 items-center justify-center rounded-pill bg-secondary text-primary">
+              <Icon name="plus" size={28} />
+            </span>
+            <span className="text-lg font-semibold text-foreground">
+              {t('newDonation.takePhoto')}
+            </span>
+          </button>
+        ) : null}
+
+        {fase === 'optimizando' || fase === 'subiendo' || fase === 'reconociendo' ? (
+          <div
+            role="status"
+            className="flex items-center gap-3 rounded-lg border border-border bg-card p-4"
+          >
+            <Spinner className="text-primary" />
+            <p className="text-sm font-semibold text-foreground">
+              {fase === 'optimizando'
+                ? t('newDonation.optimizing')
+                : fase === 'subiendo'
+                  ? t('newDonation.uploading')
+                  : t('newDonation.recognizing')}
+            </p>
+          </div>
+        ) : null}
+
+        {fase === 'listo' && imagenId ? (
+          <Resultado
+            imagenId={imagenId}
+            orgId={orgId}
+            acopioId={acopioId}
+            lectura={lectura}
+            request={request}
+            recepcionId={recepcionId}
+            unidades={unidades}
+            unidadLogisticaId={unidadLogisticaId}
+          />
+        ) : null}
+
+        {error ? (
+          <div
+            role="alert"
+            className="flex flex-col gap-2 rounded-lg border border-error bg-error-soft p-4"
+          >
+            <Badge variant="error">{t('newDonation.result.failed')}</Badge>
+            <p className="text-sm text-foreground">{error}</p>
+          </div>
+        ) : null}
+
+        {fase === 'listo' || fase === 'error' ? (
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={reiniciar}>{t('newDonation.registerAnother')}</Button>
+            <Button variant="outline" onClick={() => navigate(volverHref)}>
+              {volverLabel}
+            </Button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -255,6 +380,7 @@ function Resultado({
   lectura,
   request,
   recepcionId,
+  unidades,
   unidadLogisticaId,
 }: {
   imagenId: string;
@@ -263,6 +389,7 @@ function Resultado({
   lectura: InterpretacionDonacion | null;
   request: <T>(path: string, init?: RequestInit) => Promise<T>;
   recepcionId: string;
+  unidades: UnidadLogistica[];
   unidadLogisticaId: string;
 }) {
   const navigate = useNavigate();
@@ -276,11 +403,15 @@ function Resultado({
   const [error, setError] = useState<string | null>(null);
   const [confirmada, setConfirmada] = useState(false);
 
+  const score = mejor?.score ?? null;
+  const alto = score !== null && score >= 0.82;
+  const porcentaje = score !== null ? Math.round(score * 100) : null;
+
   if (confirmada) {
     return (
-      <div className="space-y-1">
+      <div className="flex flex-col gap-2 rounded-lg border border-success bg-card p-5">
         <Badge variant="success">{t('newDonation.result.confirmed')}</Badge>
-        <p className="text-lg font-medium text-foreground">{nombre}</p>
+        <p className="text-xl font-bold tracking-tight text-foreground">{nombre}</p>
       </div>
     );
   }
@@ -295,6 +426,10 @@ function Resultado({
       setError(t('newDonation.needAcopio'));
       return;
     }
+    if (unidades.length > 0 && !unidadLogisticaId) {
+      setError(t('newDonation.needUnit'));
+      return;
+    }
     setGuardando(true);
     setError(null);
     try {
@@ -304,7 +439,8 @@ function Resultado({
         acopioId,
         marca: marca.trim() || undefined,
         recepcionId: recepcionId || undefined,
-        unidadLogisticaId: unidadLogisticaId || undefined,
+        unidadLogisticaId:
+          unidadLogisticaId && unidadLogisticaId !== UL_SUELTA ? unidadLogisticaId : undefined,
         productoId: productoId || undefined,
         crearProducto: !productoId,
         ean: lectura?.ean ?? undefined,
@@ -321,21 +457,54 @@ function Resultado({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <Badge variant="warning">{t('newDonation.result.needsConfirm')}</Badge>
+    <div
+      className={cn(
+        'flex flex-col gap-4 rounded-lg border bg-card p-5',
+        alto ? 'border-success' : 'border-warning',
+      )}
+    >
+      <div className="flex flex-col gap-2">
+        <Badge variant={alto ? 'success' : 'warning'}>
+          {alto ? t('newDonation.result.recognized') : t('newDonation.result.needsConfirm')}
+        </Badge>
         <p className="text-sm text-muted-foreground">
           {t(`newDonation.via.${lectura?.via ?? 'manual'}`)}
           {lectura?.ean ? ` · EAN ${lectura.ean}` : ''}
           {lectura?.fuenteEan ? ` · ${t(`newDonation.eanSource.${lectura.fuenteEan}`)}` : ''}
         </p>
+        {recepcionId && unidades.length > 0 ? (
+          <p className="text-sm font-medium text-foreground">
+            {t('newDonation.unitAssigned', {
+              unit:
+                unidadLogisticaId === UL_SUELTA
+                  ? t('receptions.loose')
+                  : (unidades.find((ul) => ul.id === unidadLogisticaId)?.codigo ??
+                    t('newDonation.unitPlaceholder')),
+            })}
+          </p>
+        ) : null}
       </div>
+
+      {porcentaje !== null ? (
+        <div className="flex items-center gap-2.5">
+          <span className="h-1.5 flex-1 rounded-pill bg-muted">
+            <span
+              className={cn('block h-1.5 rounded-pill', alto ? 'bg-success' : 'bg-warning')}
+              style={{ width: `${porcentaje}%` }}
+            />
+          </span>
+          <span
+            className={cn('font-mono text-xs font-bold', alto ? 'text-success' : 'text-warning')}
+          >
+            {porcentaje}%
+          </span>
+        </div>
+      ) : null}
+
       {lectura?.coincidencias.length ? (
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-foreground">
-            {t('newDonation.mergeHint')}
-          </legend>
-          <label className="flex items-center gap-2 text-sm">
+        <fieldset className="flex flex-col gap-2 rounded-md border border-border p-3">
+          <legend className={cn('px-1', fieldLabel)}>{t('newDonation.mergeHint')}</legend>
+          <label className="flex items-center gap-2 text-sm text-foreground">
             <input
               type="radio"
               name="merge"
@@ -345,7 +514,7 @@ function Resultado({
             {t('newDonation.mergeNew')}
           </label>
           {lectura.coincidencias.map((c) => (
-            <label key={c.id} className="flex items-center gap-2 text-sm">
+            <label key={c.id} className="flex items-center gap-2 text-sm text-foreground">
               <input
                 type="radio"
                 name="merge"
@@ -356,21 +525,22 @@ function Resultado({
                   setMarca(c.marca ?? '');
                 }}
               />
-              {t('newDonation.mergeExisting', { name: c.nombre, qty: c.cantidad })}
+              {t('newDonation.mergeExisting', { name: c.nombre })}
             </label>
           ))}
         </fieldset>
       ) : null}
-      <label className="block space-y-1" htmlFor="donacion-nombre">
-        <span className="text-sm font-medium text-foreground">{t('newDonation.productName')}</span>
+
+      <label className="flex flex-col gap-1.5" htmlFor="donacion-nombre">
+        <span className={fieldLabel}>{t('newDonation.productName')}</span>
         <Input id="donacion-nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
       </label>
-      <label className="block space-y-1" htmlFor="donacion-marca">
-        <span className="text-sm font-medium text-foreground">{t('newDonation.brand')}</span>
+      <label className="flex flex-col gap-1.5" htmlFor="donacion-marca">
+        <span className={fieldLabel}>{t('newDonation.brand')}</span>
         <Input id="donacion-marca" value={marca} onChange={(e) => setMarca(e.target.value)} />
       </label>
-      <label className="block space-y-1" htmlFor="donacion-cantidad">
-        <span className="text-sm font-medium text-foreground">{t('newDonation.quantity')}</span>
+      <label className="flex flex-col gap-1.5" htmlFor="donacion-cantidad">
+        <span className={fieldLabel}>{t('newDonation.quantity')}</span>
         <Input
           id="donacion-cantidad"
           type="number"
@@ -380,11 +550,13 @@ function Resultado({
           onChange={(e) => setCantidad(e.target.value)}
         />
       </label>
+
       {error ? (
         <p role="alert" className="text-sm text-error">
           {error}
         </p>
       ) : null}
+
       <Button onClick={() => void onConfirmar()} disabled={guardando}>
         {guardando ? t('common.saving') : t('newDonation.confirm')}
       </Button>

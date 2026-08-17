@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revisión de donaciones — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-route="/app/donaciones">
+
+<div class="shell">
+  <div data-shell></div>
+
+  <div class="main">
+    <header class="topbar" data-topbar></header>
+
+    <main class="content">
+
+      <div class="page-head">
+        <div class="page-head-copy">
+          <p class="eyebrow">Donaciones</p>
+          <h1 class="page-title">Revisión de donaciones</h1>
+          <p class="page-sub">Fotos que el reconocimiento no resolvió con suficiente certeza.</p>
+        </div>
+        <span class="row gap-8" id="pendientes" style="font-size:12.5px;font-weight:700;color:var(--warn)"></span>
+      </div>
+
+      <div class="col gap-16" id="cola"></div>
+
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  import { el, fill, icon, spinner, productArt, toast } from './assets/app.js';
+  import { DONACIONES, PRODUCTOS, acopioName } from './assets/data.js';
+
+  const $ = (id) => document.getElementById(id);
+
+  // RevisionDonacionesPage.tsx:44-50 — procesadas sin producto, o fallidas.
+  const cola = DONACIONES
+    .filter((d) => (d.estado === 'PROCESADA' && !d.producto) || d.estado === 'FALLIDA')
+    .map((d) => ({ ...d }));
+
+  const catalogo = PRODUCTOS.map((p) => ({ ...p }));
+
+  function pintar() {
+    fill($('pendientes'), cola.length ? [icon('clock'), `${cola.length} pendiente${cola.length > 1 ? 's' : ''}`] : []);
+
+    if (!cola.length) {
+      fill($('cola'), el('div', { class: 'table' }, el('div', { class: 'empty' }, [
+        el('div', { class: 'empty-mark empty-mark-ok' }, icon('check', 'ico', 2.4)),
+        el('p', { class: 'empty-title', text: 'No hay nada pendiente de revisar.' }),
+        el('p', { class: 'empty-text', text: 'Todas las fotos se reconocieron con suficiente certeza. Vuelven a aparecer aquí si alguna queda sin identificar.' }),
+        !catalogo.length ? el('div', { class: 'alert alert-warn', style: 'max-width:600px;text-align:left' }, [
+          icon('triangle'),
+          el('div', { class: 'alert-copy' }, [
+            el('p', { class: 'alert-title', text: 'Revisá el catálogo antes de confiar en este vacío' }),
+            el('p', { class: 'alert-text', text: 'El catálogo de productos está vacío: sin productos cargados no hay nada que asignar ni el reconocimiento puede acertar.' }),
+          ]),
+        ]) : null,
+        el('a', { class: 'btn-ghost', href: 'donaciones.html', text: 'Volver a donaciones' }),
+      ])));
+      return;
+    }
+
+    fill($('cola'), cola.map((d) => {
+      const fallida = d.estado === 'FALLIDA';
+
+      const select = el('select', { class: 'select', style: 'width:340px' }, [
+        el('option', { value: '', text: 'Elegir producto…' }),
+        ...catalogo.map((p) => el('option', { value: p.id, text: p.nombre + (p.marca ? ` — ${p.marca}` : '') })),
+      ]);
+
+      const reintentar = el('button', { class: 'btn-ghost', type: 'button' }, [icon('refresh'), 'Reintentar reconocimiento']);
+      const estado = el('span', { class: 'row gap-8' });
+
+      const quitar = (titulo, texto, ico) => {
+        cola.splice(cola.indexOf(d), 1);
+        toast({ title: titulo, text: texto, ico });
+        pintar();
+      };
+
+      select.addEventListener('change', () => {
+        if (!select.value) return;
+        const p = catalogo.find((x) => x.id === select.value);
+        select.disabled = true; reintentar.disabled = true;
+        fill(estado, spinner());
+        setTimeout(() => quitar('Producto asignado', `${p.nombre} · la foto sale de la cola.`, 'check'), 600);
+      });
+
+      reintentar.addEventListener('click', () => {
+        select.disabled = true; reintentar.disabled = true;
+        fill(estado, spinner());
+        // POST .../:id/reprocesar vuelve a encolar el job.
+        setTimeout(() => quitar('Reencolada', 'La foto vuelve a la cola del worker.', 'refresh'), 900);
+      });
+
+      return el('div', { class: 'review-card' }, [
+        el('div', { class: 'thumb thumb-lg' }, productArt(d.art, 128)),
+        el('div', { class: 'review-body' }, [
+          fallida
+            ? el('div', { class: 'col gap-6' }, [
+                el('span', { class: 'badge badge-danger', text: 'Falló el procesamiento' }),
+                d.error ? el('p', { class: 'td-sub', text: d.error }) : null,
+              ])
+            : el('div', { class: 'col gap-6' }, [
+                el('span', { class: 'badge badge-warn', text: 'Sin identificar' }),
+                el('p', { class: 'section-label', text: 'Texto leído' }),
+                d.ocr
+                  ? el('p', { class: 'ocr', text: d.ocr })
+                  : el('p', { class: 'td-sub', text: 'No se leyó texto en la foto.' }),
+              ]),
+          el('div', { class: 'review-actions' }, [
+            select, reintentar, estado,
+            el('div', { class: 'review-meta' }, [
+              el('span', { text: typeof d.confianza === 'number' ? `${Math.round(d.confianza * 100)}% de certeza` : 'Sin certeza' }),
+              el('span', { text: acopioName(d.acopioId) || 'Sin especificar' }),
+            ]),
+          ]),
+          !catalogo.length
+            ? el('p', { class: 'td-sub', text: 'El catálogo de productos está vacío: sin productos cargados no hay nada que asignar ni el reconocimiento puede acertar.' })
+            : null,
+        ]),
+      ]);
+    }));
+  }
+
+  pintar();
+</script>
+
+</body>
+</html>

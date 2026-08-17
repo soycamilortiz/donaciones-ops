@@ -84,10 +84,7 @@ export const envSchema = z.object({
   OPEN_FOOD_FACTS_BASE_URL: z
     .preprocess(emptyToUndefined, z.string().url().optional())
     .transform((v) => v ?? 'https://world.openfoodfacts.org'),
-  OPEN_FOOD_FACTS_USER_AGENT: z
-    .string()
-    .min(8)
-    .default('SOSChoco/1.0 (contacto@soschoco.local)'),
+  OPEN_FOOD_FACTS_USER_AGENT: z.string().min(8).default('SOSChoco/1.0 (contacto@soschoco.local)'),
   OPEN_FOOD_FACTS_TIMEOUT_MS: z.coerce.number().int().positive().max(30000).default(8000),
 
   /**

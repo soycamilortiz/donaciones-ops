@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { useOrg } from '../components/OrgGate';
+import type { IconName } from '@/components/atoms/Icon';
+import { Icon } from '@/components/atoms/Icon';
+import { useOrg } from '@/components/OrgGate';
 
 export default function Dashboard() {
   const { membership, me } = useOrg();
@@ -9,29 +11,62 @@ export default function Dashboard() {
 
   /* Module cards. Kept as data so adding one is a single entry, and so the
      copy lives in the catalogue rather than inline in the markup. */
-  const modules = [
-    { to: '/app/usuarios', title: t('nav.users'), hint: t('dashboard.usersHint') },
-    { to: '/app/roles', title: t('nav.roles'), hint: t('dashboard.rolesHint') },
-    { to: '/app/acopios', title: t('nav.acopios'), hint: t('dashboard.acopiosHint') },
-    { to: '/app/inventario', title: t('nav.inventory'), hint: t('dashboard.inventoryHint') },
+  const modules: Array<{ to: string; title: string; hint: string; icon: IconName }> = [
+    { to: '/app/usuarios', title: t('nav.users'), hint: t('dashboard.usersHint'), icon: 'user' },
+    { to: '/app/roles', title: t('nav.roles'), hint: t('dashboard.rolesHint'), icon: 'settings' },
+    { to: '/app/acopios', title: t('nav.acopios'), hint: t('dashboard.acopiosHint'), icon: 'home' },
+    {
+      to: '/app/inventario',
+      title: t('nav.inventory'),
+      hint: t('dashboard.inventoryHint'),
+      icon: 'menu',
+    },
+    {
+      to: '/app/recepciones',
+      title: t('nav.receptions'),
+      hint: t('dashboard.receptionsHint'),
+      icon: 'swap',
+    },
   ];
 
   return (
-    <section className="panel">
-      <h1>{org.nombre}</h1>
-      <p className="muted">
-        {t('dashboard.roleLine', { tipo: org.tipo, rol: membership.role.nombre })}
-      </p>
-      <p>{t('dashboard.switchOrg', { nombre: me.nombre, correo: me.correo })}</p>
-      <ul className="modules">
+    <section className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {t('nav.dashboard')}
+        </p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">{org.nombre}</h1>
+        <p className="text-sm text-muted-foreground">
+          {t('dashboard.roleLine', { tipo: org.tipo, rol: membership.role.nombre })}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-4">
+        <Icon name="info" className="shrink-0 text-primary" />
+        <p className="text-sm text-foreground">
+          {t('dashboard.switchOrg', { nombre: me.nombre, correo: me.correo })}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {modules.map((module) => (
-          <li key={module.to}>
-            <h2>{module.title}</h2>
-            <p>{module.hint}</p>
-            <Link to={module.to}>{t('dashboard.open')}</Link>
-          </li>
+          <Link
+            key={module.to}
+            to={module.to}
+            className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-md bg-secondary text-primary">
+              <Icon name={module.icon} size={18} />
+            </span>
+            <h2 className="text-base font-bold text-foreground">{module.title}</h2>
+            <p className="text-sm text-muted-foreground">{module.hint}</p>
+            <span className="mt-auto flex items-center gap-1 text-sm font-semibold text-primary">
+              {t('dashboard.open')}
+              <Icon name="chevron-right" size={16} />
+            </span>
+          </Link>
         ))}
-      </ul>
+      </div>
     </section>
   );
 }

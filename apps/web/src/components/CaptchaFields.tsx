@@ -1,5 +1,8 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
+import { FormField } from '@/components/molecules/FormField';
 import { fetchCaptcha } from '../lib/api';
 
 type Props = {
@@ -29,26 +32,37 @@ export default function CaptchaFields({ refreshKey }: Props) {
   }, [load, refreshKey]);
 
   return (
-    <div className="captcha">
+    <div className="space-y-1.5">
       <input type="hidden" name="captchaId" value={captchaId} />
-      {svg ? (
-        <div
-          className="captcha-image"
-          aria-hidden="true"
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: el SVG lo genera svg-captcha en nuestra propia API, no viene de entrada del usuario.
-          dangerouslySetInnerHTML={{ __html: svg }}
+      <div className="flex items-stretch gap-3">
+        <div className="flex h-[62px] flex-1 items-center justify-center overflow-hidden rounded-md border border-border bg-card">
+          {svg ? (
+            <div
+              className="flex h-full w-full items-center justify-center [&>svg]:h-full"
+              aria-hidden="true"
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: el SVG lo genera svg-captcha en nuestra propia API, no viene de entrada del usuario.
+              dangerouslySetInnerHTML={{ __html: svg }}
+            />
+          ) : (
+            <p className="px-2 text-center text-xs text-muted-foreground">
+              {t('auth.captchaLoading')}
+            </p>
+          )}
+        </div>
+        <Button type="button" variant="ghost" size="sm" onClick={() => void load()}>
+          {t('auth.captchaImage')}
+        </Button>
+      </div>
+      <FormField label={t('auth.captchaText')} htmlFor="captchaAnswer" error={error ?? undefined}>
+        <Input
+          id="captchaAnswer"
+          name="captchaAnswer"
+          required
+          autoComplete="off"
+          spellCheck={false}
+          invalid={Boolean(error)}
         />
-      ) : (
-        <p className="muted">{t('auth.captchaLoading')}</p>
-      )}
-      <button type="button" className="linkish" onClick={() => void load()}>
-        {t('auth.captchaImage')}
-      </button>
-      <label className="field">
-        {t('auth.captchaText')}
-        <input name="captchaAnswer" required autoComplete="off" spellCheck={false} />
-      </label>
-      {error ? <p className="error">{error}</p> : null}
+      </FormField>
     </div>
   );
 }
