@@ -10,6 +10,7 @@
 
 import type {
   AcopioFlujo as PrismaAcopioFlujo,
+  InventoryMovimientoTipo as PrismaInventoryMovimientoTipo,
   OrganizationTipo as PrismaOrganizationTipo,
   PutawayEstado as PrismaPutawayEstado,
   RecepcionEstado as PrismaRecepcionEstado,
@@ -21,6 +22,7 @@ import type {
 } from '@prisma/client';
 import type {
   AcopioFlujo,
+  InventoryMovimientoTipo,
   OrganizationTipo,
   PutawayEstado,
   RecepcionEstado,
@@ -53,3 +55,8 @@ export const UBICACION_FUNCION_EN_SYNC: Exact<UbicacionFuncion, PrismaUbicacionF
 export const UBICACION_ESTADO_EN_SYNC: Exact<UbicacionEstado, PrismaUbicacionEstado> = true;
 
 export const PUTAWAY_ESTADO_EN_SYNC: Exact<PutawayEstado, PrismaPutawayEstado> = true;
+
+export const INVENTORY_MOVIMIENTO_TIPO_EN_SYNC: Exact<
+  InventoryMovimientoTipo,
+  PrismaInventoryMovimientoTipo
+> = true;

@@ -10,6 +10,11 @@ export const ROUTES = {
   inventario: '/app/inventario',
   inventarioUbicaciones: '/app/ubicaciones',
   inventarioUbicar: '/app/inventario/ubicar',
+  inventarioMover: '/app/inventario/mover',
+  inventarioMoverDe: (acopioId: string, itemId?: string) =>
+    itemId
+      ? `/app/inventario/mover?acopio=${acopioId}&item=${itemId}`
+      : `/app/inventario/mover?acopio=${acopioId}`,
   ubicaciones: '/app/ubicaciones',
   ubicacionesDe: (acopioId: string) => `/app/ubicaciones?acopio=${acopioId}`,
   signIn: '/sign-in',

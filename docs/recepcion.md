@@ -158,7 +158,7 @@ Hoy no se migra ni se borra. **Después de VALIDAR** una recepción, el sistema 
 
 Campos de donante, presentación y talla en inventario dejan de ser la fuente: quedan denormalizados un tiempo o se ignoran en altas nuevas.
 
-`ubicacion_interna` deja de ser la fuente de verdad. Tras validar, el stock nace en el **muelle** (`ubicaciones` con función RECEPCION). Ubicar es un paso aparte: putaway + confirmación del código de destino. Saldos en `inventory_balances`; historial en `inventory_movimientos`.
+`ubicacion_interna` deja de ser la fuente de verdad. Tras validar, el stock nace en el **muelle** (`ubicaciones` con función RECEPCION). Ubicar es un paso aparte: putaway + confirmación del código de destino. Un traslado posterior entre zonas es **reubicación** (también confirma el código). Saldos en `inventory_balances`; historial en `inventory_movimientos`.
 
 ## Códigos automáticos
 

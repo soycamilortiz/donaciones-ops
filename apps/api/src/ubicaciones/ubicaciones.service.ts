@@ -13,18 +13,22 @@ import { OrgCountersService } from '../org-counters/org-counters.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   ConfirmarPutawayDto,
+  CrearMovimientoDto,
   CrearPutawayDto,
   CreateUbicacionDto,
+  InventoryMovimientoDto,
   PutawayDto,
   UbicacionDto,
   UpdateUbicacionDto,
 } from './dto/ubicacion.dto';
 import {
   categoriaCompatible,
+  destinoAdmiteReubicacion,
   disponibleUnidades,
   FUNCIONES_PUTAWAY,
   MUELLE_CODIGO,
   motivoIncompatible,
+  origenAdmiteReubicacion,
   planificarPutaway,
 } from './reglas-ubicacion';
 
@@ -398,6 +402,84 @@ export class UbicacionesService {
     return this.getPutaway(orgId, acopioId, id);
   }
 
+  async listMovimientos(
+    orgId: string,
+    acopioId: string,
+    opts?: { itemId?: string; limite?: number },
+  ): Promise<InventoryMovimientoDto[]> {
+    await this.requireAcopio(orgId, acopioId);
+    if (opts?.itemId) {
+      await this.requireItem(orgId, acopioId, opts.itemId);
+    }
+    const take = Math.min(Math.max(opts?.limite ?? 50, 1), 100);
+    const rows = await this.prisma.inventoryMovimiento.findMany({
+      where: {
+        organizationId: orgId,
+        acopioId,
+        isActive: true,
+        ...(opts?.itemId ? { inventoryItemId: opts.itemId } : {}),
+      },
+      include: MOVIMIENTO_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+      take,
+    });
+    return rows.map((row) => this.toMovimientoDto(row));
+  }
+
+  async reubicar(
+    orgId: string,
+    acopioId: string,
+    usuarioId: string,
+    dto: CrearMovimientoDto,
+  ): Promise<InventoryMovimientoDto> {
+    const item = await this.requireItem(orgId, acopioId, dto.inventoryItemId);
+    if (!item.isActive) {
+      throw new BadRequestException('Ese ítem de inventario está dado de baja');
+    }
+    if (dto.origenUbicacionId === dto.destinoUbicacionId) {
+      throw new BadRequestException('El origen y el destino tienen que ser distintos');
+    }
+    const origen = await this.requireUbicacion(acopioId, dto.origenUbicacionId);
+    if (!origenAdmiteReubicacion(origen.funcion)) {
+      throw new BadRequestException(
+        'Lo que está en el muelle se ubica con putaway, no con un traslado entre zonas',
+      );
+    }
+    const dest = await this.requireUbicacion(acopioId, dto.destinoUbicacionId);
+    const esperado = dest.codigo.trim().toUpperCase();
+    const leido = dto.codigoDestino.trim().toUpperCase();
+    if (esperado !== leido) {
+      throw new BadRequestException(
+        `El código no coincide con ${dest.codigo}. Confirmá la ubicación real.`,
+      );
+    }
+    this.assertDestinoReubicacion(dest, item.categoria, dto.cantidad);
+
+    const row = await this.prisma.$transaction(async (tx) => {
+      const destTx = await this.requireUbicacion(acopioId, dest.id, tx);
+      this.assertDestinoReubicacion(destTx, item.categoria, dto.cantidad);
+      await this.moverSaldo(tx, item.id, origen.id, dest.id, dto.cantidad);
+      const codigo = await this.counters.codigoMovimiento(orgId);
+      return tx.inventoryMovimiento.create({
+        data: {
+          codigo,
+          organizationId: orgId,
+          acopioId,
+          inventoryItemId: item.id,
+          tipo: InventoryMovimientoTipo.REUBICACION,
+          cantidad: new Prisma.Decimal(dto.cantidad),
+          origenUbicacionId: origen.id,
+          destinoUbicacionId: dest.id,
+          usuarioId,
+          observaciones: blankToNull(dto.observaciones ?? ''),
+          isActive: true,
+        },
+        include: MOVIMIENTO_INCLUDE,
+      });
+    });
+    return this.toMovimientoDto(row);
+  }
+
   async ensureMuelle(acopioId: string, tx?: Prisma.TransactionClient) {
     const db = tx ?? this.prisma;
     const existente = await db.ubicacion.findFirst({
@@ -512,6 +594,47 @@ export class UbicacionesService {
     }
   }
 
+  private assertDestinoReubicacion(
+    dest: {
+      estado: UbicacionEstado;
+      isActive: boolean;
+      funcion: UbicacionFuncion;
+      permiteAlimentos: boolean;
+      permiteMedicamentos: boolean;
+      permiteRopa: boolean;
+      capacidadUnidades: Prisma.Decimal | null;
+      balances: Array<{ cantidad: Prisma.Decimal; isActive: boolean }>;
+    },
+    categoria: string,
+    cantidad: number,
+  ) {
+    if (!dest.isActive || dest.estado !== UbicacionEstado.ACTIVA) {
+      throw new BadRequestException('Esa ubicación no puede recibir inventario ahora');
+    }
+    if (!destinoAdmiteReubicacion(dest.funcion)) {
+      throw new BadRequestException(
+        dest.funcion === UbicacionFuncion.RECEPCION
+          ? 'El muelle no es destino de un traslado. Para ubicar lo recibido usá el putaway.'
+          : 'Esa ubicación no admite traslados',
+      );
+    }
+    if (!categoriaCompatible(categoria, dest)) {
+      throw new BadRequestException(
+        motivoIncompatible(categoria, dest) ?? 'Ubicación incompatible',
+      );
+    }
+    const ocupacion = ocupacionDe(dest.balances);
+    const cupo = disponibleUnidades(
+      dest.capacidadUnidades == null ? null : Number(dest.capacidadUnidades),
+      ocupacion,
+    );
+    if (cupo != null && cantidad - cupo > 0.001) {
+      throw new BadRequestException(
+        `Capacidad insuficiente: disponible ${cupo}, se intentan mover ${cantidad}`,
+      );
+    }
+  }
+
   private async moverSaldo(
     db: Db,
     inventoryItemId: string,
@@ -524,7 +647,7 @@ export class UbicacionesService {
         where: { inventoryItemId_ubicacionId: { inventoryItemId, ubicacionId: origenId } },
       });
       if (!origen || Number(origen.cantidad) + 0.001 < cantidad) {
-        throw new BadRequestException('No hay esa cantidad en el muelle para ubicar');
+        throw new BadRequestException('No hay esa cantidad en la ubicación de origen');
       }
       const queda = Number(origen.cantidad) - cantidad;
       await db.inventoryBalance.update({
@@ -742,6 +865,41 @@ export class UbicacionesService {
       })),
     };
   }
+
+  private toMovimientoDto(row: {
+    id: string;
+    codigo: string;
+    organizationId: string;
+    acopioId: string;
+    inventoryItemId: string;
+    tipo: InventoryMovimientoTipo;
+    cantidad: Prisma.Decimal;
+    origenUbicacionId: string | null;
+    destinoUbicacionId: string | null;
+    observaciones: string | null;
+    createdAt: Date;
+    inventoryItem: { nombre: string; loteCodigo: string | null };
+    origenUbicacion: { codigo: string } | null;
+    destinoUbicacion: { codigo: string } | null;
+  }): InventoryMovimientoDto {
+    return {
+      id: row.id,
+      codigo: row.codigo,
+      organizationId: row.organizationId,
+      acopioId: row.acopioId,
+      inventoryItemId: row.inventoryItemId,
+      inventoryNombre: row.inventoryItem.nombre,
+      loteCodigo: row.inventoryItem.loteCodigo,
+      tipo: row.tipo,
+      cantidad: Number(row.cantidad),
+      origenUbicacionId: row.origenUbicacionId,
+      origenCodigo: row.origenUbicacion?.codigo ?? null,
+      destinoUbicacionId: row.destinoUbicacionId,
+      destinoCodigo: row.destinoUbicacion?.codigo ?? null,
+      observaciones: row.observaciones,
+      createdAt: row.createdAt.toISOString(),
+    };
+  }
 }
 
 const PUTAWAY_INCLUDE = {
@@ -753,6 +911,12 @@ const PUTAWAY_INCLUDE = {
     },
   },
 } satisfies Prisma.PutawayInclude;
+
+const MOVIMIENTO_INCLUDE = {
+  inventoryItem: { select: { nombre: true, loteCodigo: true } },
+  origenUbicacion: { select: { codigo: true } },
+  destinoUbicacion: { select: { codigo: true } },
+} satisfies Prisma.InventoryMovimientoInclude;
 
 function ocupacionDe(balances: Array<{ cantidad: Prisma.Decimal; isActive: boolean }>): number {
   return balances.filter((row) => row.isActive).reduce((sum, row) => sum + Number(row.cantidad), 0);

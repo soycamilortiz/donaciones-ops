@@ -1,3 +1,4 @@
+import { origenAdmiteReubicacion } from '@soschoco/shared';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -346,6 +347,15 @@ export default function InventoryPage() {
           <Button type="button" variant="outline" onClick={() => navigate(ROUTES.inventarioUbicar)}>
             {t('inventory.putaway')}
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              navigate(acopioId ? ROUTES.inventarioMoverDe(acopioId) : ROUTES.inventarioMover)
+            }
+          >
+            {t('inventory.move')}
+          </Button>
           <Button type="button" onClick={openCreate}>
             {t('inventory.newProduct')}
             <span className="grid h-[34px] w-[34px] place-items-center rounded-pill bg-primary-deep">
@@ -364,6 +374,15 @@ export default function InventoryPage() {
           </Button>
           <Button type="button" variant="outline" onClick={() => navigate(ROUTES.inventarioUbicar)}>
             {t('inventory.putaway')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              navigate(acopioId ? ROUTES.inventarioMoverDe(acopioId) : ROUTES.inventarioMover)
+            }
+          >
+            {t('inventory.move')}
           </Button>
         </div>
       ) : null}
@@ -672,6 +691,20 @@ export default function InventoryPage() {
 
                     {writable ? (
                       <div className="flex flex-col gap-2 pt-1 min-[721px]:flex-row min-[721px]:items-center min-[721px]:justify-end min-[721px]:gap-1.5 min-[721px]:pt-0">
+                        {!inactive &&
+                        (item.balances ?? []).some(
+                          (b) => origenAdmiteReubicacion(b.funcion) && b.cantidad > 0,
+                        ) ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full min-[721px]:w-auto"
+                            onClick={() => navigate(ROUTES.inventarioMoverDe(acopioId, item.id))}
+                          >
+                            {t('inventory.move')}
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           variant="outline"

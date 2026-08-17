@@ -1,4 +1,4 @@
-import type { InventoryItem, Putaway, Ubicacion } from '@soschoco/shared';
+import type { InventoryItem, InventoryMovimiento, Putaway, Ubicacion } from '@soschoco/shared';
 
 export type Peticion = <T>(path: string, init?: RequestInit) => Promise<T>;
 
@@ -116,5 +116,43 @@ export function confirmarPutaway(
   return request<Putaway>(`${base(orgId, acopioId)}/putaway/tareas/${putawayId}/confirmar`, {
     method: 'POST',
     body: JSON.stringify({ lineas }),
+  });
+}
+
+export function listarMovimientos(
+  request: Peticion,
+  orgId: string,
+  acopioId: string,
+  opts?: { itemId?: string; limite?: number },
+): Promise<InventoryMovimiento[]> {
+  const q = new URLSearchParams();
+  if (opts?.itemId) {
+    q.set('itemId', opts.itemId);
+  }
+  if (opts?.limite) {
+    q.set('limite', String(opts.limite));
+  }
+  const qs = q.toString();
+  return request<InventoryMovimiento[]>(
+    `${base(orgId, acopioId)}/movimientos${qs ? `?${qs}` : ''}`,
+  );
+}
+
+export function reubicarInventario(
+  request: Peticion,
+  orgId: string,
+  acopioId: string,
+  body: {
+    inventoryItemId: string;
+    origenUbicacionId: string;
+    destinoUbicacionId: string;
+    cantidad: number;
+    codigoDestino: string;
+    observaciones?: string;
+  },
+): Promise<InventoryMovimiento> {
+  return request<InventoryMovimiento>(`${base(orgId, acopioId)}/movimientos`, {
+    method: 'POST',
+    body: JSON.stringify(body),
   });
 }

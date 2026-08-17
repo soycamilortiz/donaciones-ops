@@ -107,7 +107,7 @@ Roles semilla: administrador de acopio, auxiliar administrativo, líder de zona,
 
 Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `inventory:read/write`, `donaciones:read/write`.
 
-Inventario: por centro de acopio. Dashboard en `/app/inventario`. El alta de stock desde campo pasa por una **recepción**: confirmar una foto identifica el producto (unidad de medida y vencimiento en el ingreso); **validar** incrementa `inventory_items` (solo `cantidad_aprobada`) y deja esa cantidad en el **muelle**. Ubicar es otro paso (`/app/inventario/ubicar`): el sistema sugiere destinos; el operador confirma el código de la ubicación. Saldos en `inventory_balances`. Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol, producto, recepción, ubicación e ítem. Dar de baja no bloquea un alta nueva (el producto de inventario siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
+Inventario: por centro de acopio. Dashboard en `/app/inventario`. El alta de stock desde campo pasa por una **recepción**: confirmar una foto identifica el producto (unidad de medida y vencimiento en el ingreso); **validar** incrementa `inventory_items` (solo `cantidad_aprobada`) y deja esa cantidad en el **muelle**. Ubicar es otro paso (`/app/inventario/ubicar`): el sistema sugiere destinos; el operador confirma el código de la ubicación. Trasladar entre zonas ya ubicadas es **reubicación** (`/app/inventario/mover`): también confirma el código de destino. Saldos en `inventory_balances`. Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol, producto, recepción, ubicación e ítem. Dar de baja no bloquea un alta nueva (el producto de inventario siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
 
 ## API NestJS
 
@@ -121,7 +121,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Miembros | `/api/v1/organizations/:orgId/members` |
 | Acopios | `/api/v1/organizations/:orgId/acopios` |
 | Inventario | `/api/v1/organizations/:orgId/acopios/:acopioId/inventory` |
-| Ubicaciones / putaway | `/api/v1/organizations/:orgId/acopios/:acopioId/ubicaciones`, `.../putaway/pendientes`, `.../putaway/sugerencias/:itemId`, `POST .../putaway/:itemId`, `POST .../putaway/tareas/:id/confirmar` |
+| Ubicaciones / putaway / movimientos | `/api/v1/organizations/:orgId/acopios/:acopioId/ubicaciones`, `.../putaway/pendientes`, `.../putaway/sugerencias/:itemId`, `POST .../putaway/:itemId`, `POST .../putaway/tareas/:id/confirmar`, `GET/POST .../movimientos` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
 | Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas/ruta`, `/productos`, `/ean/:codigo`, `/:id/interpretar`, `/:id/confirmar`) |
@@ -236,7 +236,7 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 
 ## Shell (`apps/web`)
 
-Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio y putaway (`/app/inventario/ubicar`). Ubicaciones del acopio: `/app/ubicaciones` (también desde cada centro en Acopios). Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar). La foto de identificación vive en `/app/recepciones/:id/foto`. No hay módulo de Donaciones en el panel.
+Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio, putaway (`/app/inventario/ubicar`) y reubicación entre zonas (`/app/inventario/mover`). Ubicaciones del acopio: `/app/ubicaciones` (también desde cada centro en Acopios). Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar). La foto de identificación vive en `/app/recepciones/:id/foto`. No hay módulo de Donaciones en el panel.
 
 Alta/edición de acopios: departamento y municipio (DIVIPOLA Colombia), autocomplete Photon, geolocalización del navegador, pin Leaflet arrastrable y mapa para `lat`/`lng`. Componente `AddressLocationPicker`.
 
@@ -244,7 +244,7 @@ Sistema visual «html-base»: paleta verde (`#12331A`) + acento dorado (`#F2C230
 
 ## Qué falta
 
-- Recepción v1 **está**. Diseño: [recepcion.md](recepcion.md). Ubicaciones y putaway con confirmación de código **están** (v1: sin QR de cámara ni distancia/FEFO). Falta todavía: pallet de despacho, variantes (talla/gramaje), reserva/picking.
+- Recepción v1 **está**. Diseño: [recepcion.md](recepcion.md). Ubicaciones, putaway y reubicación entre zonas con confirmación de código **están** (v1: sin QR de cámara ni distancia/FEFO). Falta todavía: pallet de despacho, variantes (talla/gramaje), reserva/picking.
 - Módulo de envíos (contenedor + API).
 - Cookie httpOnly en lugar de `localStorage` si se endurece XSS.
 - Rate limit explícito en login (hoy el captcha cubre brute-force básico).

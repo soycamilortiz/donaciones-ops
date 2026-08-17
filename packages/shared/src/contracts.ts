@@ -8,6 +8,7 @@
 import type { Producto } from './donaciones.js';
 import type {
   AcopioFlujo,
+  InventoryMovimientoTipo,
   OrganizationTipo,
   PutawayEstado,
   RecepcionEstado,
@@ -206,6 +207,24 @@ export type PutawayLinea = {
   destinoCodigo?: string;
   cantidad: number;
   estado: PutawayEstado;
+};
+
+export type InventoryMovimiento = {
+  id: string;
+  codigo: string;
+  organizationId: string;
+  acopioId: string;
+  inventoryItemId: string;
+  inventoryNombre?: string;
+  loteCodigo?: string | null;
+  tipo: InventoryMovimientoTipo;
+  cantidad: number;
+  origenUbicacionId?: string | null;
+  origenCodigo?: string | null;
+  destinoUbicacionId?: string | null;
+  destinoCodigo?: string | null;
+  observaciones?: string | null;
+  createdAt: string;
 };
 
 export type Recepcion = {

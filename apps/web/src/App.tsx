@@ -10,6 +10,7 @@ import CompleteGoogleProfilePage from './pages/CompleteGoogleProfilePage';
 import Dashboard from './pages/Dashboard';
 import InventoryPage from './pages/InventoryPage';
 import Landing from './pages/Landing';
+import MovimientosPage from './pages/MovimientosPage';
 import NuevaDonacionPage from './pages/NuevaDonacionPage';
 import NuevaRecepcionPage from './pages/NuevaRecepcionPage';
 import Onboarding from './pages/Onboarding';
@@ -54,6 +55,7 @@ export default function App() {
               element={<Navigate to={ROUTES.ubicaciones} replace />}
             />
             <Route path="/app/inventario/ubicar" element={<PutawayPage />} />
+            <Route path="/app/inventario/mover" element={<MovimientosPage />} />
             <Route path="/app/recepciones" element={<RecepcionesPage />} />
             <Route path="/app/recepciones/nueva" element={<NuevaRecepcionPage />} />
             <Route path="/app/recepciones/:id/foto" element={<NuevaDonacionPage />} />

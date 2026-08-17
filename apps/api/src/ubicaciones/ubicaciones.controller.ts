@@ -24,8 +24,10 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import {
   ConfirmarPutawayDto,
+  CrearMovimientoDto,
   CrearPutawayDto,
   CreateUbicacionDto,
+  InventoryMovimientoDto,
   PutawayDto,
   UbicacionDto,
   UpdateUbicacionDto,
@@ -149,5 +151,37 @@ export class UbicacionesController {
     @Body() dto: ConfirmarPutawayDto,
   ) {
     return this.ubicaciones.confirmarPutaway(orgId, acopioId, putawayId, usuario.id, dto);
+  }
+
+  @Get('movimientos')
+  @RequirePermission(PermissionSlug.InventoryRead)
+  @ApiOperation({ summary: 'Historial de movimientos de inventario del acopio' })
+  @ApiOkResponse({ type: [InventoryMovimientoDto] })
+  listMovimientos(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('acopioId', ParseUUIDPipe) acopioId: string,
+    @Query('itemId', new ParseUUIDPipe({ optional: true })) itemId?: string,
+    @Query('limite') limite?: string,
+  ) {
+    const n = limite ? Number(limite) : undefined;
+    return this.ubicaciones.listMovimientos(orgId, acopioId, {
+      itemId: itemId || undefined,
+      limite: Number.isFinite(n) ? n : undefined,
+    });
+  }
+
+  @Post('movimientos')
+  @RequirePermission(PermissionSlug.InventoryWrite)
+  @ApiOperation({
+    summary: 'Trasladar stock entre ubicaciones. Hay que confirmar el código de destino.',
+  })
+  @ApiCreatedResponse({ type: InventoryMovimientoDto })
+  reubicar(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('acopioId', ParseUUIDPipe) acopioId: string,
+    @CurrentUser() usuario: AuthUser,
+    @Body() dto: CrearMovimientoDto,
+  ) {
+    return this.ubicaciones.reubicar(orgId, acopioId, usuario.id, dto);
   }
 }

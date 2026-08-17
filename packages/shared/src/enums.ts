@@ -209,6 +209,16 @@ export const InventoryMovimientoTipo = {
 export type InventoryMovimientoTipo =
   (typeof InventoryMovimientoTipo)[keyof typeof InventoryMovimientoTipo];
 
+export const INVENTORY_MOVIMIENTO_TIPOS: ReadonlyArray<{
+  value: InventoryMovimientoTipo;
+  label: string;
+}> = [
+  { value: InventoryMovimientoTipo.Recepcion, label: 'Recepción' },
+  { value: InventoryMovimientoTipo.Putaway, label: 'Putaway' },
+  { value: InventoryMovimientoTipo.Reubicacion, label: 'Reubicación' },
+  { value: InventoryMovimientoTipo.Ajuste, label: 'Ajuste' },
+];
+
 export const PutawayEstado = {
   Pendiente: 'PENDIENTE',
   Completado: 'COMPLETADO',
@@ -280,3 +290,50 @@ export const UBICACION_ESTADOS: ReadonlyArray<{ value: UbicacionEstado; label: s
   { value: UbicacionEstado.Bloqueada, label: 'Bloqueada' },
   { value: UbicacionEstado.Mantenimiento, label: 'Mantenimiento' },
 ];
+
+/** Destinos de un traslado entre zonas. El muelle no entra: eso es putaway. */
+export const FUNCIONES_REUBICACION_DESTINO: readonly UbicacionFuncion[] = [
+  UbicacionFuncion.Almacenamiento,
+  UbicacionFuncion.Picking,
+  UbicacionFuncion.Kitting,
+  UbicacionFuncion.Cuarentena,
+  UbicacionFuncion.Despacho,
+  UbicacionFuncion.Devolucion,
+  UbicacionFuncion.Rechazado,
+];
+
+export function origenAdmiteReubicacion(funcion: string): boolean {
+  return funcion !== UbicacionFuncion.Recepcion;
+}
+
+export function destinoAdmiteReubicacion(funcion: string): boolean {
+  return (FUNCIONES_REUBICACION_DESTINO as readonly string[]).includes(funcion);
+}
+
+const CATS_ALIMENTOS: ReadonlySet<string> = new Set([
+  'ALIMENTOS_NO_PERECEDEROS',
+  'AGUA',
+  'ALIMENTO_MASCOTAS',
+]);
+const CATS_MEDICAMENTOS: ReadonlySet<string> = new Set(['MEDICAMENTOS', 'MEDICAMENTO_MASCOTAS']);
+const CATS_ROPA: ReadonlySet<string> = new Set(['ROPA_CALZADO', 'COLCHONETAS_COBIJAS']);
+
+export function categoriaCompatible(
+  categoria: string,
+  ubicacion: {
+    permiteAlimentos: boolean;
+    permiteMedicamentos: boolean;
+    permiteRopa: boolean;
+  },
+): boolean {
+  if (CATS_ALIMENTOS.has(categoria)) {
+    return ubicacion.permiteAlimentos;
+  }
+  if (CATS_MEDICAMENTOS.has(categoria)) {
+    return ubicacion.permiteMedicamentos;
+  }
+  if (CATS_ROPA.has(categoria)) {
+    return ubicacion.permiteRopa;
+  }
+  return true;
+}

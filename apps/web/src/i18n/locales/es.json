@@ -507,6 +507,7 @@
     "subtitle": "Existencias del centro seleccionado. Lo validado nace en el muelle; ubicar es un paso aparte.",
     "locations": "Ubicaciones",
     "putaway": "Ubicar",
+    "move": "Mover",
     "pendingBadge": "Sin ubicar",
     "pendingPutawayHint": "{{count}} ítems en el muelle. Validar no los ubica: hay que confirmar el destino.",
     "acopioPicker": "Centro de acopio",
@@ -615,5 +616,29 @@
     "splitHint": "Si un rack no alcanza, el plan parte la cantidad en varios destinos.",
     "loadError": "No se pudo cargar lo pendiente de ubicar",
     "saveError": "No se pudo guardar el putaway"
+  },
+  "movimientos": {
+    "title": "Mover inventario",
+    "subtitle": "Trasladá stock ya ubicado de una zona a otra. El código de destino tiene que coincidir con la etiqueta: así queda el movimiento real, no el pensado.",
+    "itemsTitle": "Con saldo en zona",
+    "empty": "No hay stock ubicado para mover. Lo del muelle se saca con Ubicar.",
+    "formTitle": "Traslado",
+    "origin": "Desde",
+    "destination": "Hacia",
+    "destinationPlaceholder": "Elegí la ubicación destino",
+    "noDestinations": "No hay destinos compatibles. Revisá zonas y qué admiten.",
+    "confirmCode": "Código de la ubicación destino",
+    "confirmHint": "Escribí o escaneá el código de la etiqueta. Tiene que coincidir con el destino elegido.",
+    "submit": "Confirmar traslado",
+    "historyTitle": "Últimos movimientos",
+    "historyEmpty": "Todavía no hay movimientos en este acopio.",
+    "loadError": "No se pudieron cargar los movimientos",
+    "saveError": "No se pudo registrar el traslado",
+    "tipo": {
+      "RECEPCION": "Recepción",
+      "PUTAWAY": "Putaway",
+      "REUBICACION": "Reubicación",
+      "AJUSTE": "Ajuste"
+    }
   }
 }

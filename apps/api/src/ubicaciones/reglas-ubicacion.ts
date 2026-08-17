@@ -1,4 +1,10 @@
-import type { InventoryCategoria } from '@prisma/client';
+import {
+  categoriaCompatible,
+  destinoAdmiteReubicacion,
+  origenAdmiteReubicacion,
+} from '@soschoco/shared';
+
+export { categoriaCompatible, destinoAdmiteReubicacion, origenAdmiteReubicacion };
 
 const ALIMENTOS: ReadonlySet<string> = new Set([
   'ALIMENTOS_NO_PERECEDEROS',
@@ -8,34 +14,12 @@ const ALIMENTOS: ReadonlySet<string> = new Set([
 
 const MEDICAMENTOS: ReadonlySet<string> = new Set(['MEDICAMENTOS', 'MEDICAMENTO_MASCOTAS']);
 
-const ROPA: ReadonlySet<string> = new Set(['ROPA_CALZADO', 'COLCHONETAS_COBIJAS']);
-
 export const FUNCIONES_PUTAWAY = ['ALMACENAMIENTO', 'PICKING'] as const;
 
 export const MUELLE_CODIGO = 'MUELLE';
 
-export function categoriaCompatible(
-  categoria: InventoryCategoria | string,
-  ubicacion: {
-    permiteAlimentos: boolean;
-    permiteMedicamentos: boolean;
-    permiteRopa: boolean;
-  },
-): boolean {
-  if (ALIMENTOS.has(categoria)) {
-    return ubicacion.permiteAlimentos;
-  }
-  if (MEDICAMENTOS.has(categoria)) {
-    return ubicacion.permiteMedicamentos;
-  }
-  if (ROPA.has(categoria)) {
-    return ubicacion.permiteRopa;
-  }
-  return true;
-}
-
 export function motivoIncompatible(
-  categoria: InventoryCategoria | string,
+  categoria: string,
   ubicacion: {
     permiteAlimentos: boolean;
     permiteMedicamentos: boolean;

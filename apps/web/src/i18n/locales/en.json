@@ -507,6 +507,7 @@
     "subtitle": "Stock for the selected centre. Validated goods land on the dock; putaway is a separate step.",
     "locations": "Locations",
     "putaway": "Put away",
+    "move": "Move",
     "pendingBadge": "Not located",
     "pendingPutawayHint": "{{count}} items on the dock. Validating does not locate them: you still confirm the destination.",
     "acopioPicker": "Storage center",
@@ -615,5 +616,29 @@
     "splitHint": "If one rack cannot take it all, the plan splits the quantity across destinations.",
     "loadError": "Could not load pending putaway",
     "saveError": "Could not save the putaway"
+  },
+  "movimientos": {
+    "title": "Move inventory",
+    "subtitle": "Move stock that is already put away from one zone to another. The destination code must match the label so the real move is recorded.",
+    "itemsTitle": "Stock in a zone",
+    "empty": "No located stock to move. Dock stock leaves through Put away.",
+    "formTitle": "Transfer",
+    "origin": "From",
+    "destination": "To",
+    "destinationPlaceholder": "Choose the destination",
+    "noDestinations": "No compatible destinations. Check zones and what they allow.",
+    "confirmCode": "Destination location code",
+    "confirmHint": "Type or scan the label code. It must match the chosen destination.",
+    "submit": "Confirm transfer",
+    "historyTitle": "Recent movements",
+    "historyEmpty": "No movements in this centre yet.",
+    "loadError": "Could not load movements",
+    "saveError": "Could not record the transfer",
+    "tipo": {
+      "RECEPCION": "Receiving",
+      "PUTAWAY": "Putaway",
+      "REUBICACION": "Relocation",
+      "AJUSTE": "Adjustment"
+    }
   }
 }

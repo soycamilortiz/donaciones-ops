@@ -1,4 +1,10 @@
-import { categoriaCompatible, disponibleUnidades, planificarPutaway } from './reglas-ubicacion';
+import {
+  categoriaCompatible,
+  destinoAdmiteReubicacion,
+  disponibleUnidades,
+  origenAdmiteReubicacion,
+  planificarPutaway,
+} from './reglas-ubicacion';
 
 describe('reglas-ubicacion', () => {
   it('alimentos no entran a una zona solo de medicamentos', () => {
@@ -41,5 +47,13 @@ describe('reglas-ubicacion', () => {
     const plan = planificarPutaway(500, [{ id: 'a', disponible: 120 }]);
     expect(plan.lineas).toEqual([{ ubicacionId: 'a', cantidad: 120 }]);
     expect(plan.resto).toBe(380);
+  });
+
+  it('el muelle no es origen ni destino de una reubicación', () => {
+    expect(origenAdmiteReubicacion('RECEPCION')).toBe(false);
+    expect(destinoAdmiteReubicacion('RECEPCION')).toBe(false);
+    expect(origenAdmiteReubicacion('ALMACENAMIENTO')).toBe(true);
+    expect(destinoAdmiteReubicacion('CUARENTENA')).toBe(true);
+    expect(destinoAdmiteReubicacion('PICKING')).toBe(true);
   });
 });

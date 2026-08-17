@@ -1,6 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PutawayEstado, UbicacionEstado, UbicacionFuncion, UbicacionTipo } from '@prisma/client';
+import {
+  InventoryMovimientoTipo,
+  PutawayEstado,
+  UbicacionEstado,
+  UbicacionFuncion,
+  UbicacionTipo,
+} from '@prisma/client';
 import type {
+  InventoryMovimiento as InventoryMovimientoContract,
   Putaway as PutawayContract,
   PutawayLinea as PutawayLineaContract,
   Ubicacion as UbicacionContract,
@@ -285,6 +292,87 @@ export class PutawayLineaDto implements PutawayLineaContract {
 
   @ApiProperty({ enum: PutawayEstado })
   estado: PutawayEstado;
+}
+
+export class CrearMovimientoDto {
+  @ApiProperty()
+  @IsUUID()
+  inventoryItemId: string;
+
+  @ApiProperty()
+  @IsUUID()
+  origenUbicacionId: string;
+
+  @ApiProperty()
+  @IsUUID()
+  destinoUbicacionId: string;
+
+  @ApiProperty()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.001)
+  cantidad: number;
+
+  @ApiProperty({
+    description: 'Código de la ubicación destino, como se lee en la etiqueta',
+  })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(40)
+  codigoDestino: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  observaciones?: string;
+}
+
+export class InventoryMovimientoDto implements InventoryMovimientoContract {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  codigo: string;
+
+  @ApiProperty()
+  organizationId: string;
+
+  @ApiProperty()
+  acopioId: string;
+
+  @ApiProperty()
+  inventoryItemId: string;
+
+  @ApiPropertyOptional()
+  inventoryNombre?: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  loteCodigo?: string | null;
+
+  @ApiProperty({ enum: InventoryMovimientoTipo })
+  tipo: InventoryMovimientoTipo;
+
+  @ApiProperty()
+  cantidad: number;
+
+  @ApiPropertyOptional({ nullable: true })
+  origenUbicacionId?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  origenCodigo?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  destinoUbicacionId?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  destinoCodigo?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  observaciones?: string | null;
+
+  @ApiProperty()
+  createdAt: string;
 }
 
 export class PutawayDto implements PutawayContract {
