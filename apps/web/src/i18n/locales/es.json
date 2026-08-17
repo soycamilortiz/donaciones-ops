@@ -14,7 +14,8 @@
     "signOut": "Salir",
     "organization": "Organización",
     "language": "Idioma",
-    "loadError": "Error al cargar"
+    "loadError": "Error al cargar",
+    "saved": "Cambios guardados"
   },
   "nav": {
     "dashboard": "Resumen",
@@ -230,7 +231,10 @@
       "descriptionPlaceholder": "Horario, responsable, qué se recibe…",
       "lat": "Lat",
       "lng": "Lng"
-    }
+    },
+    "saved": "Centro de acopio guardado",
+    "deactivated": "Centro de acopio dado de baja",
+    "reactivated": "Centro de acopio reactivado"
   },
   "address": {
     "departamento": "Departamento",
@@ -271,7 +275,11 @@
     },
     "addError": "No se pudo agregar",
     "roleError": "No se pudo cambiar el rol",
-    "reactivateError": "No se pudo reactivar"
+    "reactivateError": "No se pudo reactivar",
+    "invited": "Persona agregada a la organización",
+    "roleChanged": "Rol actualizado",
+    "removed": "Persona dada de baja",
+    "reactivated": "Persona reactivada"
   },
   "roles": {
     "title": "Roles y permisos",
@@ -295,7 +303,10 @@
     "saveError": "No se pudo guardar",
     "renameError": "No se pudo renombrar",
     "permissionError": "No se pudo editar el permiso",
-    "createError": "No se pudo crear el rol"
+    "createError": "No se pudo crear el rol",
+    "permissionsSaved": "Permisos actualizados",
+    "created": "Rol creado",
+    "deleted": "Rol dado de baja"
   },
   "auth": {
     "signIn": "Entrar",
@@ -538,6 +549,9 @@
     "createProduct": "Crear producto",
     "saveChanges": "Guardar cambios",
     "saveError": "No se pudo guardar",
-    "statusUpdateError": "No se pudo actualizar el estado"
+    "statusUpdateError": "No se pudo actualizar el estado",
+    "saved": "Producto guardado",
+    "deactivated": "Producto dado de baja",
+    "reactivated": "Producto reactivado"
   }
 }

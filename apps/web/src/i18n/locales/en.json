@@ -14,7 +14,8 @@
     "signOut": "Sign out",
     "organization": "Organization",
     "language": "Language",
-    "loadError": "Could not load"
+    "loadError": "Could not load",
+    "saved": "Changes saved"
   },
   "nav": {
     "dashboard": "Overview",
@@ -230,7 +231,10 @@
       "descriptionPlaceholder": "Hours, contact person, what it accepts…",
       "lat": "Lat",
       "lng": "Lng"
-    }
+    },
+    "saved": "Collection centre saved",
+    "deactivated": "Collection centre deactivated",
+    "reactivated": "Collection centre reactivated"
   },
   "address": {
     "departamento": "Department",
@@ -271,7 +275,11 @@
     },
     "addError": "Could not add",
     "roleError": "Could not change the role",
-    "reactivateError": "Could not reactivate"
+    "reactivateError": "Could not reactivate",
+    "invited": "Person added to the organisation",
+    "roleChanged": "Role updated",
+    "removed": "Person deactivated",
+    "reactivated": "Person reactivated"
   },
   "roles": {
     "title": "Roles and permissions",
@@ -295,7 +303,10 @@
     "saveError": "Could not save",
     "renameError": "Could not rename",
     "permissionError": "Could not edit the permission",
-    "createError": "Could not create the role"
+    "createError": "Could not create the role",
+    "permissionsSaved": "Permissions updated",
+    "created": "Role created",
+    "deleted": "Role deactivated"
   },
   "auth": {
     "signIn": "Sign in",
@@ -538,6 +549,9 @@
     "createProduct": "Create product",
     "saveChanges": "Save changes",
     "saveError": "Could not save",
-    "statusUpdateError": "Could not update status"
+    "statusUpdateError": "Could not update status",
+    "saved": "Product saved",
+    "deactivated": "Product deactivated",
+    "reactivated": "Product reactivated"
   }
 }

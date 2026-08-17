@@ -4,6 +4,7 @@ import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { FormField } from '@/components/molecules/FormField';
+import { useToast } from '@/components/molecules/Toast';
 import { cn } from '@/lib/utils';
 import { SkeletonList } from '../components/atoms/Skeleton';
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
@@ -17,6 +18,7 @@ const ROL_BLOQUEADO = 'administrador_acopio';
 export default function RolesPage() {
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const { avisar } = useToast();
   const request = useApi();
   const writable = can('roles:write');
   const [roles, setRoles] = useState<Role[]>([]);
@@ -71,6 +73,7 @@ export default function RolesPage() {
         { method: 'PUT', body: JSON.stringify({ permissionSlugs: next }) },
       );
       setRoles((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      avisar(t('roles.permissionsSaved'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('roles.saveError'));
     } finally {
@@ -92,6 +95,7 @@ export default function RolesPage() {
         body: JSON.stringify(body),
       });
       setRoles((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      avisar(t('common.saved'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('roles.renameError'));
     }
@@ -137,6 +141,7 @@ export default function RolesPage() {
       });
       form.reset();
       setRoles((current) => [...current, created]);
+      avisar(t('roles.created'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('roles.createError'));
     }
@@ -155,6 +160,7 @@ export default function RolesPage() {
         method: 'DELETE',
       });
       await load();
+      avisar(t('roles.deleted'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('roles.deleteError'));
     } finally {

@@ -9,6 +9,7 @@ import { Select } from '@/components/atoms/Select';
 import { Skeleton, SkeletonList } from '@/components/atoms/Skeleton';
 import { FormField } from '@/components/molecules/FormField';
 import { StatCard } from '@/components/molecules/StatCard';
+import { useToast } from '@/components/molecules/Toast';
 import { cn } from '@/lib/utils';
 import { useOrg } from '../components/OrgGate';
 import {
@@ -62,6 +63,7 @@ function soon(value?: string | null) {
 
 export default function InventoryPage() {
   const { t } = useTranslation();
+  const { avisar } = useToast();
   const navigate = useNavigate();
   const { orgId, can } = useOrg();
   const request = useApi();
@@ -297,6 +299,7 @@ export default function InventoryPage() {
       }
       closeForm();
       await loadItems(acopioId);
+      avisar(t('inventory.saved'));
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : t('inventory.saveError'));
     } finally {
@@ -315,6 +318,7 @@ export default function InventoryPage() {
         body: JSON.stringify({ isActive }),
       });
       await loadItems(acopioId);
+      avisar(isActive ? t('inventory.reactivated') : t('inventory.deactivated'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('inventory.statusUpdateError'));
     }
