@@ -318,7 +318,12 @@ export default function InventoryPage() {
         body: JSON.stringify({ isActive }),
       });
       await loadItems(acopioId);
-      avisar(isActive ? t('inventory.reactivated') : t('inventory.deactivated'));
+      avisar(
+        isActive ? t('inventory.reactivated') : t('inventory.deactivated'),
+        isActive
+          ? undefined
+          : { accion: { etiqueta: t('common.undo'), alPulsar: () => void setActive(item, true) } },
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : t('inventory.statusUpdateError'));
     }

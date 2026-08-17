@@ -2,7 +2,7 @@ import { createContext, type ReactElement, type ReactNode, useCallback, useState
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/atoms/Icon';
 import { cn } from '@/lib/utils';
-import type { Toast, ToastContextValue, ToastTono } from './Toast.types';
+import type { Toast, ToastAccion, ToastContextValue, ToastTono } from './Toast.types';
 
 export const ToastContext = createContext<ToastContextValue | null>(null);
 
@@ -30,10 +30,14 @@ export function ToastProvider({ children }: { children: ReactNode }): ReactEleme
   }, []);
 
   const avisar = useCallback(
-    (mensaje: string, tono: ToastTono = 'exito') => {
+    (mensaje: string, opciones?: { tono?: ToastTono; accion?: ToastAccion }) => {
+      const tono = opciones?.tono ?? 'exito';
       const id = Date.now() + Math.random();
-      setAvisos((actuales) => [...actuales, { id, mensaje, tono }].slice(-MAXIMO));
-      if (tono === 'exito') {
+      setAvisos((actuales) =>
+        [...actuales, { id, mensaje, tono, accion: opciones?.accion }].slice(-MAXIMO),
+      );
+      // Ni los errores ni los «Deshacer» se van solos.
+      if (tono === 'exito' && !opciones?.accion) {
         window.setTimeout(() => descartar(id), DURACION_MS);
       }
     },
@@ -69,6 +73,18 @@ export function ToastProvider({ children }: { children: ReactNode }): ReactEleme
               )}
             />
             <span className="flex-1 font-medium">{aviso.mensaje}</span>
+            {aviso.accion ? (
+              <button
+                type="button"
+                onClick={() => {
+                  aviso.accion?.alPulsar();
+                  descartar(aviso.id);
+                }}
+                className="min-h-11 shrink-0 rounded-md px-2 font-bold text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {aviso.accion.etiqueta}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => descartar(aviso.id)}

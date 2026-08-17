@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import logoMarkCream from '@/assets/logo-mark-cream.png';
 import { Avatar } from '@/components/atoms/Avatar';
 import { Button } from '@/components/atoms/Button';
 import type { IconName } from '@/components/atoms/Icon';
 import { Icon } from '@/components/atoms/Icon';
 import { NavItem } from '@/components/molecules/NavItem';
+import { useToast } from '@/components/molecules/Toast';
 import { useSession } from '../lib/AuthProvider';
 import { LanguageSwitcher } from './molecules/LanguageSwitcher';
 import { useOrg } from './OrgGate';
@@ -16,6 +17,8 @@ export default function AppShell() {
   const { logout } = useSession();
   const { t } = useTranslation();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { avisar } = useToast();
   const mainRef = useRef<HTMLElement>(null);
 
   // UX-009: on route change move focus into the content region and reset the
@@ -82,7 +85,18 @@ export default function AppShell() {
           <select
             aria-label={t('common.organization')}
             value={orgId}
-            onChange={(event) => setOrgId(event.target.value)}
+            onChange={(event) => {
+              const elegida = me.memberships.find(
+                (item) => item.organization.id === event.target.value,
+              );
+              setOrgId(event.target.value);
+              // Sin volver al panel te quedabas en, por ejemplo, /app/inventario
+              // mirando datos de la organización anterior.
+              navigate('/app');
+              if (elegida) {
+                avisar(t('session.orgSwitched', { name: elegida.organization.nombre }));
+              }
+            }}
             className="min-h-11 w-auto max-w-[12rem] cursor-pointer rounded-md border-none bg-primary-panel px-3 py-2 text-sm font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary min-[900px]:w-full min-[900px]:max-w-none"
           >
             {me.memberships.map((item) => (

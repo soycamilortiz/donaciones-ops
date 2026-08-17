@@ -15,7 +15,8 @@
     "organization": "Organización",
     "language": "Idioma",
     "loadError": "Error al cargar",
-    "saved": "Cambios guardados"
+    "saved": "Cambios guardados",
+    "undo": "Deshacer"
   },
   "nav": {
     "dashboard": "Resumen",
@@ -428,7 +429,8 @@
     "loading": "Cargando sesión…",
     "noActiveOrg": "No hay organización activa.",
     "profileError": "No se pudo cargar el perfil",
-    "noActiveOrgAction": "Elegir organización"
+    "noActiveOrgAction": "Elegir organización",
+    "orgSwitched": "Estás en {{name}}"
   },
   "dashboard": {
     "roleLine": "Tipo {{tipo}} · tu rol es {{rol}}",

@@ -15,7 +15,8 @@
     "organization": "Organization",
     "language": "Language",
     "loadError": "Could not load",
-    "saved": "Changes saved"
+    "saved": "Changes saved",
+    "undo": "Undo"
   },
   "nav": {
     "dashboard": "Overview",
@@ -428,7 +429,8 @@
     "loading": "Loading session…",
     "noActiveOrg": "No active organisation.",
     "profileError": "Could not load the profile",
-    "noActiveOrgAction": "Choose an organisation"
+    "noActiveOrgAction": "Choose an organisation",
+    "orgSwitched": "You are now in {{name}}"
   },
   "dashboard": {
     "roleLine": "Type {{tipo}} · your role is {{rol}}",
