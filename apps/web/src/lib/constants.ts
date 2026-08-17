@@ -8,6 +8,7 @@ export const ROUTES = {
   revisionDonaciones: '/app/donaciones/revision',
   signIn: '/sign-in',
   signUp: '/sign-up',
+  verificarCorreo: '/verificar-correo',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

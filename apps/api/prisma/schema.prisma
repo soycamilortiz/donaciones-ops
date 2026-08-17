@@ -16,19 +16,38 @@ enum OrganizationTipo {
 }
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  usuario      String   @unique
-  correo       String   @unique
-  nombre       String
-  passwordHash String   @map("password_hash")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                  String    @id @default(uuid()) @db.Uuid
+  usuario             String    @unique
+  correo              String    @unique
+  nombre              String
+  passwordHash        String    @map("password_hash")
+  isActive            Boolean   @default(true) @map("is_active")
+  correoVerificadoAt  DateTime? @map("correo_verificado_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
-  memberships     Membership[]
-  imagenesSubidas DonacionImagen[]
+  memberships          Membership[]
+  imagenesSubidas      DonacionImagen[]
+  emailVerifications   EmailVerification[]
 
   @@map("users")
+}
+
+model EmailVerification {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @map("token_hash")
+  codigoHash String    @map("codigo_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  lastSentAt DateTime  @default(now()) @map("last_sent_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verifications")
 }
 
 model CaptchaChallenge {

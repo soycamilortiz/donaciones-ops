@@ -29,6 +29,7 @@ servicios con dirección pública.
 | `R2_*` | ✅ | ✅ | — | — |
 | `OPEN_FOOD_FACTS_*` | ✅ | — | — | — |
 | `VISION_*` | ✅ | — | — | — |
+| `EMAIL_VERIFICATION` / `RESEND_API_KEY` / `MAIL_FROM` / `PUBLIC_WEB_URL` | ✅ | — | — | — |
 | `JOBS_USER` / `JOBS_PASSWORD` | — | — | ✅ | — |
 | `OCR_*` | — | ✅ | — | — |
 | `RBAC_SYNC_ON_BOOT` / `SWAGGER_ENABLED` | ✅ | — | — | — |

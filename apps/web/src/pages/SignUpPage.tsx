@@ -1,12 +1,13 @@
 import { type FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
-import { useSession } from '../lib/AuthProvider';
-import { type AuthSession, apiRequest } from '../lib/api';
+import { apiRequest, type RegisterPendingVerification } from '../lib/api';
+import { ROUTES } from '../lib/constants';
 
 export default function SignUpPage() {
-  const { setSession } = useSession();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const { refreshKey, onSubmitFailed } = useCaptchaRefresh();
 
@@ -17,25 +18,25 @@ export default function SignUpPage() {
     const password = String(data.get('password') ?? '');
     const confirm = String(data.get('confirm') ?? '');
     if (password !== confirm) {
-      setError('Las contraseñas no coinciden');
+      setError(t('auth.passwordsMismatch'));
       return;
     }
 
+    const correo = String(data.get('correo') ?? '').trim();
     try {
-      const session = await apiRequest<AuthSession>('/api/v1/auth/register', null, {
+      await apiRequest<RegisterPendingVerification>('/api/v1/auth/register', null, {
         method: 'POST',
         body: JSON.stringify({
           nombre: String(data.get('nombre') ?? '').trim(),
           usuario: String(data.get('usuario') ?? '').trim(),
-          correo: String(data.get('correo') ?? '').trim(),
+          correo,
           password,
           ...readCaptcha(data),
         }),
       });
-      setSession(session.accessToken);
-      navigate('/empezar');
+      navigate(`${ROUTES.verificarCorreo}?correo=${encodeURIComponent(correo)}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo registrar');
+      setError(err instanceof Error ? err.message : t('auth.signUpError'));
       onSubmitFailed(event);
     }
   }
@@ -46,29 +47,29 @@ export default function SignUpPage() {
         SOS Chocó
       </Link>
       <form className="form auth-form" onSubmit={(event) => void onSubmit(event)}>
-        <h1>Crear cuenta</h1>
+        <h1>{t('auth.createAccount')}</h1>
         <label className="field">
-          Nombre
+          {t('auth.name')}
           <input name="nombre" required minLength={2} autoComplete="name" />
         </label>
         <label className="field">
-          Usuario
+          {t('auth.username')}
           <input
             name="usuario"
             required
             minLength={3}
             maxLength={32}
             pattern="[a-zA-Z0-9._]+"
-            title="Letras, números, punto y guion bajo"
+            title={t('auth.usernameHint')}
             autoComplete="username"
           />
         </label>
         <label className="field">
-          Correo
+          {t('auth.email')}
           <input name="correo" type="email" required autoComplete="email" />
         </label>
         <label className="field">
-          Contraseña
+          {t('auth.password')}
           <input
             name="password"
             type="password"
@@ -78,7 +79,7 @@ export default function SignUpPage() {
           />
         </label>
         <label className="field">
-          Confirmar contraseña
+          {t('auth.confirmPassword')}
           <input
             name="confirm"
             type="password"
@@ -87,7 +88,7 @@ export default function SignUpPage() {
             autoComplete="new-password"
           />
         </label>
-        <p className="muted">Mínimo 8 caracteres, con letras y números.</p>
+        <p className="muted">{t('auth.passwordHint')}</p>
         <CaptchaFields refreshKey={refreshKey} />
         {error ? (
           <p role="alert" className="error">
@@ -95,10 +96,10 @@ export default function SignUpPage() {
           </p>
         ) : null}
         <button className="button" type="submit">
-          Registrarme
+          {t('auth.submitSignUp')}
         </button>
         <p className="muted">
-          ¿Ya tenés cuenta? <Link to="/sign-in">Entrar</Link>
+          {t('auth.hasAccount')} <Link to={ROUTES.signIn}>{t('auth.signIn')}</Link>
         </p>
       </form>
     </div>

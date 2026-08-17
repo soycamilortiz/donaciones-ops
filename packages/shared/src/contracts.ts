@@ -20,6 +20,13 @@ export type AuthSession = {
   user: AuthUser;
 };
 
+export type RegisterPendingVerification = {
+  pendingVerification: true;
+  correo: string;
+};
+
+export type RegisterResult = AuthSession | RegisterPendingVerification;
+
 export type Captcha = {
   captchaId: string;
   svg: string;

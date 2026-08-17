@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import type { AuthSession, AuthUser, Captcha } from '@soschoco/shared';
-import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type { AuthSession, AuthUser, Captcha, RegisterPendingVerification } from '@soschoco/shared';
+import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class CaptchaResponseDto implements Captcha {
   @ApiProperty()
@@ -90,4 +90,38 @@ export class AuthTokenDto implements AuthSession {
 
   @ApiProperty({ type: AuthUserDto })
   user: AuthUserDto;
+}
+
+export class RegisterPendingDto implements RegisterPendingVerification {
+  @ApiProperty({ example: true })
+  pendingVerification: true;
+
+  @ApiProperty({ example: 'ana@org.org' })
+  correo: string;
+}
+
+export class VerifyEmailDto {
+  @ApiPropertyOptional({ description: 'Token del enlace del correo' })
+  @IsOptional()
+  @IsString()
+  @MinLength(16)
+  token?: string;
+
+  @ApiPropertyOptional({ example: 'ana@org.org' })
+  @IsOptional()
+  @IsEmail()
+  correo?: string;
+
+  @ApiPropertyOptional({ example: '482193', description: 'Código de 6 dígitos' })
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  @MaxLength(6)
+  codigo?: string;
+}
+
+export class ResendVerificationDto {
+  @ApiProperty({ example: 'ana@org.org' })
+  @IsEmail()
+  correo: string;
 }

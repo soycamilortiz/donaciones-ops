@@ -11,6 +11,7 @@ export type {
   AuthSession,
   AuthUser,
   Captcha,
+  RegisterPendingVerification,
   InventoryItem,
   Me,
   Member,

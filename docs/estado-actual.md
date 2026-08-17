@@ -82,12 +82,16 @@ No hay proveedor externo. El API emite un JWT y el front lo guarda en `localStor
 
 | Pieza | Cómo está |
 | --- | --- |
-| Registro | `POST /api/v1/auth/register` — nombre, usuario (3–32, `[a-zA-Z0-9._]+`), correo, contraseña, captcha |
-| Login | `POST /api/v1/auth/login` — usuario **o** correo, contraseña y captcha |
+| Registro | `POST /api/v1/auth/register` — nombre, usuario, correo, contraseña, captcha. **No** emite JWT: queda pendiente de verificar el correo |
+| Verificar correo | `POST /api/v1/auth/verificar-correo` — token del enlace **o** correo + código de 6 dígitos. Emite JWT |
+| Reenviar código | `POST /api/v1/auth/verificar-correo/reenviar` — cooldown 60 s. No revela si el correo existe |
+| Login | `POST /api/v1/auth/login` — usuario **o** correo, contraseña y captcha. 403 si el correo no está verificado |
 | Captcha | `GET /api/v1/auth/captcha` — SVG, 5 minutos, un solo uso. La respuesta se guarda como SHA-256 |
 | Contraseña | bcrypt, 12 rounds. Nunca se persiste ni se devuelve en texto plano |
 | Sesión | `Authorization: Bearer <jwt>`. Default 8h (`JWT_EXPIRES_IN`) |
 | Rutas públicas | health, metadatos, Swagger, `/api/v1/auth/*` |
+
+`EMAIL_VERIFICATION=false` (default local): el API **no** llama a Resend e imprime `codigo=` y `url=` en los logs del contenedor `api`. `EMAIL_VERIFICATION=true` envía un HTML por Resend (`RESEND_API_KEY`, `MAIL_FROM`, `PUBLIC_WEB_URL`). Cuentas ya existentes se marcan verificadas en la migración.
 
 Flujo de producto: registrarse → elegir crear organización **o** esperar invitación (no es obligatorio tener org) → si crea org, los acopios (recibir / enviar donaciones) se cargan en `/app/acopios`.
 
@@ -95,7 +99,7 @@ Invitar personas: quien se suma **ya tiene que estar registrada** con ese correo
 
 ## Dominio (Prisma)
 
-`User` (usuario + correo únicos, `password_hash`), `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto`, `DonacionImagen`.
+`User` (usuario + correo únicos, `password_hash`, `correoVerificadoAt`), `EmailVerification`, `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto`, `DonacionImagen`.
 
 Roles semilla: administrador de acopio, auxiliar administrativo, líder de zona, finanzas, transportador, voluntario. Quien crea la org queda como administrador de acopio. El alta por defecto es voluntario. La matriz se edita en `/app/roles` (permiso `roles:write`). Los permisos nuevos de código aparecen como filas; no se pisan los tildes ya guardados.
 
@@ -109,7 +113,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 
 | Recurso | Ruta |
 | --- | --- |
-| Auth | `/api/v1/auth/captcha`, `/register`, `/login` |
+| Auth | `/api/v1/auth/captcha`, `/register`, `/login`, `/verificar-correo`, `/verificar-correo/reenviar` |
 | Yo | `/api/v1/me` |
 | Organizaciones | `/api/v1/organizations` |
 | Miembros | `/api/v1/organizations/:orgId/members` |
@@ -149,6 +153,10 @@ Variables del API:
 | `VISION_BASE_URL` | Default `https://api.openai.com/v1` |
 | `VISION_MODEL` | Default `gpt-4o-mini` |
 | `VISION_TIMEOUT_MS` | Default `45000` |
+| `EMAIL_VERIFICATION` | Default `false`. `true` envía con Resend; `false` deja código y link en logs del API |
+| `RESEND_API_KEY` | Clave de Resend. Solo hace falta con `EMAIL_VERIFICATION=true` |
+| `MAIL_FROM` | Default `SOS Chocó <beth.t@example.com>` (sandbox de Resend) |
+| `PUBLIC_WEB_URL` | Origen del front para el link. Default `http://localhost` |
 | `RBAC_SYNC_ON_BOOT` | Default `true`. Ponelo en `false` en serverless |
 | `SWAGGER_ENABLED` | Default `true`. Ponelo en `false` en serverless |
 | `LOGS_TOKEN` | Opcional. Si está, `/logs` exige `?token=…` |
@@ -222,7 +230,7 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 
 ## Shell (`apps/web`)
 
-Landing, login/registro con captcha, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio.
+Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio.
 
 Alta/edición de acopios: departamento y municipio (DIVIPOLA Colombia), autocomplete Photon, geolocalización del navegador, pin Leaflet arrastrable y mapa para `lat`/`lng`. Componente `AddressLocationPicker`.
 

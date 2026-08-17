@@ -101,6 +101,19 @@ export const envSchema = z.object({
     .transform((v) => v ?? 'https://api.openai.com/v1'),
   VISION_MODEL: z.string().min(1).default('gpt-4o-mini'),
   VISION_TIMEOUT_MS: z.coerce.number().int().positive().max(120000).default(45000),
+
+  /**
+   * `true`: envía el mail con Resend.
+   * `false`: no llama a Resend; imprime código y link en los logs del API
+   * (Docker local). El registro igual exige verificar antes del JWT.
+   */
+  EMAIL_VERIFICATION: bandera(false),
+  RESEND_API_KEY: z.preprocess(emptyToUndefined, z.string().min(8).optional()),
+  MAIL_FROM: z.string().min(3).default('SOS Chocó <beth.t@example.com>'),
+  /** Origen del front para armar el link del mail (`http://localhost` en Docker). */
+  PUBLIC_WEB_URL: z.preprocess(emptyToUndefined, z.string().url().optional()).transform(
+    (v) => v ?? 'http://localhost',
+  ),
 });
 
 export type Env = z.infer<typeof envSchema>;

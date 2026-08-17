@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
 import { useSession } from '../lib/AuthProvider';
-import { type AuthSession, apiRequest } from '../lib/api';
+import { type AuthSession, ApiError, apiRequest } from '../lib/api';
+import { ROUTES } from '../lib/constants';
 
 export default function SignInPage() {
   const { setSession } = useSession();
@@ -28,6 +29,12 @@ export default function SignInPage() {
       setSession(session.accessToken);
       navigate('/app');
     } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        const identifier = String(data.get('usuario') ?? '').trim();
+        const q = identifier.includes('@') ? `?correo=${encodeURIComponent(identifier)}` : '';
+        navigate(`${ROUTES.verificarCorreo}${q}`);
+        return;
+      }
       setError(err instanceof Error ? err.message : 'No se pudo entrar');
       onSubmitFailed(event);
     }

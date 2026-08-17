@@ -1,11 +1,17 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { Env } from '../config/env.schema';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthUser } from './auth.types';
 import { CaptchaService } from './captcha.service';
-import type { LoginDto, RegisterDto } from './dto/auth.dto';
+import type { LoginDto, RegisterDto, ResendVerificationDto, VerifyEmailDto } from './dto/auth.dto';
+import { EmailVerificationService } from './email-verification.service';
 import { PasswordService } from './password.service';
 
 @Injectable()
@@ -16,6 +22,7 @@ export class AuthService {
     private readonly captcha: CaptchaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService<Env, true>,
+    private readonly emailVerification: EmailVerificationService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -39,7 +46,31 @@ export class AuthService {
       },
     });
 
-    return this.issueToken(this.toAuthUser(user));
+    await this.emailVerification.issueAndDeliver(user);
+    return { pendingVerification: true as const, correo: user.correo };
+  }
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    const token = dto.token?.trim();
+    const codigo = dto.codigo?.trim();
+    const correo = dto.correo?.trim().toLowerCase();
+
+    if (token) {
+      const user = await this.emailVerification.consumeToken(token);
+      return this.issueToken(this.toAuthUser(user));
+    }
+
+    if (codigo && correo) {
+      const user = await this.emailVerification.consumeCodigo(correo, codigo);
+      return this.issueToken(this.toAuthUser(user));
+    }
+
+    throw new UnprocessableEntityException('Falta el código o el enlace de verificación');
+  }
+
+  async resendVerification(dto: ResendVerificationDto) {
+    await this.emailVerification.resend(dto.correo);
+    return { ok: true as const };
   }
 
   async login(dto: LoginDto) {
@@ -58,12 +89,13 @@ export class AuthService {
     if (!user.isActive) {
       throw new UnauthorizedException('La cuenta está dada de baja');
     }
+    this.emailVerification.assertVerified(user.correoVerificadoAt);
     return this.issueToken(this.toAuthUser(user));
   }
 
   async findAuthUser(id: string): Promise<AuthUser | null> {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user?.isActive) {
+    if (!user?.isActive || !user.correoVerificadoAt) {
       return null;
     }
     return this.toAuthUser(user);

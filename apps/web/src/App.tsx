@@ -17,6 +17,7 @@ import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
 import StartChoice from './pages/StartChoice';
 import UsersPage from './pages/UsersPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import WaitingRoom from './pages/WaitingRoom';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
       <Route element={<GuestOnly />}>
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/verificar-correo" element={<VerifyEmailPage />} />
       </Route>
       <Route element={<RequireAuth />}>
         <Route element={<OrgGate />}>
