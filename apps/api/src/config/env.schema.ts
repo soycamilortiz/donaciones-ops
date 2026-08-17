@@ -108,9 +108,9 @@ export const envSchema = z.object({
   RESEND_API_KEY: z.preprocess(emptyToUndefined, z.string().min(8).optional()),
   MAIL_FROM: z.string().min(3).default('SOS Chocó <beth.t@example.com>'),
   /** Origen del front para armar el link del mail (`http://localhost` en Docker). */
-  PUBLIC_WEB_URL: z.preprocess(emptyToUndefined, z.string().url().optional()).transform(
-    (v) => v ?? 'http://localhost',
-  ),
+  PUBLIC_WEB_URL: z
+    .preprocess(emptyToUndefined, z.string().url().optional())
+    .transform((v) => v ?? 'http://localhost'),
 
   /** Google Sign-In (OAuth). Solo hace falta el client ID para validar el ID token. */
   GOOGLE_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().min(8).optional()),

@@ -1,10 +1,7 @@
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import {
-  clearGoogleProfileToken,
-  readGoogleProfileToken,
-} from '@/components/GoogleSignInButton';
+import { clearGoogleProfileToken, readGoogleProfileToken } from '@/components/GoogleSignInButton';
 import { useSession } from '@/lib/AuthProvider';
 import { type AuthSession, apiRequest } from '@/lib/api';
 import { ROUTES } from '@/lib/constants';

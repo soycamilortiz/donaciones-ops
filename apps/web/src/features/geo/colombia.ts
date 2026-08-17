@@ -10,23 +10,15 @@ const DEPARTAMENTOS = raw as DepartamentoColombia[];
 
 /** Fold accents for fuzzy matching Photon → DIVIPOLA names. */
 export function foldEs(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase()
-    .trim();
+  return value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
 }
 
 export function listDepartamentos(): string[] {
-  return DEPARTAMENTOS.map((row) => row.departamento).sort((a, b) =>
-    a.localeCompare(b, 'es'),
-  );
+  return DEPARTAMENTOS.map((row) => row.departamento).sort((a, b) => a.localeCompare(b, 'es'));
 }
 
 export function listMunicipios(departamento: string): string[] {
-  const hit = DEPARTAMENTOS.find(
-    (row) => foldEs(row.departamento) === foldEs(departamento),
-  );
+  const hit = DEPARTAMENTOS.find((row) => foldEs(row.departamento) === foldEs(departamento));
   return hit ? [...hit.ciudades].sort((a, b) => a.localeCompare(b, 'es')) : [];
 }
 
@@ -36,16 +28,12 @@ export function matchDepartamento(hint: string | null | undefined): string {
   const hit = DEPARTAMENTOS.find((row) => foldEs(row.departamento) === key);
   if (hit) return hit.departamento;
   const partial = DEPARTAMENTOS.find(
-    (row) =>
-      foldEs(row.departamento).includes(key) || key.includes(foldEs(row.departamento)),
+    (row) => foldEs(row.departamento).includes(key) || key.includes(foldEs(row.departamento)),
   );
   return partial?.departamento ?? '';
 }
 
-export function matchMunicipio(
-  departamento: string,
-  hint: string | null | undefined,
-): string {
+export function matchMunicipio(departamento: string, hint: string | null | undefined): string {
   const key = foldEs(hint ?? '');
   if (!key) return '';
   const municipios = listMunicipios(departamento);

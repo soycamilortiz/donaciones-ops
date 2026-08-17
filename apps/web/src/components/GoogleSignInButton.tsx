@@ -1,8 +1,8 @@
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import { type CredentialResponse, GoogleLogin } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@/lib/AuthProvider';
-import { type AuthSession, type GoogleAuthResult, apiRequest } from '@/lib/api';
+import { type AuthSession, apiRequest, type GoogleAuthResult } from '@/lib/api';
 import { ROUTES } from '@/lib/constants';
 
 const PROFILE_TOKEN_KEY = 'soschoco.googleProfileToken';

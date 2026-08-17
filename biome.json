@@ -18,7 +18,9 @@
       "!apps/web/public",
       "!apps/api/api",
       "!pnpm-lock.yaml",
-      "!apps/web/src/styles/design-system.css"
+      "!apps/web/src/styles/design-system.css",
+      "!**/*.min.json",
+      "!html-base"
     ]
   },
   "formatter": {

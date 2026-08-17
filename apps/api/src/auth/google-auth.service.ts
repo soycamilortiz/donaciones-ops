@@ -1,6 +1,6 @@
 import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OAuth2Client } from 'google-auth-library';
+import { OAuth2Client, type TokenPayload } from 'google-auth-library';
 import type { Env } from '../config/env.schema';
 
 export type GoogleProfile = {
@@ -21,7 +21,7 @@ export class GoogleAuthService {
     }
 
     const client = new OAuth2Client(clientId);
-    let payload;
+    let payload: TokenPayload | undefined;
     try {
       const ticket = await client.verifyIdToken({
         idToken: credential,
@@ -39,7 +39,12 @@ export class GoogleAuthService {
     return {
       googleId: payload.sub,
       correo: payload.email.trim().toLowerCase(),
-      nombre: (payload.name || payload.given_name || payload.email.split('@')[0] || 'Usuario').trim(),
+      nombre: (
+        payload.name ||
+        payload.given_name ||
+        payload.email.split('@')[0] ||
+        'Usuario'
+      ).trim(),
       correoVerificado: payload.email_verified === true,
     };
   }
