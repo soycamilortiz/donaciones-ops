@@ -166,6 +166,57 @@ export const RecepcionItemEstado = {
 
 export type RecepcionItemEstado = (typeof RecepcionItemEstado)[keyof typeof RecepcionItemEstado];
 
+export const UbicacionTipo = {
+  Zona: 'ZONA',
+  Pasillo: 'PASILLO',
+  Rack: 'RACK',
+  Nivel: 'NIVEL',
+  Posicion: 'POSICION',
+  Otro: 'OTRO',
+} as const;
+
+export type UbicacionTipo = (typeof UbicacionTipo)[keyof typeof UbicacionTipo];
+
+export const UbicacionFuncion = {
+  Recepcion: 'RECEPCION',
+  Cuarentena: 'CUARENTENA',
+  Almacenamiento: 'ALMACENAMIENTO',
+  Picking: 'PICKING',
+  Kitting: 'KITTING',
+  Despacho: 'DESPACHO',
+  Devolucion: 'DEVOLUCION',
+  Rechazado: 'RECHAZADO',
+} as const;
+
+export type UbicacionFuncion = (typeof UbicacionFuncion)[keyof typeof UbicacionFuncion];
+
+export const UbicacionEstado = {
+  Activa: 'ACTIVA',
+  Inactiva: 'INACTIVA',
+  Bloqueada: 'BLOQUEADA',
+  Mantenimiento: 'MANTENIMIENTO',
+} as const;
+
+export type UbicacionEstado = (typeof UbicacionEstado)[keyof typeof UbicacionEstado];
+
+export const InventoryMovimientoTipo = {
+  Recepcion: 'RECEPCION',
+  Putaway: 'PUTAWAY',
+  Reubicacion: 'REUBICACION',
+  Ajuste: 'AJUSTE',
+} as const;
+
+export type InventoryMovimientoTipo =
+  (typeof InventoryMovimientoTipo)[keyof typeof InventoryMovimientoTipo];
+
+export const PutawayEstado = {
+  Pendiente: 'PENDIENTE',
+  Completado: 'COMPLETADO',
+  Anulado: 'ANULADO',
+} as const;
+
+export type PutawayEstado = (typeof PutawayEstado)[keyof typeof PutawayEstado];
+
 export const RECEPCION_TIPOS: ReadonlyArray<{ value: RecepcionTipo; label: string }> = [
   { value: RecepcionTipo.DonacionIndividual, label: 'Donación individual' },
   { value: RecepcionTipo.DonacionMasiva, label: 'Donación masiva' },
@@ -201,4 +252,31 @@ export const UNIDAD_LOGISTICA_TIPOS: ReadonlyArray<{
   { value: UnidadLogisticaTipo.Bolsa, label: 'Bolsa' },
   { value: UnidadLogisticaTipo.Paquete, label: 'Paquete' },
   { value: UnidadLogisticaTipo.Otro, label: 'Otro' },
+];
+
+export const UBICACION_TIPOS: ReadonlyArray<{ value: UbicacionTipo; label: string }> = [
+  { value: UbicacionTipo.Zona, label: 'Zona' },
+  { value: UbicacionTipo.Pasillo, label: 'Pasillo' },
+  { value: UbicacionTipo.Rack, label: 'Rack' },
+  { value: UbicacionTipo.Nivel, label: 'Nivel' },
+  { value: UbicacionTipo.Posicion, label: 'Posición' },
+  { value: UbicacionTipo.Otro, label: 'Otro' },
+];
+
+export const UBICACION_FUNCIONES: ReadonlyArray<{ value: UbicacionFuncion; label: string }> = [
+  { value: UbicacionFuncion.Recepcion, label: 'Recepción / muelle' },
+  { value: UbicacionFuncion.Cuarentena, label: 'Cuarentena' },
+  { value: UbicacionFuncion.Almacenamiento, label: 'Almacenamiento' },
+  { value: UbicacionFuncion.Picking, label: 'Picking' },
+  { value: UbicacionFuncion.Kitting, label: 'Kitting' },
+  { value: UbicacionFuncion.Despacho, label: 'Despacho' },
+  { value: UbicacionFuncion.Devolucion, label: 'Devolución' },
+  { value: UbicacionFuncion.Rechazado, label: 'Rechazado' },
+];
+
+export const UBICACION_ESTADOS: ReadonlyArray<{ value: UbicacionEstado; label: string }> = [
+  { value: UbicacionEstado.Activa, label: 'Activa' },
+  { value: UbicacionEstado.Inactiva, label: 'Inactiva' },
+  { value: UbicacionEstado.Bloqueada, label: 'Bloqueada' },
+  { value: UbicacionEstado.Mantenimiento, label: 'Mantenimiento' },
 ];

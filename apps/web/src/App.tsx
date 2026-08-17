@@ -13,12 +13,14 @@ import Landing from './pages/Landing';
 import NuevaDonacionPage from './pages/NuevaDonacionPage';
 import NuevaRecepcionPage from './pages/NuevaRecepcionPage';
 import Onboarding from './pages/Onboarding';
+import PutawayPage from './pages/PutawayPage';
 import RecepcionDetailPage from './pages/RecepcionDetailPage';
 import RecepcionesPage from './pages/RecepcionesPage';
 import RolesPage from './pages/RolesPage';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
 import StartChoice from './pages/StartChoice';
+import UbicacionesPage from './pages/UbicacionesPage';
 import UsersPage from './pages/UsersPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import WaitingRoom from './pages/WaitingRoom';
@@ -45,7 +47,13 @@ export default function App() {
             <Route path="/app/usuarios" element={<UsersPage />} />
             <Route path="/app/roles" element={<RolesPage />} />
             <Route path="/app/acopios" element={<AcopiosPage />} />
+            <Route path="/app/ubicaciones" element={<UbicacionesPage />} />
             <Route path="/app/inventario" element={<InventoryPage />} />
+            <Route
+              path="/app/inventario/ubicaciones"
+              element={<Navigate to={ROUTES.ubicaciones} replace />}
+            />
+            <Route path="/app/inventario/ubicar" element={<PutawayPage />} />
             <Route path="/app/recepciones" element={<RecepcionesPage />} />
             <Route path="/app/recepciones/nueva" element={<NuevaRecepcionPage />} />
             <Route path="/app/recepciones/:id/foto" element={<NuevaDonacionPage />} />

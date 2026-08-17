@@ -31,6 +31,9 @@ model User {
   imagenesSubidas      DonacionImagen[]
   emailVerifications   EmailVerification[]
   recepciones          Recepcion[]
+  movimientos          InventoryMovimiento[]
+  putawaysCreados      Putaway[]             @relation("PutawayCreado")
+  putawaysConfirmados  Putaway[]             @relation("PutawayConfirmado")
 
   @@map("users")
 }
@@ -81,6 +84,8 @@ model Organization {
   recepciones Recepcion[]
   lotes       Lote[]
   counters    OrgCounter[]
+  movimientos InventoryMovimiento[]
+  putaways    Putaway[]
 
   @@map("organizations")
 }
@@ -111,6 +116,9 @@ model Acopio {
   inventoryItems InventoryItem[]
   imagenes       DonacionImagen[]
   recepciones    Recepcion[]
+  ubicaciones    Ubicacion[]
+  movimientos    InventoryMovimiento[]
+  putaways       Putaway[]
 
   @@index([organizationId])
   @@map("acopios")
@@ -255,6 +263,9 @@ model InventoryItem {
   producto       Producto?       @relation(fields: [productoId], references: [id], onDelete: SetNull)
   lote           Lote?           @relation(fields: [loteId], references: [id], onDelete: SetNull)
   recepcionItems RecepcionItem[]
+  balances       InventoryBalance[]
+  movimientos    InventoryMovimiento[]
+  putaways       Putaway[]
 
   @@index([acopioId])
   @@index([acopioId, categoria])
@@ -524,4 +535,186 @@ model RecepcionItem {
   @@index([productoId])
   @@index([unidadLogisticaId])
   @@map("recepcion_items")
+}
+
+/// Nivel físico en el árbol (zona → pasillo → rack → …). No todas las bodegas
+/// usan todos los niveles: una chica puede parar en ZONA.
+enum UbicacionTipo {
+  ZONA
+  PASILLO
+  RACK
+  NIVEL
+  POSICION
+  OTRO
+}
+
+/// Para qué sirve el nodo. Un inventario aprobado va a ALMACENAMIENTO, no a
+/// RECHAZADO ni a CUARENTENA.
+enum UbicacionFuncion {
+  RECEPCION
+  CUARENTENA
+  ALMACENAMIENTO
+  PICKING
+  KITTING
+  DESPACHO
+  DEVOLUCION
+  RECHAZADO
+}
+
+enum UbicacionEstado {
+  ACTIVA
+  INACTIVA
+  BLOQUEADA
+  MANTENIMIENTO
+}
+
+enum InventoryMovimientoTipo {
+  RECEPCION
+  PUTAWAY
+  REUBICACION
+  AJUSTE
+}
+
+enum PutawayEstado {
+  PENDIENTE
+  COMPLETADO
+  ANULADO
+}
+
+/// Lugar físico (o zona) dentro de un acopio. Jerárquico vía parent_id.
+model Ubicacion {
+  id                   String           @id @default(uuid()) @db.Uuid
+  acopioId             String           @map("acopio_id") @db.Uuid
+  parentId             String?          @map("parent_id") @db.Uuid
+  codigo               String
+  nombre               String
+  tipo                 UbicacionTipo
+  funcion              UbicacionFuncion
+  estado               UbicacionEstado  @default(ACTIVA)
+  capacidadPesoKg      Decimal?         @map("capacidad_peso_kg") @db.Decimal(14, 3)
+  capacidadVolumen     Decimal?         @map("capacidad_volumen") @db.Decimal(14, 3)
+  capacidadUnidades    Decimal?         @map("capacidad_unidades") @db.Decimal(14, 3)
+  zonaTemperatura      String?          @map("zona_temperatura")
+  permiteAlimentos     Boolean          @default(true) @map("permite_alimentos")
+  permiteMedicamentos  Boolean          @default(true) @map("permite_medicamentos")
+  permiteRopa          Boolean          @default(true) @map("permite_ropa")
+  /// Muelle / cuarentena de sistema: no se dan de baja a mano.
+  esSistema            Boolean          @default(false) @map("es_sistema")
+  isActive             Boolean          @default(true) @map("is_active")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+
+  acopio   Acopio      @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  parent   Ubicacion?  @relation("UbicacionArbol", fields: [parentId], references: [id], onDelete: SetNull)
+  children Ubicacion[] @relation("UbicacionArbol")
+
+  balances            InventoryBalance[]
+  movimientosOrigen   InventoryMovimiento[] @relation("MovimientoOrigen")
+  movimientosDestino  InventoryMovimiento[] @relation("MovimientoDestino")
+  putawayOrigen       PutawayLinea[]        @relation("PutawayOrigen")
+  putawayDestino      PutawayLinea[]        @relation("PutawayDestino")
+
+  @@unique([acopioId, codigo])
+  @@index([acopioId, estado])
+  @@index([acopioId, funcion])
+  @@index([parentId])
+  @@map("ubicaciones")
+}
+
+/// Cuánto de un ítem está hoy en una ubicación. Un inventario puede partirse.
+model InventoryBalance {
+  id              String   @id @default(uuid()) @db.Uuid
+  inventoryItemId String   @map("inventory_item_id") @db.Uuid
+  ubicacionId     String   @map("ubicacion_id") @db.Uuid
+  cantidad        Decimal  @db.Decimal(14, 3)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  ubicacion     Ubicacion     @relation(fields: [ubicacionId], references: [id], onDelete: Restrict)
+
+  @@unique([inventoryItemId, ubicacionId])
+  @@index([ubicacionId])
+  @@map("inventory_balances")
+}
+
+/// Historial: nunca se cambia un saldo sin dejar movimiento.
+model InventoryMovimiento {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  codigo             String
+  organizationId     String                   @map("organization_id") @db.Uuid
+  acopioId           String                   @map("acopio_id") @db.Uuid
+  inventoryItemId    String                   @map("inventory_item_id") @db.Uuid
+  tipo               InventoryMovimientoTipo
+  cantidad           Decimal                  @db.Decimal(14, 3)
+  origenUbicacionId  String?                  @map("origen_ubicacion_id") @db.Uuid
+  destinoUbicacionId String?                  @map("destino_ubicacion_id") @db.Uuid
+  putawayId          String?                  @map("putaway_id") @db.Uuid
+  usuarioId          String                   @map("usuario_id") @db.Uuid
+  observaciones      String?
+  isActive           Boolean                  @default(true) @map("is_active")
+  createdAt          DateTime                 @default(now()) @map("created_at")
+
+  organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio           Acopio        @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  inventoryItem    InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  origenUbicacion  Ubicacion?    @relation("MovimientoOrigen", fields: [origenUbicacionId], references: [id], onDelete: SetNull)
+  destinoUbicacion Ubicacion?    @relation("MovimientoDestino", fields: [destinoUbicacionId], references: [id], onDelete: SetNull)
+  putaway          Putaway?      @relation(fields: [putawayId], references: [id], onDelete: SetNull)
+  usuario          User          @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, codigo])
+  @@index([inventoryItemId, createdAt])
+  @@index([acopioId, createdAt])
+  @@map("inventory_movimientos")
+}
+
+/// Tarea de llevar mercancía del muelle a almacenamiento. Completarla exige
+/// confirmar el código de la ubicación destino (el sistema no ubica solo).
+model Putaway {
+  id              String         @id @default(uuid()) @db.Uuid
+  codigo          String
+  organizationId  String         @map("organization_id") @db.Uuid
+  acopioId        String         @map("acopio_id") @db.Uuid
+  inventoryItemId String         @map("inventory_item_id") @db.Uuid
+  estado          PutawayEstado  @default(PENDIENTE)
+  createdById     String         @map("created_by_id") @db.Uuid
+  confirmedById   String?        @map("confirmed_by_id") @db.Uuid
+  confirmedAt     DateTime?      @map("confirmed_at")
+  isActive        Boolean        @default(true) @map("is_active")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio        Acopio        @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  createdBy     User          @relation("PutawayCreado", fields: [createdById], references: [id], onDelete: Restrict)
+  confirmedBy   User?         @relation("PutawayConfirmado", fields: [confirmedById], references: [id], onDelete: SetNull)
+  lineas        PutawayLinea[]
+  movimientos   InventoryMovimiento[]
+
+  @@unique([organizationId, codigo])
+  @@index([acopioId, estado])
+  @@index([inventoryItemId])
+  @@map("putaways")
+}
+
+model PutawayLinea {
+  id                 String        @id @default(uuid()) @db.Uuid
+  putawayId          String        @map("putaway_id") @db.Uuid
+  origenUbicacionId  String        @map("origen_ubicacion_id") @db.Uuid
+  destinoUbicacionId String        @map("destino_ubicacion_id") @db.Uuid
+  cantidad           Decimal       @db.Decimal(14, 3)
+  estado             PutawayEstado @default(PENDIENTE)
+  confirmedAt        DateTime?     @map("confirmed_at")
+  isActive           Boolean       @default(true) @map("is_active")
+  createdAt          DateTime      @default(now()) @map("created_at")
+
+  putaway          Putaway   @relation(fields: [putawayId], references: [id], onDelete: Restrict)
+  origenUbicacion  Ubicacion @relation("PutawayOrigen", fields: [origenUbicacionId], references: [id], onDelete: Restrict)
+  destinoUbicacion Ubicacion @relation("PutawayDestino", fields: [destinoUbicacionId], references: [id], onDelete: Restrict)
+
+  @@index([putawayId])
+  @@map("putaway_lineas")
 }

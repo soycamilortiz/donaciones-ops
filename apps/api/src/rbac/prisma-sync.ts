@@ -11,16 +11,24 @@
 import type {
   AcopioFlujo as PrismaAcopioFlujo,
   OrganizationTipo as PrismaOrganizationTipo,
+  PutawayEstado as PrismaPutawayEstado,
   RecepcionEstado as PrismaRecepcionEstado,
   RecepcionPresentacion as PrismaRecepcionPresentacion,
   RecepcionTipo as PrismaRecepcionTipo,
+  UbicacionEstado as PrismaUbicacionEstado,
+  UbicacionFuncion as PrismaUbicacionFuncion,
+  UbicacionTipo as PrismaUbicacionTipo,
 } from '@prisma/client';
 import type {
   AcopioFlujo,
   OrganizationTipo,
+  PutawayEstado,
   RecepcionEstado,
   RecepcionPresentacion,
   RecepcionTipo,
+  UbicacionEstado,
+  UbicacionFuncion,
+  UbicacionTipo,
 } from '@soschoco/shared';
 
 type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
@@ -37,3 +45,11 @@ export const RECEPCION_PRESENTACION_EN_SYNC: Exact<
 > = true;
 
 export const RECEPCION_ESTADO_EN_SYNC: Exact<RecepcionEstado, PrismaRecepcionEstado> = true;
+
+export const UBICACION_TIPO_EN_SYNC: Exact<UbicacionTipo, PrismaUbicacionTipo> = true;
+
+export const UBICACION_FUNCION_EN_SYNC: Exact<UbicacionFuncion, PrismaUbicacionFuncion> = true;
+
+export const UBICACION_ESTADO_EN_SYNC: Exact<UbicacionEstado, PrismaUbicacionEstado> = true;
+
+export const PUTAWAY_ESTADO_EN_SYNC: Exact<PutawayEstado, PrismaPutawayEstado> = true;

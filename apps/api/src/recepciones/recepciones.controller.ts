@@ -95,8 +95,12 @@ export class RecepcionesController {
   @RequirePermission(PermissionSlug.DonacionesWrite)
   @ApiOperation({ summary: 'Validar y postear al inventario solo lo aprobado' })
   @ApiOkResponse({ type: RecepcionDto })
-  validar(@Param('orgId', ParseUUIDPipe) orgId: string, @Param('id', ParseUUIDPipe) id: string) {
-    return this.recepciones.validar(orgId, id);
+  validar(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() usuario: AuthUser,
+  ) {
+    return this.recepciones.validar(orgId, id, usuario.id);
   }
 
   @Post(':id/anular')

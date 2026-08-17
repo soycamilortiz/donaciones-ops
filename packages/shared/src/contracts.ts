@@ -9,10 +9,14 @@ import type { Producto } from './donaciones.js';
 import type {
   AcopioFlujo,
   OrganizationTipo,
+  PutawayEstado,
   RecepcionEstado,
   RecepcionItemEstado,
   RecepcionPresentacion,
   RecepcionTipo,
+  UbicacionEstado,
+  UbicacionFuncion,
+  UbicacionTipo,
   UnidadLogisticaEstado,
   UnidadLogisticaTipo,
 } from './enums.js';
@@ -141,6 +145,67 @@ export type InventoryItem = {
   donanteContacto?: string | null;
   observaciones?: string | null;
   isActive: boolean;
+  cantidadEnMuelle?: number;
+  cantidadUbicada?: number;
+  pendienteUbicar?: boolean;
+  balances?: InventoryBalance[];
+};
+
+export type InventoryBalance = {
+  ubicacionId: string;
+  codigo: string;
+  nombre: string;
+  cantidad: number;
+  funcion: UbicacionFuncion;
+};
+
+export type Ubicacion = {
+  id: string;
+  acopioId: string;
+  parentId?: string | null;
+  codigo: string;
+  nombre: string;
+  tipo: UbicacionTipo;
+  funcion: UbicacionFuncion;
+  estado: UbicacionEstado;
+  capacidadPesoKg?: number | null;
+  capacidadVolumen?: number | null;
+  capacidadUnidades?: number | null;
+  ocupacionUnidades: number;
+  disponibleUnidades?: number | null;
+  zonaTemperatura?: string | null;
+  permiteAlimentos: boolean;
+  permiteMedicamentos: boolean;
+  permiteRopa: boolean;
+  esSistema: boolean;
+  isActive: boolean;
+};
+
+export type UbicacionSugerida = Ubicacion & {
+  compatible: boolean;
+  motivo?: string | null;
+};
+
+export type Putaway = {
+  id: string;
+  codigo: string;
+  organizationId: string;
+  acopioId: string;
+  inventoryItemId: string;
+  estado: PutawayEstado;
+  lineas: PutawayLinea[];
+  inventoryNombre?: string;
+  loteCodigo?: string | null;
+};
+
+export type PutawayLinea = {
+  id: string;
+  origenUbicacionId: string;
+  origenCodigo?: string;
+  destinoUbicacionId: string;
+  destinoCodigo?: string;
+  cantidad: number;
+  estado: PutawayEstado;
 };
 
 export type Recepcion = {
@@ -200,6 +265,7 @@ export type RecepcionItem = {
   producto?: Producto | null;
   lote?: Lote | null;
   unidadLogistica?: Pick<UnidadLogistica, 'id' | 'codigo' | 'nroEnRecepcion' | 'tipo'> | null;
+  alertaValidacion?: 'FALTA_VENCIMIENTO' | null;
 };
 
 /** Un permiso conocido del catálogo, o cualquier slug que llegue del servidor. */

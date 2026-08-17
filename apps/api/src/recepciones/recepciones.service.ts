@@ -31,6 +31,7 @@ import type {
   GenerarUnidadesDto,
   InspeccionarItemDto,
 } from './dto/recepcion.dto';
+import { faltaVencimientoObligatorio } from './faltan-datos-stock';
 
 const UL_PREFIX: Record<UnidadLogisticaTipo, string> = {
   PALLET: 'PAL',
@@ -82,6 +83,7 @@ export type ConfirmarFotoDto = {
   presentacion?: string;
   loteCodigoOrigen?: string;
   vencimiento?: string;
+  unidad?: InventoryUnidad;
 };
 
 @Injectable()
@@ -204,7 +206,7 @@ export class RecepcionesService {
     return this.get(orgId, id);
   }
 
-  async validar(orgId: string, id: string): Promise<RecepcionDto> {
+  async validar(orgId: string, id: string, usuarioId: string): Promise<RecepcionDto> {
     const recepcion = await this.requireRecepcion(orgId, id);
     this.assertAbierta(recepcion);
     if (recepcion.items.length === 0) {
@@ -229,7 +231,7 @@ export class RecepcionesService {
         throw new BadRequestException('Hay líneas que todavía no se pueden validar');
       }
 
-      const faltanDatos = this.faltanDatosObligatorios(item.producto, item.lote);
+      const faltanDatos = faltaVencimientoObligatorio(item.producto, item.lote);
       if (faltanDatos && aprobada > 0) {
         cuarentena += aprobada;
         aprobada = 0;
@@ -250,6 +252,7 @@ export class RecepcionesService {
           loteCodigo: item.lote?.codigoOrigen ?? item.lote?.codigo ?? null,
           donanteNombre: recepcion.donanteNombre,
           donanteContacto: recepcion.donanteContacto,
+          usuarioId,
         });
         inventoryItemId = stock.id;
       }
@@ -332,6 +335,7 @@ export class RecepcionesService {
       presentacion: dto.presentacion,
       loteCodigoOrigen: dto.loteCodigoOrigen,
       vencimiento: dto.vencimiento,
+      unidad: dto.unidad,
     });
 
     await this.prisma.donacionImagen.update({
@@ -537,16 +541,6 @@ export class RecepcionesService {
     }
   }
 
-  private faltanDatosObligatorios(producto: Producto, lote: Lote | null): boolean {
-    if (producto.requiereVencimiento && !lote?.vencimiento) {
-      return true;
-    }
-    if (producto.requiereLote && !lote?.codigoOrigen) {
-      return true;
-    }
-    return false;
-  }
-
   private assertAbierta(recepcion: Pick<Recepcion, 'estado'>): void {
     if (!ABIERTA.includes(recepcion.estado)) {
       throw new BadRequestException('Esta recepción ya no admite cambios');
@@ -647,6 +641,10 @@ export class RecepcionesService {
             }
           : null,
         unidadLogistica: item.unidadLogistica,
+        alertaValidacion:
+          item.producto && faltaVencimientoObligatorio(item.producto, item.lote)
+            ? 'FALTA_VENCIMIENTO'
+            : null,
       })),
     };
   }

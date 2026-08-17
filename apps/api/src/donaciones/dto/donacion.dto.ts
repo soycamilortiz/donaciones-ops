@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { InventoryUnidad } from '@prisma/client';
 import {
   DonacionImagenEstado,
   FuenteCatalogo,
@@ -9,6 +10,7 @@ import {
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsEnum,
   IsIn,
   IsNumber,
   IsOptional,
@@ -220,6 +222,11 @@ export class ConfirmarDonacionDto {
   @IsOptional()
   @IsString()
   vencimiento?: string;
+
+  @ApiPropertyOptional({ enum: InventoryUnidad })
+  @IsOptional()
+  @IsEnum(InventoryUnidad)
+  unidad?: InventoryUnidad;
 }
 
 export class PaginaDonacionImagenDto {
@@ -323,6 +330,15 @@ export class CoincidenciaInventarioDto {
 
   @ApiProperty()
   score: number;
+
+  @ApiPropertyOptional()
+  unidadBase?: string;
+
+  @ApiPropertyOptional()
+  requiereLote?: boolean;
+
+  @ApiPropertyOptional()
+  requiereVencimiento?: boolean;
 }
 
 export class InterpretacionDto {

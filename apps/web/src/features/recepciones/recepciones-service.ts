@@ -60,7 +60,7 @@ export function agregarItemManual(
     unidadLogisticaId?: string;
     loteCodigoOrigen?: string;
     vencimiento?: string;
-    observaciones?: string;
+    unidad?: string;
   },
 ): Promise<Recepcion> {
   return request<Recepcion>(`${base(orgId)}/${id}/items`, {

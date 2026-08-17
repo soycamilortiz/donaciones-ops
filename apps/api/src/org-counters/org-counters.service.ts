@@ -79,6 +79,26 @@ export class OrgCountersService {
     });
     return `${prefix}-${pad(n, 4)}`;
   }
+
+  async codigoPutaway(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'PUTAWAY',
+      periodo: year,
+    });
+    return `PUT-${year}-${pad(n, 6)}`;
+  }
+
+  async codigoMovimiento(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'MOVIMIENTO',
+      periodo: year,
+    });
+    return `MOV-${year}-${pad(n, 6)}`;
+  }
 }
 
 function pad(n: number, width: number): string {
