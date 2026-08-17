@@ -39,6 +39,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       isLoading = false,
       disabled,
       children,
+      // Sin `type`, el HTML asume `submit` y cualquier boton dentro de un
+      // formulario lo envia al pulsarlo. Los que sí envían lo declaran.
+      type = 'button',
       ...props
     },
     ref,
@@ -46,6 +49,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         className={cn(base, variants[variant], sizes[size], className)}
         disabled={disabled || isLoading}
         aria-busy={isLoading || undefined}

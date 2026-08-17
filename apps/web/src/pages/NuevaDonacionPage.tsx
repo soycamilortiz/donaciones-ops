@@ -6,6 +6,7 @@ import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { Spinner } from '@/components/atoms/Spinner';
 import { useOrg } from '@/components/OrgGate';
 import {
@@ -25,9 +26,6 @@ type Fase = 'inicio' | 'optimizando' | 'subiendo' | 'reconociendo' | 'listo' | '
 const UL_SUELTA = 'suelta';
 
 const fieldLabel = 'text-xs font-bold uppercase tracking-wider text-muted-foreground';
-const selectClassName =
-  'min-h-11 w-full cursor-pointer rounded-md border border-border bg-card px-3.5 text-sm font-medium text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
-
 /**
  * Progress bars upload → recognize → confirm. Presentational only: it reads
  * the real state machine `fase`.
@@ -61,9 +59,8 @@ function UnidadSelect({
   return (
     <label className="flex flex-col gap-1.5" htmlFor="donacion-ul">
       <span className={fieldLabel}>{t('newDonation.unitLabel')}</span>
-      <select
+      <Select
         id="donacion-ul"
-        className={selectClassName}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required
@@ -75,7 +72,7 @@ function UnidadSelect({
             {ul.codigo} · #{ul.nroEnRecepcion} · {t(`receptions.ulTipo.${ul.tipo}`)}
           </option>
         ))}
-      </select>
+      </Select>
       <span className="text-xs text-muted-foreground">{t('newDonation.unitHint')}</span>
     </label>
   );

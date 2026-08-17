@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Select } from '@/components/atoms/Select';
 import { type Language, SUPPORTED_LANGUAGES } from '@/i18n';
 
 const LABELS: Record<Language, string> = {
@@ -24,8 +25,8 @@ export function LanguageSwitcher(): ReactElement {
   return (
     <label className="inline-flex items-center gap-2">
       <span className="sr-only">{t('common.language')}</span>
-      <select
-        className="min-h-11 cursor-pointer rounded-md border border-border bg-card px-3 py-1 text-sm font-semibold text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      <Select
+        className="w-auto font-semibold"
         value={current}
         onChange={(event) => void i18n.changeLanguage(event.target.value)}
       >
@@ -34,7 +35,7 @@ export function LanguageSwitcher(): ReactElement {
             {LABELS[language]}
           </option>
         ))}
-      </select>
+      </Select>
     </label>
   );
 }
