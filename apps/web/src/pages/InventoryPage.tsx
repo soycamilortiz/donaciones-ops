@@ -1,6 +1,14 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/atoms/Badge';
+import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
+import { Input } from '@/components/atoms/Input';
+import { Skeleton, SkeletonList } from '@/components/atoms/Skeleton';
+import { FormField } from '@/components/molecules/FormField';
+import { StatCard } from '@/components/molecules/StatCard';
+import { cn } from '@/lib/utils';
 import { useOrg } from '../components/OrgGate';
 import {
   ACOPIO_FLUJOS,
@@ -14,6 +22,22 @@ import {
 import { useApi } from '../lib/useApi';
 
 const ACOPIO_KEY = 'soschoco.inventoryAcopio';
+
+// Skin html-base: control blanco de 44px, radio 12px, foco con anillo verde.
+// Se comparte entre los <select> nativos y el <textarea> porque el DS aún no
+// expone átomos propios para esos dos; el <input> sí usa el átomo Input.
+const fieldControlClass =
+  'flex h-11 w-full rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+const fieldSelectClass = `${fieldControlClass} cursor-pointer`;
+const fieldTextareaClass = `${fieldControlClass} h-auto min-h-[72px] resize-y py-2.5 leading-relaxed`;
+
+// Tabla de 6 columnas en desktop; bajo 721px cada fila se apila como tarjeta
+// (UX-002), así que la grilla solo aplica a partir de ese ancho.
+const ROW_GRID =
+  'min-[721px]:grid-cols-[minmax(200px,2fr)_minmax(120px,1.2fr)_96px_92px_116px_220px]';
+const cellLabelClass =
+  'text-[10px] font-bold uppercase tracking-wider text-muted-foreground min-[721px]:hidden';
+const thClass = 'text-[10px] font-bold uppercase tracking-wider text-muted-foreground';
 
 function labelOf(options: readonly { value: string; label: string }[], value: string) {
   return options.find((item) => item.value === value)?.label ?? value;
@@ -38,15 +62,22 @@ function soon(value?: string | null) {
 
 export default function InventoryPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { orgId, can } = useOrg();
   const request = useApi();
   const writable = can('inventory:write');
-  const [acopios, setAcopios] = useState<Acopio[]>([]);
+  // null = todavía cargando (UX-005). El array vacío ya es "no hay acopios".
+  const [acopios, setAcopios] = useState<Acopio[] | null>(null);
   const [acopioId, setAcopioId] = useState<string>(() => localStorage.getItem(ACOPIO_KEY) ?? '');
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(false);
   const [editing, setEditing] = useState<InventoryItem | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Error del guardado: vive dentro del modal, junto a Guardar (UX-001), aparte
+  // del banner de página que muestra fallos de carga o de baja.
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [categoria, setCategoria] = useState('');
   const [showInactive, setShowInactive] = useState(false);
@@ -66,9 +97,14 @@ export default function InventoryPage() {
   }
 
   async function loadItems(id: string) {
-    setItems(
-      await request<InventoryItem[]>(`/api/v1/organizations/${orgId}/acopios/${id}/inventory`),
-    );
+    setItemsLoading(true);
+    try {
+      setItems(
+        await request<InventoryItem[]>(`/api/v1/organizations/${orgId}/acopios/${id}/inventory`),
+      );
+    } finally {
+      setItemsLoading(false);
+    }
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: loadAcopios se redefine en cada render; orgId es el disparador real de la recarga.
@@ -89,7 +125,8 @@ export default function InventoryPage() {
     });
   }, [orgId, acopioId]);
 
-  const selected = acopios.find((row) => row.id === acopioId);
+  const selected = acopios?.find((row) => row.id === acopioId);
+  const activeAcopios = acopios?.filter((row) => row.isActive !== false) ?? [];
   const activeItems = useMemo(() => items.filter((item) => item.isActive !== false), [items]);
 
   const stats = useMemo(() => {
@@ -128,6 +165,14 @@ export default function InventoryPage() {
     });
   }, [items, query, categoria, showInactive]);
 
+  const hasFilters = query.trim() !== '' || categoria !== '' || showInactive;
+
+  function clearFilters() {
+    setQuery('');
+    setCategoria('');
+    setShowInactive(false);
+  }
+
   function selectAcopio(id: string) {
     setAcopioId(id);
     localStorage.setItem(ACOPIO_KEY, id);
@@ -136,23 +181,27 @@ export default function InventoryPage() {
   }
 
   function openCreate() {
+    setSaveError(null);
     setEditing(null);
     setFormOpen(true);
   }
 
   function openEdit(item: InventoryItem) {
+    setSaveError(null);
     setEditing(item);
     setFormOpen(true);
   }
 
   function closeForm() {
+    setSaveError(null);
     setEditing(null);
     setFormOpen(false);
   }
 
   // Cerrar pinchando el fondo es una comodidad de raton; con teclado el gesto
   // equivalente es Escape. Sin esto, quien no usa raton queda atrapado en el
-  // modal.
+  // modal. También se bloquea el scroll del body mientras el modal está abierto
+  // (UX-012) para que el fondo no se deslice bajo el diálogo.
   useEffect(() => {
     if (!formOpen) {
       return;
@@ -191,12 +240,18 @@ export default function InventoryPage() {
     };
     document.addEventListener('keydown', alPulsar);
 
+    const previoOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     // Al abrir, el foco debe entrar al modal; si no, sigue en el boton que lo
     // abrio y tabular lleva al contenido de detras.
     const dialogo = document.querySelector<HTMLElement>('[role="dialog"]');
     dialogo?.querySelector<HTMLElement>('input, select, textarea, button')?.focus();
 
-    return () => document.removeEventListener('keydown', alPulsar);
+    return () => {
+      document.removeEventListener('keydown', alPulsar);
+      document.body.style.overflow = previoOverflow;
+    };
   }, [formOpen]);
 
   async function onSave(event: FormEvent<HTMLFormElement>) {
@@ -204,7 +259,7 @@ export default function InventoryPage() {
     if (!acopioId || !writable) {
       return;
     }
-    setError(null);
+    setSaveError(null);
     const form = event.currentTarget;
     const data = new FormData(form);
     const payload = {
@@ -227,6 +282,7 @@ export default function InventoryPage() {
       donanteContacto: String(data.get('donanteContacto') ?? '').trim(),
       observaciones: String(data.get('observaciones') ?? '').trim(),
     };
+    setSaving(true);
     try {
       if (editing) {
         await request(
@@ -242,7 +298,9 @@ export default function InventoryPage() {
       closeForm();
       await loadItems(acopioId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar');
+      setSaveError(err instanceof Error ? err.message : t('inventory.saveError'));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -258,195 +316,350 @@ export default function InventoryPage() {
       });
       await loadItems(acopioId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo actualizar el estado');
+      setError(err instanceof Error ? err.message : t('inventory.statusUpdateError'));
     }
   }
 
-  if (acopios.filter((row) => row.isActive !== false).length === 0) {
+  const pageHead = (showAction: boolean) => (
+    <header className="flex flex-wrap items-end justify-between gap-6">
+      <div className="flex flex-col gap-1.5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-foreground">
+          {t('inventory.warehouse')}
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
+          {t('inventory.title')}
+        </h1>
+        <p className="max-w-xl text-sm text-muted-foreground">{t('inventory.subtitle')}</p>
+      </div>
+      {showAction && writable ? (
+        <Button type="button" onClick={openCreate}>
+          {t('inventory.newProduct')}
+          <span className="grid h-[34px] w-[34px] place-items-center rounded-pill bg-primary-deep">
+            <Icon name="plus" size={15} className="text-accent" />
+          </span>
+        </Button>
+      ) : null}
+    </header>
+  );
+
+  // UX-005: mientras los acopios cargan se muestran esqueletos, nunca el CTA de
+  // "creá un acopio" — ese solo aparece cuando ya sabemos que no hay ninguno.
+  if (acopios === null) {
     return (
-      <section className="panel">
-        <h1>{t('inventory.title')}</h1>
-        <p className="lede">El inventario vive en cada centro de acopio. Primero creá un acopio.</p>
-        <Link className="button" to="/app/acopios">
-          Ir a acopios
-        </Link>
+      <section className="flex flex-col gap-6">
+        {pageHead(false)}
+        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-6">
+          <span className="sr-only">{t('common.loading')}</span>
+          <div className="flex gap-2.5 overflow-hidden">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={`chip-${i}`} className="h-16 w-48 shrink-0 rounded-lg" />
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Skeleton key={`stat-${i}`} className="h-24 w-full rounded-lg" />
+            ))}
+          </div>
+          <SkeletonList filas={4} etiqueta={t('common.loading')} />
+        </div>
+      </section>
+    );
+  }
+
+  if (activeAcopios.length === 0) {
+    return (
+      <section className="flex flex-col gap-6">
+        {pageHead(false)}
+        <div className="rounded-lg border border-border bg-card">
+          <div className="flex flex-col items-center gap-4 px-6 py-14 text-center">
+            <span className="grid h-16 w-16 place-items-center rounded-pill bg-secondary text-muted-foreground">
+              <Icon name="alert-circle" size={28} />
+            </span>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">
+              {t('inventory.emptyGateTitle')}
+            </h2>
+            <p className="max-w-md text-sm text-muted-foreground">{t('inventory.emptyGateText')}</p>
+            <Button type="button" onClick={() => navigate('/app/acopios')}>
+              {t('inventory.goToAcopios')}
+              <span className="grid h-[34px] w-[34px] place-items-center rounded-pill bg-primary-deep">
+                <Icon name="chevron-right" size={15} className="text-accent" />
+              </span>
+            </Button>
+          </div>
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="panel inventory-dash">
-      <header className="dash-head">
-        <div>
-          <p className="eyebrow">{t('inventory.warehouse')}</p>
-          <h1>{t('inventory.title')}</h1>
-          <p className="muted">
-            Existencias del centro seleccionado. Los productos se dan de baja; no se borran.
-          </p>
-        </div>
-        {writable ? (
-          <button className="button" type="button" onClick={openCreate}>
-            Nuevo producto
-          </button>
-        ) : null}
-      </header>
+    <section className="flex flex-col gap-6">
+      {pageHead(true)}
 
-      <div className="acopio-picker" role="listbox" aria-label="Centro de acopio">
-        {acopios
-          .filter((row) => row.isActive !== false)
-          .map((row) => (
+      {/* UX-032: bajo 721px la fila de acopios se vuelve una tira horizontal con
+          scroll-snap; en desktop hace wrap. */}
+      <div
+        role="listbox"
+        aria-label={t('inventory.acopioPicker')}
+        className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-1 min-[721px]:flex-wrap min-[721px]:overflow-visible min-[721px]:pb-0"
+      >
+        {activeAcopios.map((row) => {
+          const isSelected = row.id === acopioId;
+          return (
             <button
               key={row.id}
               type="button"
               role="option"
-              aria-selected={row.id === acopioId}
-              className={row.id === acopioId ? 'acopio-chip is-selected' : 'acopio-chip'}
+              aria-selected={isSelected}
               onClick={() => selectAcopio(row.id)}
+              className={cn(
+                'flex min-h-[62px] w-52 shrink-0 snap-start flex-col justify-center gap-0.5 rounded-lg border px-4 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background min-[721px]:w-auto min-[721px]:min-w-[190px]',
+                isSelected
+                  ? 'border-accent bg-accent'
+                  : 'border-border bg-card hover:border-muted-foreground/40',
+              )}
             >
-              <strong>{row.nombre}</strong>
-              <span>
+              <strong
+                className={cn(
+                  'text-sm font-bold tracking-tight',
+                  isSelected ? 'text-primary' : 'text-foreground',
+                )}
+              >
+                {row.nombre}
+              </strong>
+              <span
+                className={cn(
+                  'text-[11px] font-medium',
+                  isSelected ? 'text-primary/80' : 'text-muted-foreground',
+                )}
+              >
                 {labelOf(ACOPIO_FLUJOS, row.flujo)}
                 {row.municipio ? ` · ${row.municipio}` : ''}
               </span>
             </button>
-          ))}
+          );
+        })}
       </div>
-      {selected?.direccion ? <p className="muted acopio-meta">{selected.direccion}</p> : null}
+      {selected?.direccion ? (
+        <p className="-mt-3 text-xs text-muted-foreground">{selected.direccion}</p>
+      ) : null}
 
-      <div className="stat-grid">
-        <article className="stat-card">
-          <span>Productos activos</span>
-          <strong>{stats.activos}</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t('inventory.stockQuantity')}</span>
-          <strong>{stats.cantidad.toLocaleString('es-CO')}</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t('inventory.categories')}</span>
-          <strong>{stats.categorias}</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t('inventory.expiryAlerts')}</span>
-          <strong>{stats.alertas}</strong>
-        </article>
-        <article className="stat-card">
-          <span>{t('inventory.inactive')}</span>
-          <strong>{stats.bajas}</strong>
-        </article>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <StatCard label={t('inventory.activeProducts')} value={String(stats.activos)} />
+        <StatCard
+          label={t('inventory.stockQuantity')}
+          value={stats.cantidad.toLocaleString('es-CO')}
+        />
+        <StatCard label={t('inventory.categories')} value={String(stats.categorias)} />
+        <StatCard
+          label={t('inventory.expiryAlerts')}
+          value={String(stats.alertas)}
+          className="border-warning/40 bg-warning-soft"
+        />
+        <StatCard label={t('inventory.inactive')} value={String(stats.bajas)} />
       </div>
 
-      <div className="dash-toolbar">
-        <label className="field">
-          {t('common.search')}
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t('inventory.searchPlaceholder')}
-          />
-        </label>
-        <label className="field">
-          Categoría
-          <select value={categoria} onChange={(event) => setCategoria(event.target.value)}>
-            <option value="">Todas</option>
+      <div className="flex flex-col gap-3.5 min-[721px]:flex-row min-[721px]:flex-wrap min-[721px]:items-end">
+        <FormField label={t('common.search')} htmlFor="inv-q" className="min-[721px]:w-80">
+          <div className="relative">
+            <Icon
+              name="search"
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              id="inv-q"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t('inventory.searchPlaceholder')}
+              className="pl-9"
+            />
+          </div>
+        </FormField>
+        <FormField label={t('inventory.category')} htmlFor="inv-cat" className="min-[721px]:w-64">
+          <select
+            id="inv-cat"
+            value={categoria}
+            onChange={(event) => setCategoria(event.target.value)}
+            className={fieldSelectClass}
+          >
+            <option value="">{t('inventory.allCategories')}</option>
             {INVENTORY_CATEGORIAS.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
             ))}
           </select>
-        </label>
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={showInactive}
-            onChange={(event) => setShowInactive(event.target.checked)}
-          />
-          Ver dados de baja
+        </FormField>
+        <label className="inline-flex min-h-11 cursor-pointer select-none items-center gap-2.5">
+          <span className="relative inline-flex h-[22px] w-[38px] shrink-0 items-center rounded-pill bg-muted-foreground/40 p-[3px] transition-colors has-[:checked]:bg-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(event) => setShowInactive(event.target.checked)}
+              className="peer sr-only"
+            />
+            <span className="h-4 w-4 rounded-pill bg-card shadow-sm transition-transform peer-checked:translate-x-4" />
+          </span>
+          <span className="text-sm font-semibold text-foreground">
+            {t('inventory.showInactive')}
+          </span>
         </label>
       </div>
 
       {error ? (
-        <p role="alert" className="error">
+        <p
+          role="alert"
+          className="rounded-md bg-error-soft px-4 py-3 text-sm font-medium text-error"
+        >
           {error}
         </p>
       ) : null}
 
-      <div className="table-wrap dash-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th>{t('inventory.category')}</th>
-              <th>{t('inventory.quantity')}</th>
-              <th>Vence</th>
-              <th>{t('inventory.status')}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="muted">
-                  No hay productos con esos filtros.
-                  {writable ? ' Usá Nuevo producto para cargar existencias.' : ''}
-                </td>
-              </tr>
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="min-[721px]:overflow-x-auto">
+          <div className="min-[721px]:min-w-[940px]">
+            <div
+              className={cn(
+                'hidden gap-3 border-b border-border bg-secondary px-4 min-[721px]:grid min-[721px]:h-11 min-[721px]:items-center',
+                ROW_GRID,
+              )}
+            >
+              <span className={thClass}>{t('inventory.product')}</span>
+              <span className={thClass}>{t('inventory.category')}</span>
+              <span className={thClass}>{t('inventory.quantity')}</span>
+              <span className={thClass}>{t('inventory.expires')}</span>
+              <span className={thClass}>{t('inventory.status')}</span>
+              <span className={cn(thClass, 'text-right')}>{t('inventory.actions')}</span>
+            </div>
+
+            {itemsLoading ? (
+              <div className="p-4">
+                <SkeletonList filas={4} etiqueta={t('common.loading')} />
+              </div>
+            ) : visible.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 px-6 py-14 text-center">
+                <span className="grid h-16 w-16 place-items-center rounded-pill bg-secondary text-muted-foreground">
+                  <Icon name="search" size={28} />
+                </span>
+                <p className="text-lg font-bold tracking-tight text-foreground">
+                  {t('inventory.noResults')}
+                </p>
+                <p className="max-w-md text-sm text-muted-foreground">
+                  {t('inventory.noResultsHint')}
+                </p>
+                {hasFilters ? (
+                  <Button type="button" variant="outline" onClick={clearFilters}>
+                    {t('inventory.clearFilters')}
+                  </Button>
+                ) : null}
+              </div>
             ) : (
-              visible.map((item) => (
-                <tr key={item.id} className={item.isActive === false ? 'is-inactive' : undefined}>
-                  <td>
-                    <strong>{item.nombre}</strong>
-                    <div className="muted">
-                      {[item.marca, item.presentacion, item.talla, item.sku]
-                        .filter(Boolean)
-                        .join(' · ')}
+              visible.map((item) => {
+                const inactive = item.isActive === false;
+                const sub = [item.marca, item.presentacion, item.talla, item.sku]
+                  .filter(Boolean)
+                  .join(' · ');
+                const estadoClass = cn(
+                  'text-sm',
+                  item.estado === 'VENCIDO'
+                    ? 'font-bold text-error'
+                    : item.estado === 'PROXIMO_A_VENCER'
+                      ? 'font-bold text-warning'
+                      : 'font-medium text-muted-foreground',
+                );
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      'flex flex-col gap-2 border-b border-border p-4 transition-colors last:border-b-0 min-[721px]:grid min-[721px]:items-center min-[721px]:gap-3 min-[721px]:px-4 min-[721px]:py-3',
+                      ROW_GRID,
+                      inactive ? 'bg-muted/50' : 'hover:bg-secondary/60',
+                    )}
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-bold tracking-tight text-foreground">
+                        {item.nombre}
+                      </span>
+                      {sub ? <span className="text-xs text-muted-foreground">{sub}</span> : null}
+                      {inactive ? (
+                        <Badge variant="default" className="mt-1 w-fit">
+                          {t('inventory.inactiveBadge')}
+                        </Badge>
+                      ) : null}
                     </div>
-                    {item.isActive === false ? <span className="badge-baja">Baja</span> : null}
-                  </td>
-                  <td>{labelOf(INVENTORY_CATEGORIAS, item.categoria)}</td>
-                  <td>
-                    {item.cantidad} {labelOf(INVENTORY_UNIDADES, item.unidad).toLowerCase()}
-                  </td>
-                  <td>{dateInput(item.vencimiento) || '—'}</td>
-                  <td>{labelOf(INVENTORY_ESTADOS, item.estado)}</td>
-                  <td>
+
+                    <div className="flex items-center justify-between gap-3 min-[721px]:block">
+                      <span className={cellLabelClass}>{t('inventory.category')}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {labelOf(INVENTORY_CATEGORIAS, item.categoria)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 min-[721px]:block">
+                      <span className={cellLabelClass}>{t('inventory.quantity')}</span>
+                      <span className="text-sm font-bold tabular-nums text-foreground">
+                        {item.cantidad} {labelOf(INVENTORY_UNIDADES, item.unidad).toLowerCase()}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 min-[721px]:block">
+                      <span className={cellLabelClass}>{t('inventory.expires')}</span>
+                      <span className="text-sm tabular-nums text-muted-foreground">
+                        {dateInput(item.vencimiento) || '—'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 min-[721px]:block">
+                      <span className={cellLabelClass}>{t('inventory.status')}</span>
+                      <span className={estadoClass}>{labelOf(INVENTORY_ESTADOS, item.estado)}</span>
+                    </div>
+
                     {writable ? (
-                      <div className="row-actions">
-                        <button type="button" className="linkish" onClick={() => openEdit(item)}>
-                          Editar
-                        </button>
-                        {item.isActive === false ? (
-                          <button
+                      <div className="flex flex-col gap-2 pt-1 min-[721px]:flex-row min-[721px]:items-center min-[721px]:justify-end min-[721px]:gap-1.5 min-[721px]:pt-0">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full min-[721px]:w-auto"
+                          onClick={() => openEdit(item)}
+                        >
+                          {t('common.edit')}
+                        </Button>
+                        {inactive ? (
+                          <Button
                             type="button"
-                            className="linkish"
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-success min-[721px]:w-auto"
                             onClick={() => void setActive(item, true)}
                           >
-                            Reactivar
-                          </button>
+                            {t('inventory.reactivate')}
+                          </Button>
                         ) : (
-                          <button
+                          <Button
                             type="button"
-                            className="linkish"
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-error min-[721px]:w-auto"
                             onClick={() => void setActive(item, false)}
                           >
-                            Dar de baja
-                          </button>
+                            {t('inventory.deactivate')}
+                          </Button>
                         )}
                       </div>
                     ) : null}
-                  </td>
-                </tr>
-              ))
+                  </div>
+                );
+              })
             )}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
 
       {formOpen && writable ? (
         // biome-ignore lint/a11y/noStaticElementInteractions: el fondo es decorativo y cerrar al pincharlo es una comodidad de raton; el camino de teclado es Escape, manejado arriba.
         <div
-          className="modal-backdrop"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-primary-deep/40 p-4"
           role="presentation"
           onClick={(event) => {
             // Solo si el clic cayo en el fondo, no en el dialogo.
@@ -456,159 +669,272 @@ export default function InventoryPage() {
           }}
         >
           <div
-            className="modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="inventory-form-title"
+            className="flex max-h-[calc(100dvh-32px)] w-full max-w-[812px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xl"
           >
             <form
-              className="form form-wide"
+              className="flex min-h-0 flex-1 flex-col"
               key={editing?.id ?? 'new'}
               onSubmit={(event) => void onSave(event)}
             >
-              <h2 id="inventory-form-title">{editing ? 'Editar producto' : 'Nuevo producto'}</h2>
-              <p className="muted">
-                {editing
-                  ? 'Actualizá ficha y cantidades. El registro se conserva.'
-                  : 'Cargá un ítem al centro de acopio seleccionado.'}
-              </p>
-              <div className="form-grid">
-                <label className="field">
-                  Producto / ayuda
-                  <input
-                    name="nombre"
-                    required
-                    minLength={2}
-                    defaultValue={editing?.nombre ?? ''}
-                  />
-                </label>
-                <label className="field">
-                  Categoría
-                  <select
-                    name="categoria"
-                    defaultValue={editing?.categoria ?? 'ALIMENTOS_NO_PERECEDEROS'}
+              <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5">
+                <div className="flex flex-col gap-1.5">
+                  {selected?.nombre ? (
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-foreground">
+                      {selected.nombre}
+                    </p>
+                  ) : null}
+                  <h2
+                    id="inventory-form-title"
+                    className="text-xl font-bold tracking-tight text-foreground sm:text-2xl"
                   >
-                    {INVENTORY_CATEGORIAS.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  Detalle de categoría
-                  <input name="categoriaDetalle" defaultValue={editing?.categoriaDetalle ?? ''} />
-                </label>
-                <label className="field">
-                  SKU / código
-                  <input name="sku" defaultValue={editing?.sku ?? ''} />
-                </label>
-                <label className="field">
-                  Marca
-                  <input name="marca" defaultValue={editing?.marca ?? ''} />
-                </label>
-                <label className="field">
-                  Presentación
-                  <input
-                    name="presentacion"
-                    placeholder="500 g, 900 ml…"
-                    defaultValue={editing?.presentacion ?? ''}
-                  />
-                </label>
-                <label className="field">
-                  Talla
-                  <input name="talla" defaultValue={editing?.talla ?? ''} />
-                </label>
-                <label className="field">
-                  Destinatario
-                  <select name="destinatario" defaultValue={editing?.destinatario ?? 'NO_APLICA'}>
-                    {INVENTORY_DESTINATARIOS.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  {t('inventory.quantity')}
-                  <input
-                    name="cantidad"
-                    type="number"
-                    min={0}
-                    step="any"
-                    inputMode="decimal"
-                    required
-                    defaultValue={editing?.cantidad ?? ''}
-                  />
-                </label>
-                <label className="field">
-                  Unidad
-                  <select name="unidad" defaultValue={editing?.unidad ?? 'UNIDAD'}>
-                    {INVENTORY_UNIDADES.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  Detalle de unidad
-                  <input name="unidadDetalle" defaultValue={editing?.unidadDetalle ?? ''} />
-                </label>
-                <label className="field">
-                  Vencimiento
-                  <input
-                    name="vencimiento"
-                    type="date"
-                    defaultValue={dateInput(editing?.vencimiento)}
-                  />
-                </label>
-                <label className="field">
-                  Estado
-                  <select name="estado" defaultValue={editing?.estado ?? 'BUEN_ESTADO'}>
-                    {INVENTORY_ESTADOS.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  Lote
-                  <input name="loteCodigo" defaultValue={editing?.loteCodigo ?? ''} />
-                </label>
-                <label className="field">
-                  Ubicación en bodega
-                  <input
-                    name="ubicacionInterna"
-                    placeholder="Estante, pasillo…"
-                    defaultValue={editing?.ubicacionInterna ?? ''}
-                  />
-                </label>
-                <label className="field">
-                  Donante
-                  <input name="donanteNombre" defaultValue={editing?.donanteNombre ?? ''} />
-                </label>
-                <label className="field">
-                  Contacto del donante
-                  <input name="donanteContacto" defaultValue={editing?.donanteContacto ?? ''} />
-                </label>
+                    {editing ? t('inventory.editProduct') : t('inventory.newProduct')}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {editing ? t('inventory.editSubtitle') : t('inventory.newSubtitle')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  aria-label={t('common.close')}
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-secondary text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <Icon name="close" size={18} />
+                </button>
               </div>
-              <label className="field">
-                Observaciones
-                <textarea
-                  name="observaciones"
-                  rows={2}
-                  defaultValue={editing?.observaciones ?? ''}
-                />
-              </label>
-              <div className="inline-form">
-                <button className="button" type="submit">
-                  {editing ? 'Guardar cambios' : 'Crear producto'}
-                </button>
-                <button type="button" className="linkish" onClick={closeForm}>
-                  Cancelar
-                </button>
+
+              <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
+                <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
+                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    {t('inventory.groupIdentification')}
+                  </legend>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
+                    <FormField
+                      label={t('inventory.productName')}
+                      htmlFor="f-nombre"
+                      required
+                      className="sm:col-span-2 min-[721px]:col-span-3"
+                    >
+                      <Input
+                        id="f-nombre"
+                        name="nombre"
+                        required
+                        minLength={2}
+                        defaultValue={editing?.nombre ?? ''}
+                      />
+                    </FormField>
+                    <FormField label={t('inventory.brand')} htmlFor="f-marca">
+                      <Input id="f-marca" name="marca" defaultValue={editing?.marca ?? ''} />
+                    </FormField>
+                    <FormField label={t('inventory.category')} htmlFor="f-categoria">
+                      <select
+                        id="f-categoria"
+                        name="categoria"
+                        defaultValue={editing?.categoria ?? 'ALIMENTOS_NO_PERECEDEROS'}
+                        className={fieldSelectClass}
+                      >
+                        {INVENTORY_CATEGORIAS.map((item) => (
+                          <option key={item.value} value={item.value}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label={t('inventory.categoryDetail')} htmlFor="f-catdet">
+                      <Input
+                        id="f-catdet"
+                        name="categoriaDetalle"
+                        placeholder={t('inventory.categoryDetailPlaceholder')}
+                        defaultValue={editing?.categoriaDetalle ?? ''}
+                      />
+                    </FormField>
+                    <FormField label={t('inventory.sku')} htmlFor="f-sku">
+                      <Input id="f-sku" name="sku" defaultValue={editing?.sku ?? ''} />
+                    </FormField>
+                  </div>
+                </fieldset>
+
+                <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
+                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    {t('inventory.groupPresentation')}
+                  </legend>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
+                    <FormField label={t('inventory.presentation')} htmlFor="f-pres">
+                      <Input
+                        id="f-pres"
+                        name="presentacion"
+                        placeholder={t('inventory.presentationPlaceholder')}
+                        defaultValue={editing?.presentacion ?? ''}
+                      />
+                    </FormField>
+                    <FormField label={t('inventory.size')} htmlFor="f-talla">
+                      <Input id="f-talla" name="talla" defaultValue={editing?.talla ?? ''} />
+                    </FormField>
+                    <FormField label={t('inventory.recipient')} htmlFor="f-dest">
+                      <select
+                        id="f-dest"
+                        name="destinatario"
+                        defaultValue={editing?.destinatario ?? 'NO_APLICA'}
+                        className={fieldSelectClass}
+                      >
+                        {INVENTORY_DESTINATARIOS.map((item) => (
+                          <option key={item.value} value={item.value}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                  </div>
+                </fieldset>
+
+                <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
+                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    {t('inventory.groupQuantity')}
+                  </legend>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
+                    <FormField label={t('inventory.quantity')} htmlFor="f-cant" required>
+                      <Input
+                        id="f-cant"
+                        name="cantidad"
+                        type="number"
+                        min={0}
+                        step="any"
+                        inputMode="decimal"
+                        required
+                        defaultValue={editing?.cantidad ?? ''}
+                      />
+                    </FormField>
+                    <FormField label={t('inventory.unit')} htmlFor="f-unidad">
+                      <select
+                        id="f-unidad"
+                        name="unidad"
+                        defaultValue={editing?.unidad ?? 'UNIDAD'}
+                        className={fieldSelectClass}
+                      >
+                        {INVENTORY_UNIDADES.map((item) => (
+                          <option key={item.value} value={item.value}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label={t('inventory.unitDetail')} htmlFor="f-unidet">
+                      <Input
+                        id="f-unidet"
+                        name="unidadDetalle"
+                        placeholder={t('inventory.unitDetailPlaceholder')}
+                        defaultValue={editing?.unidadDetalle ?? ''}
+                      />
+                    </FormField>
+                    <FormField label={t('inventory.expiry')} htmlFor="f-venc">
+                      <Input
+                        id="f-venc"
+                        name="vencimiento"
+                        type="date"
+                        defaultValue={dateInput(editing?.vencimiento)}
+                      />
+                    </FormField>
+                    <FormField label={t('inventory.status')} htmlFor="f-estado">
+                      <select
+                        id="f-estado"
+                        name="estado"
+                        defaultValue={editing?.estado ?? 'BUEN_ESTADO'}
+                        className={fieldSelectClass}
+                      >
+                        {INVENTORY_ESTADOS.map((item) => (
+                          <option key={item.value} value={item.value}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label={t('inventory.batch')} htmlFor="f-lote">
+                      <Input
+                        id="f-lote"
+                        name="loteCodigo"
+                        defaultValue={editing?.loteCodigo ?? ''}
+                      />
+                    </FormField>
+                  </div>
+                </fieldset>
+
+                <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
+                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    {t('inventory.groupLocation')}
+                  </legend>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
+                    <FormField label={t('inventory.location')} htmlFor="f-ubic">
+                      <Input
+                        id="f-ubic"
+                        name="ubicacionInterna"
+                        placeholder={t('inventory.locationPlaceholder')}
+                        defaultValue={editing?.ubicacionInterna ?? ''}
+                      />
+                    </FormField>
+                    <FormField label={t('inventory.donor')} htmlFor="f-donante">
+                      <Input
+                        id="f-donante"
+                        name="donanteNombre"
+                        defaultValue={editing?.donanteNombre ?? ''}
+                      />
+                    </FormField>
+                    <FormField label={t('inventory.donorContact')} htmlFor="f-contacto">
+                      <Input
+                        id="f-contacto"
+                        name="donanteContacto"
+                        defaultValue={editing?.donanteContacto ?? ''}
+                      />
+                    </FormField>
+                  </div>
+                </fieldset>
+
+                <FormField label={t('inventory.notes')} htmlFor="f-obs">
+                  <textarea
+                    id="f-obs"
+                    name="observaciones"
+                    rows={2}
+                    defaultValue={editing?.observaciones ?? ''}
+                    className={fieldTextareaClass}
+                  />
+                </FormField>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-border bg-secondary/40 px-6 py-4 min-[721px]:flex-row min-[721px]:items-center min-[721px]:justify-end">
+                {saveError ? (
+                  <p role="alert" className="text-sm font-medium text-error min-[721px]:mr-auto">
+                    {saveError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground min-[721px]:mr-auto">
+                    {t('inventory.modalHint')}
+                  </p>
+                )}
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={closeForm}
+                    disabled={saving}
+                    className="flex-1 min-[721px]:flex-none"
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    type="submit"
+                    isLoading={saving}
+                    disabled={saving}
+                    className="flex-1 min-[721px]:flex-none"
+                  >
+                    {saving
+                      ? t('common.saving')
+                      : editing
+                        ? t('inventory.saveChanges')
+                        : t('inventory.createProduct')}
+                  </Button>
+                </div>
               </div>
             </form>
           </div>

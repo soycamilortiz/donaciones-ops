@@ -1,10 +1,24 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { AcopioFlujo } from '@soschoco/shared';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SkeletonList } from '../components/atoms/Skeleton';
-import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
-import { useOrg } from '../components/OrgGate';
-import { ACOPIO_FLUJOS, type Acopio } from '../lib/api';
-import { useApi } from '../lib/useApi';
+import { Badge } from '@/components/atoms/Badge';
+import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
+import { Input } from '@/components/atoms/Input';
+import { SkeletonList } from '@/components/atoms/Skeleton';
+import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
+import { FormField } from '@/components/molecules/FormField';
+import { useOrg } from '@/components/OrgGate';
+import { ACOPIO_FLUJOS, type Acopio } from '@/lib/api';
+import { useApi } from '@/lib/useApi';
+import { cn } from '@/lib/utils';
+
+// Estilo compartido: no hay atomo Select/Textarea en el DS, asi que se calcan
+// las clases base de Input para que ambos campos midan y se vean igual.
+const selectClassName =
+  'flex h-11 w-full cursor-pointer appearance-none rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground ring-offset-background transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+const textareaClassName =
+  'flex min-h-[4.5rem] w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base md:text-sm text-foreground ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 export default function AcopiosPage() {
   const { orgId, can } = useOrg();
@@ -17,6 +31,7 @@ export default function AcopiosPage() {
   const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
   const [editing, setEditing] = useState<Acopio | null>(null);
+  const nombreRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     try {
@@ -35,6 +50,18 @@ export default function AcopiosPage() {
     });
   }, [orgId]);
 
+  // UX-031: al tocar «Editar» el formulario ya está en pantalla pero puede
+  // quedar fuera de vista (sobre todo en móvil, donde la lista está encima).
+  // Lo trae a la vista y enfoca el primer campo para no tener que buscarlo.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: solo debe repetirse cuando cambia el registro en edición (por id), no en cada nueva referencia de `editing`.
+  useEffect(() => {
+    if (!editing) {
+      return;
+    }
+    nombreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    nombreRef.current?.focus({ preventScroll: true });
+  }, [editing?.id]);
+
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -44,7 +71,7 @@ export default function AcopiosPage() {
     const lngRaw = String(data.get('lng') ?? '').trim();
     const payload = {
       nombre: String(data.get('nombre') ?? '').trim(),
-      flujo: String(data.get('flujo') ?? 'AMBOS'),
+      flujo: String(data.get('flujo') ?? AcopioFlujo.Recibir),
       telefono: String(data.get('telefono') ?? '').trim() || undefined,
       descripcion: String(data.get('descripcion') ?? '').trim() || undefined,
       municipio: String(data.get('municipio') ?? '').trim() || undefined,
@@ -68,7 +95,7 @@ export default function AcopiosPage() {
       form.reset();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar');
+      setError(err instanceof Error ? err.message : t('acopios.saveError'));
     }
   }
 
@@ -81,7 +108,7 @@ export default function AcopiosPage() {
       });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo reactivar');
+      setError(err instanceof Error ? err.message : t('acopios.reactivateError'));
     }
   }
 
@@ -101,127 +128,234 @@ export default function AcopiosPage() {
     }
   }
 
+  const activos = rows.filter((row) => row.isActive !== false).length;
+  const inactivos = rows.length - activos;
+
   return (
-    <section className="panel">
-      <h1>{t('acopios.title')}</h1>
-      <p className="muted">{t('acopios.subtitle')}</p>
+    <div className="space-y-6 py-2">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold text-foreground">{t('acopios.title')}</h1>
+        <p className="max-w-2xl text-sm text-muted-foreground">{t('acopios.subtitle')}</p>
+      </div>
+
       {error ? (
-        <p role="alert" className="error">
+        <p role="alert" className="text-sm font-medium text-error">
           {error}
         </p>
       ) : null}
-      {cargando ? <SkeletonList filas={3} etiqueta={t('common.loading')} /> : null}
 
-      {!cargando && rows.length === 0 ? <p className="muted">{t('acopios.empty')}</p> : null}
-
-      <ul className="stack-list">
-        {rows.map((row) => (
-          <li key={row.id} className={row.isActive === false ? 'is-inactive' : undefined}>
-            <div>
-              <strong>{row.nombre}</strong>
-              {row.isActive === false ? (
-                <span className="badge-baja"> {t('acopios.inactive')}</span>
-              ) : null}
-              <p className="muted">
-                {ACOPIO_FLUJOS.find((item) => item.value === row.flujo)?.label}
-                {' · '}
-                {[row.municipio, row.direccion, row.telefono].filter(Boolean).join(' · ') ||
-                  'Sin datos de ubicación'}
-              </p>
-            </div>
-            {can('acopios:write') ? (
-              <div className="row-actions">
-                <button type="button" className="linkish" onClick={() => setEditing(row)}>
-                  Editar
-                </button>
-                {row.isActive === false ? (
-                  <button
-                    type="button"
-                    className="linkish"
-                    onClick={() => void onReactivate(row.id)}
-                  >
-                    Reactivar
-                  </button>
-                ) : (
-                  <button type="button" className="linkish" onClick={() => setPorConfirmar(row.id)}>
-                    Dar de baja
-                  </button>
-                )}
-              </div>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {t('acopios.listTitle')}
+            </h2>
+            {!cargando && rows.length > 0 ? (
+              <span className="font-mono text-xs text-muted-foreground">
+                {t('acopios.count', { active: activos, inactive: inactivos })}
+              </span>
             ) : null}
-          </li>
-        ))}
-      </ul>
-      {can('acopios:write') ? (
-        <form className="form" key={editing?.id ?? 'new'} onSubmit={(event) => void onSave(event)}>
-          <h2>{editing ? 'Editar acopio' : 'Nuevo acopio'}</h2>
-          <label className="field">
-            Nombre
-            <input
-              name="nombre"
-              required
-              defaultValue={editing?.nombre ?? ''}
-              key={editing?.id ?? 'new'}
-            />
-          </label>
-          <label className="field">
-            Flujo de donaciones
-            <select name="flujo" defaultValue={editing?.flujo ?? 'RECIBIR'}>
-              {ACOPIO_FLUJOS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            Municipio
-            <input name="municipio" defaultValue={editing?.municipio ?? ''} />
-          </label>
-          <label className="field">
-            Dirección
-            <input name="direccion" defaultValue={editing?.direccion ?? ''} />
-          </label>
-          <label className="field">
-            Teléfono
-            <input name="telefono" defaultValue={editing?.telefono ?? ''} />
-          </label>
-          <label className="field">
-            Descripción
-            <textarea name="descripcion" rows={2} defaultValue={editing?.descripcion ?? ''} />
-          </label>
-          <div className="inline-form">
-            <label className="field">
-              Lat
-              <input
-                name="lat"
-                type="number"
-                step="any"
-                inputMode="decimal"
-                defaultValue={editing?.lat ?? ''}
-              />
-            </label>
-            <label className="field">
-              Lng
-              <input
-                name="lng"
-                type="number"
-                step="any"
-                inputMode="decimal"
-                defaultValue={editing?.lng ?? ''}
-              />
-            </label>
           </div>
-          <button className="button" type="submit">
-            Guardar
-          </button>
-          {editing ? (
-            <button type="button" className="linkish" onClick={() => setEditing(null)}>
-              Cancelar
-            </button>
+
+          {cargando ? <SkeletonList filas={3} etiqueta={t('common.loading')} /> : null}
+
+          {!cargando && rows.length === 0 ? (
+            <div className="space-y-3 rounded-lg border border-dashed border-border bg-card px-8 py-12 text-center">
+              <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-pill bg-secondary text-muted-foreground">
+                <Icon name="home" size={28} />
+              </span>
+              <p className="text-lg font-semibold text-foreground">{t('acopios.emptyTitle')}</p>
+              <p className="mx-auto max-w-md text-sm text-muted-foreground">{t('acopios.empty')}</p>
+            </div>
           ) : null}
-        </form>
-      ) : null}
+
+          {!cargando && rows.length > 0 ? (
+            <ul className="space-y-3">
+              {rows.map((row) => {
+                const inactive = row.isActive === false;
+                const meta = [row.municipio, row.direccion, row.telefono]
+                  .filter(Boolean)
+                  .join(' · ');
+                return (
+                  <li
+                    key={row.id}
+                    className={cn(
+                      'flex flex-wrap items-center gap-4 rounded-lg border p-4',
+                      inactive
+                        ? 'border-dashed border-border bg-secondary'
+                        : 'border-border bg-card',
+                    )}
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-secondary text-primary">
+                      <Icon name="home" size={18} />
+                    </span>
+                    <div className="min-w-[180px] flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <strong className="font-semibold text-foreground">{row.nombre}</strong>
+                        {inactive ? <Badge>{t('acopios.inactive')}</Badge> : null}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                          {ACOPIO_FLUJOS.find((item) => item.value === row.flujo)?.label}
+                        </span>
+                        {' · '}
+                        {meta || t('acopios.noLocation')}
+                      </p>
+                    </div>
+                    {can('acopios:write') ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditing(row)}
+                        >
+                          {t('common.edit')}
+                        </Button>
+                        {inactive ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void onReactivate(row.id)}
+                          >
+                            {t('acopios.reactivate')}
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPorConfirmar(row.id)}
+                          >
+                            {t('acopios.deactivate')}
+                          </Button>
+                        )}
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </section>
+
+        {can('acopios:write') ? (
+          <form
+            className="space-y-4 rounded-lg border border-border bg-card p-5"
+            key={editing?.id ?? 'new'}
+            onSubmit={(event) => void onSave(event)}
+          >
+            <h2 className="text-lg font-bold tracking-tight text-foreground">
+              {editing ? t('acopios.editTitle') : t('acopios.newTitle')}
+            </h2>
+
+            <FormField label={t('acopios.fields.name')} htmlFor="a-nombre" required>
+              <Input
+                ref={nombreRef}
+                id="a-nombre"
+                name="nombre"
+                required
+                placeholder={t('acopios.fields.namePlaceholder')}
+                defaultValue={editing?.nombre ?? ''}
+              />
+            </FormField>
+
+            <FormField label={t('acopios.fields.flow')} htmlFor="a-flujo">
+              <select
+                id="a-flujo"
+                name="flujo"
+                className={selectClassName}
+                defaultValue={editing?.flujo ?? AcopioFlujo.Recibir}
+              >
+                {ACOPIO_FLUJOS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+
+            <FormField label={t('acopios.fields.municipality')} htmlFor="a-mun">
+              <Input
+                id="a-mun"
+                name="municipio"
+                placeholder={t('acopios.fields.municipalityPlaceholder')}
+                defaultValue={editing?.municipio ?? ''}
+              />
+            </FormField>
+
+            <FormField label={t('acopios.fields.address')} htmlFor="a-dir">
+              <Input
+                id="a-dir"
+                name="direccion"
+                placeholder={t('acopios.fields.addressPlaceholder')}
+                defaultValue={editing?.direccion ?? ''}
+              />
+            </FormField>
+
+            <FormField label={t('acopios.fields.phone')} htmlFor="a-tel">
+              <Input
+                id="a-tel"
+                name="telefono"
+                type="tel"
+                autoComplete="tel"
+                placeholder={t('acopios.fields.phonePlaceholder')}
+                defaultValue={editing?.telefono ?? ''}
+              />
+            </FormField>
+
+            <FormField label={t('acopios.fields.description')} htmlFor="a-desc">
+              <textarea
+                id="a-desc"
+                name="descripcion"
+                rows={2}
+                placeholder={t('acopios.fields.descriptionPlaceholder')}
+                defaultValue={editing?.descripcion ?? ''}
+                className={textareaClassName}
+              />
+            </FormField>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label={t('acopios.fields.lat')} htmlFor="a-lat">
+                <Input
+                  id="a-lat"
+                  name="lat"
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  defaultValue={editing?.lat ?? ''}
+                />
+              </FormField>
+              <FormField label={t('acopios.fields.lng')} htmlFor="a-lng">
+                <Input
+                  id="a-lng"
+                  name="lng"
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  defaultValue={editing?.lng ?? ''}
+                />
+              </FormField>
+            </div>
+
+            <Button type="submit" className="w-full">
+              {t('common.save')}
+            </Button>
+            {editing ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setEditing(null)}
+              >
+                {t('common.cancel')}
+              </Button>
+            ) : null}
+          </form>
+        ) : null}
+      </div>
+
       <ConfirmDialog
         abierto={porConfirmar !== null}
         titulo={t('confirm.deleteAcopioTitle')}
@@ -230,6 +364,6 @@ export default function AcopiosPage() {
         onConfirmar={() => porConfirmar && void onRemove(porConfirmar)}
         onCancelar={() => setPorConfirmar(null)}
       />
-    </section>
+    </div>
   );
 }
