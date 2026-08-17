@@ -95,7 +95,7 @@ export default function AppShell() {
               </option>
             ))}
           </select>
-          <p className="whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-accent min-[900px]:mt-0.5 min-[900px]:px-2">
+          <p className="whitespace-nowrap text-xs font-bold uppercase tracking-wider text-accent min-[900px]:mt-0.5 min-[900px]:px-2">
             {membership.role.nombre}
           </p>
         </div>

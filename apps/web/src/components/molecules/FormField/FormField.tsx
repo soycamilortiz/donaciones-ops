@@ -47,7 +47,7 @@ export function FormField({
     <div className={cn('space-y-1.5', className)} {...props}>
       <label
         htmlFor={htmlFor}
-        className="text-[11px] font-bold uppercase leading-none tracking-wide text-muted-foreground"
+        className="text-xs font-bold uppercase leading-none tracking-wide text-muted-foreground"
       >
         {label}
         {/* aria-required on the control already says it; the asterisk is visual. */}

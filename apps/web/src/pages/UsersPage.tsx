@@ -265,7 +265,7 @@ export default function UsersPage() {
                 </p>
 
                 <div className="space-y-1.5">
-                  <span className="block text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                  <span className="block text-xs font-bold uppercase tracking-wide text-muted-foreground">
                     {t('users.columns.role')}
                   </span>
                   {roleField(member)}
@@ -283,31 +283,31 @@ export default function UsersPage() {
                 <tr>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.name')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.username')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.email')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.role')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-right align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-right align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.actions')}
                   </th>

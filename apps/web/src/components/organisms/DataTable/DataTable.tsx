@@ -28,7 +28,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 key={col.key}
                 scope="col"
                 className={cn(
-                  'h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground',
+                  'h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground',
                   col.align === 'right' && 'text-right',
                   col.align === 'center' && 'text-center',
                   col.className,

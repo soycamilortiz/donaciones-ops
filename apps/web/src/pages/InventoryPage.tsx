@@ -36,8 +36,8 @@ const fieldTextareaClass = `${fieldControlClass} h-auto min-h-[72px] resize-y py
 const ROW_GRID =
   'min-[721px]:grid-cols-[minmax(200px,2fr)_minmax(120px,1.2fr)_96px_92px_116px_220px]';
 const cellLabelClass =
-  'text-[10px] font-bold uppercase tracking-wider text-muted-foreground min-[721px]:hidden';
-const thClass = 'text-[10px] font-bold uppercase tracking-wider text-muted-foreground';
+  'text-xs font-bold uppercase tracking-wider text-muted-foreground min-[721px]:hidden';
+const thClass = 'text-xs font-bold uppercase tracking-wider text-muted-foreground';
 
 function labelOf(options: readonly { value: string; label: string }[], value: string) {
   return options.find((item) => item.value === value)?.label ?? value;
@@ -710,7 +710,7 @@ export default function InventoryPage() {
 
               <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupIdentification')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
@@ -759,7 +759,7 @@ export default function InventoryPage() {
                 </fieldset>
 
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupPresentation')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
@@ -791,7 +791,7 @@ export default function InventoryPage() {
                 </fieldset>
 
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupQuantity')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
@@ -860,7 +860,7 @@ export default function InventoryPage() {
                 </fieldset>
 
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupLocation')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">

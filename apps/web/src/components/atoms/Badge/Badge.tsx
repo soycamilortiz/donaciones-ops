@@ -4,7 +4,7 @@ import type { BadgeProps, BadgeVariant } from './Badge.types';
 
 // Skin html-base: pastillas «soft» — fondo tenue + texto del color de estado.
 const base =
-  'inline-flex items-center rounded-pill px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors';
+  'inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-bold uppercase tracking-wide transition-colors';
 
 const variants: Record<BadgeVariant, string> = {
   default: 'bg-secondary text-muted-foreground',

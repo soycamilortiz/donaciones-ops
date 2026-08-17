@@ -164,7 +164,7 @@ export default function AcopiosPage() {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               {t('acopios.listTitle')}
             </h2>
             {!cargando && rows.length > 0 ? (
