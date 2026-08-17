@@ -10,24 +10,32 @@
 
 import type {
   AcopioFlujo as PrismaAcopioFlujo,
+  DemandaEstado as PrismaDemandaEstado,
+  DemandaItemTipo as PrismaDemandaItemTipo,
+  DemandaPrioridad as PrismaDemandaPrioridad,
   InventoryMovimientoTipo as PrismaInventoryMovimientoTipo,
   OrganizationTipo as PrismaOrganizationTipo,
   PutawayEstado as PrismaPutawayEstado,
   RecepcionEstado as PrismaRecepcionEstado,
   RecepcionPresentacion as PrismaRecepcionPresentacion,
   RecepcionTipo as PrismaRecepcionTipo,
+  ReservaEstado as PrismaReservaEstado,
   UbicacionEstado as PrismaUbicacionEstado,
   UbicacionFuncion as PrismaUbicacionFuncion,
   UbicacionTipo as PrismaUbicacionTipo,
 } from '@prisma/client';
 import type {
   AcopioFlujo,
+  DemandaEstado,
+  DemandaItemTipo,
+  DemandaPrioridad,
   InventoryMovimientoTipo,
   OrganizationTipo,
   PutawayEstado,
   RecepcionEstado,
   RecepcionPresentacion,
   RecepcionTipo,
+  ReservaEstado,
   UbicacionEstado,
   UbicacionFuncion,
   UbicacionTipo,
@@ -60,3 +68,11 @@ export const INVENTORY_MOVIMIENTO_TIPO_EN_SYNC: Exact<
   InventoryMovimientoTipo,
   PrismaInventoryMovimientoTipo
 > = true;
+
+export const DEMANDA_PRIORIDAD_EN_SYNC: Exact<DemandaPrioridad, PrismaDemandaPrioridad> = true;
+
+export const DEMANDA_ESTADO_EN_SYNC: Exact<DemandaEstado, PrismaDemandaEstado> = true;
+
+export const DEMANDA_ITEM_TIPO_EN_SYNC: Exact<DemandaItemTipo, PrismaDemandaItemTipo> = true;
+
+export const RESERVA_ESTADO_EN_SYNC: Exact<ReservaEstado, PrismaReservaEstado> = true;

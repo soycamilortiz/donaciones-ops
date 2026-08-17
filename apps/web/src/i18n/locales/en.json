@@ -22,6 +22,8 @@
     "acopios": "Collection centres",
     "locations": "Locations",
     "inventory": "Inventory",
+    "kits": "Kits",
+    "demands": "Demands",
     "receptions": "Receptions",
     "skipToContent": "Skip to content",
     "primary": "Primary navigation"
@@ -430,6 +432,8 @@
     "acopiosHint": "Warehouses to receive or send donations.",
     "locationsHint": "Zones, aisles and positions in each centre. Set them up before putting stock away.",
     "inventoryHint": "Stock per collection centre: product, batch and expiry.",
+    "kitsHint": "Bills of materials for food and shelter kits. A demand asks for kits, not each product.",
+    "demandsHint": "Reserve inventory for a destination: stock is committed, not yet picked from the warehouse.",
     "receptionsHint": "Open the arrival event, identify products and validate the inbound."
   },
   "inventoryCategories": {
@@ -489,6 +493,8 @@
     "category": "Category",
     "categories": "Categories",
     "quantity": "Quantity",
+    "availableQty": "available {{qty}}",
+    "reservedQty": "reserved {{qty}}",
     "stockQuantity": "Quantity in stock",
     "status": "Status",
     "expiryAlerts": "Expiry alerts",
@@ -639,6 +645,98 @@
       "PUTAWAY": "Putaway",
       "REUBICACION": "Relocation",
       "AJUSTE": "Adjustment"
+    }
+  },
+  "kits": {
+    "title": "Kits",
+    "subtitle": "The BOM says how much of each product goes into a kit. A demand asks for kits; the system computes the requirements.",
+    "newTitle": "New kit",
+    "create": "Create kit",
+    "empty": "No kits yet. Define one with catalogue components.",
+    "loadError": "Could not load kits",
+    "saveError": "Could not save the kit",
+    "noPermission": "You do not have permission to view kits.",
+    "addComponent": "Add component",
+    "bomHint": "Add at least one catalogue product. Without a BOM nothing can be reserved.",
+    "noBom": "This kit has no components.",
+    "deleteTitle": "Deactivate this kit",
+    "deleteHint": "The record is kept. Existing reservations are not deleted.",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "product": "Catalogue product",
+      "productPlaceholder": "Choose a product",
+      "qty": "Quantity per kit"
+    }
+  },
+  "demands": {
+    "title": "Demands",
+    "subtitle": "A demand is the need. A reservation commits inventory without taking it off the shelf. If stock is short, as much as possible is covered and the deficit remains.",
+    "open": "New demand",
+    "create": "Create demand",
+    "back": "Back to demands",
+    "empty": "No demands yet.",
+    "tableCaption": "Organisation demands",
+    "loadError": "Could not load demands",
+    "saveError": "Could not save",
+    "noPermission": "You do not have permission to view demands.",
+    "coverageLine": "Coverage already reserved: {{pct}}",
+    "simulate": "Simulate FEFO",
+    "preReserve": "Pre-reserve",
+    "reserve": "Firm reserve",
+    "confirm": "Confirm",
+    "release": "Release",
+    "cancelDemand": "Cancel demand",
+    "cancelTitle": "Cancel this demand",
+    "cancelHint": "Reservations are released. Inventory becomes available again; nothing is moved physically.",
+    "releaseTitle": "Release the reservation",
+    "releaseHint": "The commitment returns to available. Stock stays in its location.",
+    "productLine": "Product",
+    "itemCounts": "Requested {{requested}} · reserved {{reserved}} · possible now {{possible}} · pending {{pending}}",
+    "requirementLine": "need {{needed}}, have {{available}}, covering {{covered}}",
+    "reservationsTitle": "Reservations",
+    "reservationsEmpty": "No reservations for this demand yet.",
+    "scarceTitle": "Split when stock is short",
+    "scarceHint": "Kits this warehouse can commit now: {{count}}. Priority first, then required date.",
+    "scarceLine": "proposed {{proposed}} of {{requested}} ({{deficit}} short)",
+    "columns": {
+      "code": "Code",
+      "destination": "Destination",
+      "priority": "Priority",
+      "status": "Status",
+      "coverage": "Coverage"
+    },
+    "fields": {
+      "acopio": "Centre",
+      "acopioPlaceholder": "Choose the centre",
+      "destination": "Destination",
+      "municipality": "Municipality",
+      "priority": "Priority",
+      "neededBy": "Required date",
+      "population": "Affected population",
+      "kit": "Kit",
+      "kitPlaceholder": "Choose a kit",
+      "qty": "Number of kits"
+    },
+    "prioridad": {
+      "CRITICA": "Critical",
+      "ALTA": "High",
+      "MEDIA": "Medium",
+      "BAJA": "Low"
+    },
+    "estado": {
+      "ABIERTA": "Open",
+      "PARCIAL": "Partial",
+      "CUBIERTA": "Covered",
+      "CANCELADA": "Cancelled",
+      "CERRADA": "Closed"
+    },
+    "reservaEstado": {
+      "PRE_RESERVA": "Pre-reserve",
+      "RESERVADA": "Reserved",
+      "LIBERADA": "Released",
+      "CANCELADA": "Cancelled",
+      "CONSUMIDA": "Consumed"
     }
   }
 }

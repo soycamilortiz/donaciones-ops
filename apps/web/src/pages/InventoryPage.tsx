@@ -675,6 +675,14 @@ export default function InventoryPage() {
                       <span className="text-sm font-bold tabular-nums text-foreground">
                         {item.cantidad} {labelOf(INVENTORY_UNIDADES, item.unidad).toLowerCase()}
                       </span>
+                      {item.cantidadDisponible !== undefined ? (
+                        <span className="block text-xs tabular-nums text-muted-foreground">
+                          {t('inventory.availableQty', { qty: item.cantidadDisponible })}
+                          {(item.cantidadReservada ?? 0) > 0
+                            ? ` · ${t('inventory.reservedQty', { qty: item.cantidadReservada })}`
+                            : ''}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className="flex items-center justify-between gap-3 min-[721px]:block">

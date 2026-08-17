@@ -8,6 +8,9 @@
 import type { Producto } from './donaciones.js';
 import type {
   AcopioFlujo,
+  DemandaEstado,
+  DemandaItemTipo,
+  DemandaPrioridad,
   InventoryMovimientoTipo,
   OrganizationTipo,
   PutawayEstado,
@@ -15,6 +18,7 @@ import type {
   RecepcionItemEstado,
   RecepcionPresentacion,
   RecepcionTipo,
+  ReservaEstado,
   UbicacionEstado,
   UbicacionFuncion,
   UbicacionTipo,
@@ -149,6 +153,9 @@ export type InventoryItem = {
   cantidadEnMuelle?: number;
   cantidadUbicada?: number;
   pendienteUbicar?: boolean;
+  cantidadReservada?: number;
+  cantidadPreReservada?: number;
+  cantidadDisponible?: number;
   balances?: InventoryBalance[];
 };
 
@@ -158,6 +165,8 @@ export type InventoryBalance = {
   nombre: string;
   cantidad: number;
   funcion: UbicacionFuncion;
+  reservada?: number;
+  disponible?: number;
 };
 
 export type Ubicacion = {
@@ -285,6 +294,129 @@ export type RecepcionItem = {
   lote?: Lote | null;
   unidadLogistica?: Pick<UnidadLogistica, 'id' | 'codigo' | 'nroEnRecepcion' | 'tipo'> | null;
   alertaValidacion?: 'FALTA_VENCIMIENTO' | null;
+};
+
+export type KitComponente = {
+  id: string;
+  kitId: string;
+  productoId: string;
+  productoNombre?: string;
+  productoSku?: string;
+  cantidad: number;
+};
+
+export type Kit = {
+  id: string;
+  organizationId: string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string | null;
+  isActive: boolean;
+  componentes: KitComponente[];
+};
+
+export type DemandaItem = {
+  id: string;
+  demandaId: string;
+  tipo: DemandaItemTipo;
+  kitId?: string | null;
+  kitCodigo?: string | null;
+  kitNombre?: string | null;
+  productoId?: string | null;
+  productoNombre?: string | null;
+  cantidadSolicitada: number;
+  cantidadCubierta: number;
+  cantidadPosible?: number;
+  deficit?: number;
+};
+
+export type Demanda = {
+  id: string;
+  codigo: string;
+  organizationId: string;
+  acopioId: string;
+  acopioNombre?: string;
+  destinoNombre: string;
+  destinoMunicipio?: string | null;
+  destinoDepartamento?: string | null;
+  prioridad: DemandaPrioridad;
+  estado: DemandaEstado;
+  fechaRequerida?: string | null;
+  poblacionAfectada?: number | null;
+  tipoEmergencia?: string | null;
+  observaciones?: string | null;
+  isActive: boolean;
+  items: DemandaItem[];
+  cobertura?: number;
+};
+
+export type ReservaAsignacion = {
+  id?: string;
+  inventoryItemId: string;
+  inventoryNombre?: string;
+  loteCodigo?: string | null;
+  vencimiento?: string | null;
+  ubicacionId: string;
+  ubicacionCodigo?: string;
+  cantidad: number;
+};
+
+export type ReservaItem = {
+  id: string;
+  productoId: string;
+  productoNombre?: string;
+  cantidadRequerida: number;
+  cantidadAsignada: number;
+  deficit: number;
+  asignaciones: ReservaAsignacion[];
+};
+
+export type Reserva = {
+  id: string;
+  codigo: string;
+  organizationId: string;
+  acopioId: string;
+  demandaId: string;
+  demandaCodigo?: string;
+  demandaItemId: string;
+  kitId?: string | null;
+  estado: ReservaEstado;
+  cantidad: number;
+  observaciones?: string | null;
+  createdAt: string;
+  confirmedAt?: string | null;
+  items: ReservaItem[];
+};
+
+export type SimulacionReserva = {
+  demandaItemId: string;
+  solicitado: number;
+  posible: number;
+  deficit: number;
+  cobertura: number;
+  requerimientos: Array<{
+    productoId: string;
+    productoNombre: string;
+    porUnidad: number;
+    requerido: number;
+    disponible: number;
+    cubierto: number;
+    deficit: number;
+    plan: ReservaAsignacion[];
+  }>;
+};
+
+export type PlanEscaso = {
+  kitsPosibles: number;
+  lineas: Array<{
+    demandaId: string;
+    demandaCodigo: string;
+    destinoNombre: string;
+    prioridad: DemandaPrioridad;
+    solicitado: number;
+    propuesto: number;
+    deficit: number;
+  }>;
 };
 
 /** Un permiso conocido del catálogo, o cualquier slug que llegue del servidor. */

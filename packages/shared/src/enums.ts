@@ -337,3 +337,46 @@ export function categoriaCompatible(
   }
   return true;
 }
+
+export const DemandaPrioridad = {
+  Critica: 'CRITICA',
+  Alta: 'ALTA',
+  Media: 'MEDIA',
+  Baja: 'BAJA',
+} as const;
+
+export type DemandaPrioridad = (typeof DemandaPrioridad)[keyof typeof DemandaPrioridad];
+
+export const DemandaEstado = {
+  Abierta: 'ABIERTA',
+  Parcial: 'PARCIAL',
+  Cubierta: 'CUBIERTA',
+  Cancelada: 'CANCELADA',
+  Cerrada: 'CERRADA',
+} as const;
+
+export type DemandaEstado = (typeof DemandaEstado)[keyof typeof DemandaEstado];
+
+export const DemandaItemTipo = {
+  Kit: 'KIT',
+  Producto: 'PRODUCTO',
+} as const;
+
+export type DemandaItemTipo = (typeof DemandaItemTipo)[keyof typeof DemandaItemTipo];
+
+export const ReservaEstado = {
+  PreReserva: 'PRE_RESERVA',
+  Reservada: 'RESERVADA',
+  Liberada: 'LIBERADA',
+  Cancelada: 'CANCELADA',
+  Consumida: 'CONSUMIDA',
+} as const;
+
+export type ReservaEstado = (typeof ReservaEstado)[keyof typeof ReservaEstado];
+
+export const DEMANDA_PRIORIDADES: ReadonlyArray<{ value: DemandaPrioridad; label: string }> = [
+  { value: DemandaPrioridad.Critica, label: 'Crítica' },
+  { value: DemandaPrioridad.Alta, label: 'Alta' },
+  { value: DemandaPrioridad.Media, label: 'Media' },
+  { value: DemandaPrioridad.Baja, label: 'Baja' },
+];

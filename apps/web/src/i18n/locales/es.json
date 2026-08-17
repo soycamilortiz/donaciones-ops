@@ -22,6 +22,8 @@
     "acopios": "Acopios",
     "locations": "Ubicaciones",
     "inventory": "Inventario",
+    "kits": "Kits",
+    "demands": "Demandas",
     "receptions": "Recepciones",
     "skipToContent": "Saltar al contenido",
     "primary": "Navegación principal"
@@ -430,6 +432,8 @@
     "acopiosHint": "Bodegas para recibir o enviar donaciones.",
     "locationsHint": "Zonas, pasillos y posiciones de cada acopio. Se configuran antes de ubicar stock.",
     "inventoryHint": "Existencias por centro de acopio: producto, lote y vencimiento.",
+    "kitsHint": "Recetas (BOM) de kits alimentarios y de abrigo. La demanda pide kits, no cada producto.",
+    "demandsHint": "Reservar inventario para un destino: se compromete stock, todavía no se saca de la bodega.",
     "receptionsHint": "Abrir el evento de llegada, identificar productos y validar el ingreso."
   },
   "inventoryCategories": {
@@ -489,6 +493,8 @@
     "category": "Categoría",
     "categories": "Categorías",
     "quantity": "Cantidad",
+    "availableQty": "disponible {{qty}}",
+    "reservedQty": "reservado {{qty}}",
     "stockQuantity": "Cantidad en stock",
     "status": "Estado",
     "expiryAlerts": "Alertas de vencimiento",
@@ -639,6 +645,98 @@
       "PUTAWAY": "Putaway",
       "REUBICACION": "Reubicación",
       "AJUSTE": "Ajuste"
+    }
+  },
+  "kits": {
+    "title": "Kits",
+    "subtitle": "El BOM dice cuánto de cada producto entra en un kit. La demanda pide kits; el sistema calcula los requerimientos.",
+    "newTitle": "Nuevo kit",
+    "create": "Crear kit",
+    "empty": "Todavía no hay kits. Definí uno con sus componentes del catálogo.",
+    "loadError": "No se pudieron cargar los kits",
+    "saveError": "No se pudo guardar el kit",
+    "noPermission": "No tenés permiso para ver kits.",
+    "addComponent": "Agregar componente",
+    "bomHint": "Agregá al menos un producto del catálogo. Sin BOM no se puede reservar.",
+    "noBom": "Este kit no tiene componentes.",
+    "deleteTitle": "Dar de baja este kit",
+    "deleteHint": "El registro se conserva. Las demandas ya reservadas no se borran.",
+    "fields": {
+      "name": "Nombre",
+      "description": "Descripción",
+      "product": "Producto del catálogo",
+      "productPlaceholder": "Elegí un producto",
+      "qty": "Cantidad por kit"
+    }
+  },
+  "demands": {
+    "title": "Demandas",
+    "subtitle": "Una demanda es la necesidad. La reserva compromete inventario sin sacarlo de la bodega. Si no alcanza el stock, se cubre lo posible y queda el déficit.",
+    "open": "Nueva demanda",
+    "create": "Crear demanda",
+    "back": "Volver a demandas",
+    "empty": "Todavía no hay demandas.",
+    "tableCaption": "Demandas de la organización",
+    "loadError": "No se pudieron cargar las demandas",
+    "saveError": "No se pudo guardar",
+    "noPermission": "No tenés permiso para ver demandas.",
+    "coverageLine": "Cobertura de lo ya reservado: {{pct}}",
+    "simulate": "Simular FEFO",
+    "preReserve": "Pre-reservar",
+    "reserve": "Reservar en firme",
+    "confirm": "Confirmar",
+    "release": "Liberar",
+    "cancelDemand": "Cancelar demanda",
+    "cancelTitle": "Cancelar esta demanda",
+    "cancelHint": "Se liberan las reservas. El inventario vuelve a disponible; no se mueve nada físico.",
+    "releaseTitle": "Liberar la reserva",
+    "releaseHint": "El compromiso vuelve a disponible. El stock sigue en su ubicación.",
+    "productLine": "Producto",
+    "itemCounts": "Solicitado {{requested}} · reservado {{reserved}} · posible ahora {{possible}} · pendiente {{pending}}",
+    "requirementLine": "hace falta {{needed}}, hay {{available}}, se cubren {{covered}}",
+    "reservationsTitle": "Reservas",
+    "reservationsEmpty": "Todavía no hay reservas para esta demanda.",
+    "scarceTitle": "Reparto si el stock no alcanza",
+    "scarceHint": "Kits que la bodega puede comprometer ahora: {{count}}. Primero prioridad, después fecha requerida.",
+    "scarceLine": "propuestos {{proposed}} de {{requested}} (faltan {{deficit}})",
+    "columns": {
+      "code": "Código",
+      "destination": "Destino",
+      "priority": "Prioridad",
+      "status": "Estado",
+      "coverage": "Cobertura"
+    },
+    "fields": {
+      "acopio": "Acopio",
+      "acopioPlaceholder": "Elegí el centro",
+      "destination": "Destino",
+      "municipality": "Municipio",
+      "priority": "Prioridad",
+      "neededBy": "Fecha requerida",
+      "population": "Población afectada",
+      "kit": "Kit",
+      "kitPlaceholder": "Elegí un kit",
+      "qty": "Cantidad de kits"
+    },
+    "prioridad": {
+      "CRITICA": "Crítica",
+      "ALTA": "Alta",
+      "MEDIA": "Media",
+      "BAJA": "Baja"
+    },
+    "estado": {
+      "ABIERTA": "Abierta",
+      "PARCIAL": "Parcial",
+      "CUBIERTA": "Cubierta",
+      "CANCELADA": "Cancelada",
+      "CERRADA": "Cerrada"
+    },
+    "reservaEstado": {
+      "PRE_RESERVA": "Pre-reserva",
+      "RESERVADA": "Reservada",
+      "LIBERADA": "Liberada",
+      "CANCELADA": "Cancelada",
+      "CONSUMIDA": "Consumida"
     }
   }
 }

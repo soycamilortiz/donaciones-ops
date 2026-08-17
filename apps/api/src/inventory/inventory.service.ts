@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InventoryCategoria, InventoryUnidad, Prisma } from '@prisma/client';
 import { blankToNull } from '../common/soft-delete';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReservasService } from '../reservas/reservas.service';
 import { UbicacionesService } from '../ubicaciones/ubicaciones.service';
 import type {
   CreateInventoryItemDto,
@@ -15,6 +16,7 @@ export class InventoryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ubicaciones: UbicacionesService,
+    private readonly reservas: ReservasService,
   ) {}
 
   /**
@@ -188,7 +190,28 @@ export class InventoryService {
       },
       orderBy: [{ isActive: 'desc' }, { categoria: 'asc' }, { nombre: 'asc' }],
     });
-    return rows.map((row) => this.ubicaciones.toInventoryDto(row));
+    const compromisos = await this.reservas.compromisosPorSaldo(acopioId);
+    return rows.map((row) => {
+      const dto = this.ubicaciones.toInventoryDto(row);
+      const reservada = compromisos.firmeItem.get(row.id) ?? 0;
+      const pre = compromisos.preItem.get(row.id) ?? 0;
+      const ubicada = dto.cantidadUbicada ?? 0;
+      return {
+        ...dto,
+        cantidadReservada: reservada,
+        cantidadPreReservada: pre,
+        cantidadDisponible: Math.max(0, ubicada - reservada),
+        balances: dto.balances?.map((balance) => {
+          const key = `${row.id}:${balance.ubicacionId}`;
+          const res = compromisos.firme.get(key) ?? 0;
+          return {
+            ...balance,
+            reservada: res,
+            disponible: Math.max(0, balance.cantidad - res),
+          };
+        }),
+      };
+    });
   }
 
   async create(

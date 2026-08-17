@@ -28,6 +28,18 @@ export default function Dashboard() {
       icon: 'package',
     },
     {
+      to: '/app/kits',
+      title: t('nav.kits'),
+      hint: t('dashboard.kitsHint'),
+      icon: 'heart',
+    },
+    {
+      to: '/app/demandas',
+      title: t('nav.demands'),
+      hint: t('dashboard.demandsHint'),
+      icon: 'alert-circle',
+    },
+    {
       to: '/app/recepciones',
       title: t('nav.receptions'),
       hint: t('dashboard.receptionsHint'),

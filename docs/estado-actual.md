@@ -101,13 +101,13 @@ Invitar personas: quien se suma **ya tiene que estar registrada** con ese correo
 
 ## Dominio (Prisma)
 
-`User` (usuario + correo únicos, `password_hash`, `correoVerificadoAt`), `EmailVerification`, `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto` (catálogo global con SKU), `DonacionImagen`, `Recepcion`, `UnidadLogistica`, `Lote`, `RecepcionItem`, `OrgCounter`, `Ubicacion`, `InventoryBalance`, `InventoryMovimiento`, `Putaway`, `PutawayLinea`.
+`User` (usuario + correo únicos, `password_hash`, `correoVerificadoAt`), `EmailVerification`, `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto` (catálogo global con SKU), `DonacionImagen`, `Recepcion`, `UnidadLogistica`, `Lote`, `RecepcionItem`, `OrgCounter`, `Ubicacion`, `InventoryBalance`, `InventoryMovimiento`, `Putaway`, `PutawayLinea`, `Kit`, `KitComponente`, `Demanda`, `DemandaItem`, `Reserva`, `ReservaItem`, `ReservaAsignacion`.
 
 Roles semilla: administrador de acopio, auxiliar administrativo, líder de zona, finanzas, transportador, voluntario. Quien crea la org queda como administrador de acopio. El alta por defecto es voluntario. La matriz se edita en `/app/roles` (permiso `roles:write`). Los permisos nuevos de código aparecen como filas; no se pisan los tildes ya guardados.
 
 Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `inventory:read/write`, `donaciones:read/write`.
 
-Inventario: por centro de acopio. Dashboard en `/app/inventario`. El alta de stock desde campo pasa por una **recepción**: confirmar una foto identifica el producto (unidad de medida y vencimiento en el ingreso); **validar** incrementa `inventory_items` (solo `cantidad_aprobada`) y deja esa cantidad en el **muelle**. Ubicar es otro paso (`/app/inventario/ubicar`): el sistema sugiere destinos; el operador confirma el código de la ubicación. Trasladar entre zonas ya ubicadas es **reubicación** (`/app/inventario/mover`): también confirma el código de destino. Saldos en `inventory_balances`. Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol, producto, recepción, ubicación e ítem. Dar de baja no bloquea un alta nueva (el producto de inventario siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
+Inventario: por centro de acopio. Dashboard en `/app/inventario`. El alta de stock desde campo pasa por una **recepción**: confirmar una foto identifica el producto (unidad de medida y vencimiento en el ingreso); **validar** incrementa `inventory_items` (solo `cantidad_aprobada`) y deja esa cantidad en el **muelle**. Ubicar es otro paso (`/app/inventario/ubicar`): el sistema sugiere destinos; el operador confirma el código de la ubicación. Trasladar entre zonas ya ubicadas es **reubicación** (`/app/inventario/mover`): también confirma el código de destino. Saldos en `inventory_balances`. **Reserva** (`/app/demandas`, `/app/kits`): una demanda pide kits; el BOM calcula requerimientos; se compromete lo posible (FEFO por lote/ubicación) sin sacar stock. Pre-reserva no bloquea; reserva firme sí. Diseño: [reserva.md](reserva.md). Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol, producto, recepción, ubicación, ítem, kit, demanda y reserva. Dar de baja no bloquea un alta nueva (el producto de inventario siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
 
 ## API NestJS
 
@@ -126,6 +126,7 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
 | Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas/ruta`, `/productos`, `/ean/:codigo`, `/:id/interpretar`, `/:id/confirmar`) |
 | Recepciones | `/api/v1/organizations/:orgId/recepciones` (+ `/:id/unidades`, `/:id/items`, `/:id/items/:itemId/inspeccion`, `/:id/validar`, `/:id/anular`) |
+| Kits / demandas / reservas | `/api/v1/organizations/:orgId/kits`, `/demandas`, `/demandas/:id/reservas`, `/demandas/plan-escaso`, `/reservas/:id/confirmar`, `/reservas/:id/liberar`, `/acopios/:acopioId/reservas` |
 
 `GET /donaciones` está **paginado por cursor**, no por offset: las fotos se insertan sin parar desde el campo y con `OFFSET` una fila nueva desplaza la ventana, haciendo que se repitan o se salten registros entre páginas. Devuelve `{ items, siguienteCursor }`; `siguienteCursor` es `null` cuando ya no hay más. Acepta `?estado=`, `?cursor=` y `?limite=` (1–200, default 50).
 
@@ -236,7 +237,7 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 
 ## Shell (`apps/web`)
 
-Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio, putaway (`/app/inventario/ubicar`) y reubicación entre zonas (`/app/inventario/mover`). Ubicaciones del acopio: `/app/ubicaciones` (también desde cada centro en Acopios). Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar). La foto de identificación vive en `/app/recepciones/:id/foto`. No hay módulo de Donaciones en el panel.
+Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio, putaway (`/app/inventario/ubicar`) y reubicación entre zonas (`/app/inventario/mover`). Ubicaciones del acopio: `/app/ubicaciones` (también desde cada centro en Acopios). Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar). La foto de identificación vive en `/app/recepciones/:id/foto`. Kits (`/app/kits`) y demandas/reservas (`/app/demandas`). No hay módulo de Donaciones en el panel.
 
 Alta/edición de acopios: departamento y municipio (DIVIPOLA Colombia), autocomplete Photon, geolocalización del navegador, pin Leaflet arrastrable y mapa para `lat`/`lng`. Componente `AddressLocationPicker`.
 
@@ -244,7 +245,7 @@ Sistema visual «html-base»: paleta verde (`#12331A`) + acento dorado (`#F2C230
 
 ## Qué falta
 
-- Recepción v1 **está**. Diseño: [recepcion.md](recepcion.md). Ubicaciones, putaway y reubicación entre zonas con confirmación de código **están** (v1: sin QR de cámara ni distancia/FEFO). Falta todavía: pallet de despacho, variantes (talla/gramaje), reserva/picking.
+- Recepción v1 **está**. Diseño: [recepcion.md](recepcion.md). Ubicaciones, putaway y reubicación entre zonas con confirmación de código **están** (v1: sin QR de cámara ni distancia/FEFO en el putaway). Reserva v1 **está**. Diseño: [reserva.md](reserva.md). Falta todavía: picking, kitting, pallet de despacho, variantes (talla/gramaje).
 - Módulo de envíos (contenedor + API).
 - Cookie httpOnly en lugar de `localStorage` si se endurece XSS.
 - Rate limit explícito en login (hoy el captcha cubre brute-force básico).

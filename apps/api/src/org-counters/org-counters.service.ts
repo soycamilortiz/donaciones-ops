@@ -99,6 +99,35 @@ export class OrgCountersService {
     });
     return `MOV-${year}-${pad(n, 6)}`;
   }
+
+  async codigoKit(organizationId: string): Promise<string> {
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'KIT',
+      periodo: '',
+    });
+    return `KIT-${pad(n, 4)}`;
+  }
+
+  async codigoDemanda(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'DEMANDA',
+      periodo: year,
+    });
+    return `DEM-${year}-${pad(n, 6)}`;
+  }
+
+  async codigoReserva(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'RESERVA',
+      periodo: year,
+    });
+    return `RES-${year}-${pad(n, 6)}`;
+  }
 }
 
 function pad(n: number, width: number): string {

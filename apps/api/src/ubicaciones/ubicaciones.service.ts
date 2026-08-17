@@ -649,6 +649,24 @@ export class UbicacionesService {
       if (!origen || Number(origen.cantidad) + 0.001 < cantidad) {
         throw new BadRequestException('No hay esa cantidad en la ubicación de origen');
       }
+      const reservado = await db.reservaAsignacion.aggregate({
+        where: {
+          inventoryItemId,
+          ubicacionId: origenId,
+          isActive: true,
+          reservaItem: {
+            isActive: true,
+            reserva: { estado: 'RESERVADA', isActive: true },
+          },
+        },
+        _sum: { cantidad: true },
+      });
+      const libre = Number(origen.cantidad) - Number(reservado._sum.cantidad ?? 0);
+      if (cantidad - libre > 0.001) {
+        throw new BadRequestException(
+          `Hay inventario reservado en esa ubicación. Libre: ${libre}, se intentan mover ${cantidad}`,
+        );
+      }
       const queda = Number(origen.cantidad) - cantidad;
       await db.inventoryBalance.update({
         where: { id: origen.id },

@@ -8,7 +8,10 @@ import { ROUTES } from './lib/constants';
 import AcopiosPage from './pages/AcopiosPage';
 import CompleteGoogleProfilePage from './pages/CompleteGoogleProfilePage';
 import Dashboard from './pages/Dashboard';
+import DemandaDetailPage from './pages/DemandaDetailPage';
+import DemandasPage from './pages/DemandasPage';
 import InventoryPage from './pages/InventoryPage';
+import KitsPage from './pages/KitsPage';
 import Landing from './pages/Landing';
 import MovimientosPage from './pages/MovimientosPage';
 import NuevaDonacionPage from './pages/NuevaDonacionPage';
@@ -56,6 +59,9 @@ export default function App() {
             />
             <Route path="/app/inventario/ubicar" element={<PutawayPage />} />
             <Route path="/app/inventario/mover" element={<MovimientosPage />} />
+            <Route path="/app/kits" element={<KitsPage />} />
+            <Route path="/app/demandas" element={<DemandasPage />} />
+            <Route path="/app/demandas/:id" element={<DemandaDetailPage />} />
             <Route path="/app/recepciones" element={<RecepcionesPage />} />
             <Route path="/app/recepciones/nueva" element={<NuevaRecepcionPage />} />
             <Route path="/app/recepciones/:id/foto" element={<NuevaDonacionPage />} />
