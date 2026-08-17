@@ -44,6 +44,25 @@ function labelOf(options: readonly { value: string; label: string }[], value: st
   return options.find((item) => item.value === value)?.label ?? value;
 }
 
+/** Fecha para mostrar: `15/06/2027` en español, `6/15/2027` en inglés. */
+function dateLabel(value: string | null | undefined, idioma: string) {
+  const iso = dateInput(value);
+  if (!iso) {
+    return '';
+  }
+  // Se parte a mano: `new Date('2027-06-15')` es UTC y en América se corre un día.
+  const [anio, mes, dia] = iso.split('-').map(Number);
+  if (!anio || !mes || !dia) {
+    return iso;
+  }
+  return new Date(anio, mes - 1, dia).toLocaleDateString(idioma, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+/** Valor para un `<input type="date">`, que exige ISO. */
 function dateInput(value?: string | null) {
   if (!value) {
     return '';
@@ -62,7 +81,7 @@ function soon(value?: string | null) {
 }
 
 export default function InventoryPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { avisar } = useToast();
   const navigate = useNavigate();
   const { orgId, can } = useOrg();
@@ -245,14 +264,33 @@ export default function InventoryPage() {
     const previoOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
+    // Quien tenia el foco antes de abrir, para devolverselo al cerrar (UX-033):
+    // sin esto el foco cae a <body> y hay que tabular la pagina entera.
+    const origen = document.activeElement as HTMLElement | null;
+
     // Al abrir, el foco debe entrar al modal; si no, sigue en el boton que lo
     // abrio y tabular lleva al contenido de detras.
     const dialogo = document.querySelector<HTMLElement>('[role="dialog"]');
     dialogo?.querySelector<HTMLElement>('input, select, textarea, button')?.focus();
 
+    // El resto de la pagina queda inerte (UX-042): la trampa de foco solo
+    // retiene el tabulador, pero el gesto de barrido de un lector de pantalla
+    // seguia llegando al contenido de detras.
+    const raiz = document.getElementById('root');
+    const fueraDelModal = raiz
+      ? [...raiz.children].filter((hijo) => !hijo.contains(dialogo ?? null))
+      : [];
+    for (const hijo of fueraDelModal) {
+      hijo.setAttribute('inert', '');
+    }
+
     return () => {
       document.removeEventListener('keydown', alPulsar);
       document.body.style.overflow = previoOverflow;
+      for (const hijo of fueraDelModal) {
+        hijo.removeAttribute('inert');
+      }
+      origen?.focus();
     };
   }, [formOpen]);
 
@@ -616,7 +654,7 @@ export default function InventoryPage() {
                     <div className="flex items-center justify-between gap-3 min-[721px]:block">
                       <span className={cellLabelClass}>{t('inventory.expires')}</span>
                       <span className="text-sm tabular-nums text-muted-foreground">
-                        {dateInput(item.vencimiento) || '—'}
+                        {dateLabel(item.vencimiento, i18n.language) || '—'}
                       </span>
                     </div>
 

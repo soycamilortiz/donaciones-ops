@@ -63,6 +63,12 @@ export function DataTable<T extends Record<string, unknown>>({
                       col.className,
                     )}
                   >
+                    <span
+                      aria-hidden="true"
+                      className="ds-cell-label hidden font-bold uppercase tracking-wider text-muted-foreground"
+                    >
+                      {col.header}
+                    </span>
                     {col.render ? col.render(row) : String(row[col.key] ?? '')}
                   </td>
                 ))}

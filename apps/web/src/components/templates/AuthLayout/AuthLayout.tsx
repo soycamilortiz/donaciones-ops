@@ -13,7 +13,7 @@ export function AuthLayout({
 }: AuthLayoutProps): ReactElement {
   return (
     // Skin html-base: fondo salvia, tarjeta centrada (<=460px) radio 20px.
-    <div className="grid min-h-screen place-items-center bg-background p-4 sm:p-6">
+    <main className="grid min-h-screen place-items-center bg-background p-4 sm:p-6">
       <div
         className={cn(
           'w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg sm:p-8',
@@ -37,6 +37,6 @@ export function AuthLayout({
         ) : null}
         <div className="mt-6">{children}</div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -113,8 +113,19 @@
     display: block;
   }
 
+  /*
+   * `display: none` habría sacado los <th scope="col"> del árbol de
+   * accesibilidad junto con la vista. Se ocultan visualmente y siguen ahí.
+   */
   .ds-datatable thead {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .ds-datatable tbody tr {
@@ -130,8 +141,15 @@
     text-align: right;
   }
 
-  .ds-datatable td[data-label]::before {
-    content: attr(data-label);
+  /*
+   * La etiqueta de columna es un <span> real dentro de la celda, no un
+   * `::before` con `attr(data-label)`: VoiceOver y TalkBack no anuncian el
+   * contenido generado de forma fiable, así que al apilar la tabla el valor
+   * quedaba sin su columna («Camisetas», «40», «Pendiente» y nada más).
+   * El span es `aria-hidden` porque el <th> sigue en el árbol.
+   */
+  .ds-datatable td[data-label] .ds-cell-label {
+    display: block;
     flex: 0 0 auto;
     text-align: left;
     /* 12px: a 10px la etiqueta de columna no se lee con reflejo ni en marcha. */
