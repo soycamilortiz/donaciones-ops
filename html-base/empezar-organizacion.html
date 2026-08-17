@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crear organización — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .pending { min-height: 100vh; background: var(--sage); display: flex; flex-direction: column; align-items: center; }
+  .pending-bar { width: 100%; max-width: 620px; height: 64px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+  .pending-main { width: 100%; max-width: 620px; padding: 22px 24px 64px; display: flex; flex-direction: column; gap: 20px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); }
+  .back svg { width: 13px; height: 13px; }
+  .cond { padding: 14px; background: var(--gold-soft); border-radius: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .cond-note { font-size: 11px; font-weight: 600; color: var(--gold-deep); }
+</style>
+</head>
+<body data-route="/empezar/organizacion">
+
+<div class="pending">
+
+  <header class="pending-bar">
+    <a class="brand" href="index.html" aria-label="SOS Chocó — inicio"><img class="logo logo-auth" src="assets/logo-mark.png" alt="SOS Chocó" width="520" height="441"></a>
+    <a class="tb-action" href="index.html"><span data-ico="logout"></span>Salir</a>
+  </header>
+
+  <main class="pending-main">
+
+    <a class="back" href="empezar.html"><span data-ico="arrowLeft"></span>Volver</a>
+
+    <div class="auth-head">
+      <h1 class="auth-title">Crear organización</h1>
+      <p class="auth-sub">Solo caracterización (quiénes son y cómo contactarlos). Los centros de acopio —recibir o enviar donaciones— se cargan en Acopios, ya dentro del panel.</p>
+    </div>
+
+    <form class="auth-card" id="form" novalidate>
+
+      <div class="field">
+        <div class="row"><label class="field-label grow" for="nombre">Nombre</label><span class="field-req">Obligatorio</span></div>
+        <input class="input" id="nombre" minlength="2" required value="Corporación Pueblo Negro Fuerte">
+      </div>
+
+      <div class="field">
+        <div class="row"><label class="field-label grow" for="correo">Correo</label><span class="field-req">Obligatorio</span></div>
+        <input class="input" id="correo" type="email" required>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="tipo">Tipo</label>
+        <select class="select" id="tipo"></select>
+      </div>
+
+      <div class="cond" id="cond" hidden>
+        <p class="cond-note">Solo si el tipo es «Otro»</p>
+        <label class="field-label" for="tipoDetalle">Detalle del tipo</label>
+        <input class="input" id="tipoDetalle" placeholder="Junta de acción comunal">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="telefono">Teléfono</label>
+        <input class="input" id="telefono" placeholder="+57 000 000 0000">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="descripcion">Descripción</label>
+        <textarea class="textarea" id="descripcion" rows="3" placeholder="Qué hacen, dónde operan, a quién atienden."></textarea>
+      </div>
+
+      <button class="btn btn-lg btn-block" type="submit">Crear organización<span class="btn-cap" data-ico="arrowRight"></span></button>
+    </form>
+
+    <div class="note">
+      <span data-ico="home"></span>
+      <p class="note-text">Al guardar entrás directo a Acopios. Sin al menos un acopio activo, Inventario no puede operar.</p>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+  import { el, fill } from './assets/app.js';
+  import { ORGANIZATION_TIPOS, ME } from './assets/data.js';
+
+  document.getElementById('correo').value = ME.correo;
+
+  const tipo = document.getElementById('tipo');
+  fill(tipo, ORGANIZATION_TIPOS.map((t) => el('option', { value: t.value, text: t.label })));
+
+  const cond = document.getElementById('cond');
+  const sync = () => { cond.hidden = tipo.value !== 'OTRO'; };
+  tipo.addEventListener('change', sync);
+  sync();
+
+  document.getElementById('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    location.href = 'acopios.html';
+  });
+</script>
+
+</body>
+</html>

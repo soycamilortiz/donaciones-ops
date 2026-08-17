@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inventario — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .inv-head, .inv-row { grid-template-columns: minmax(240px, 2fr) minmax(180px, 1.4fr) 130px 110px 130px 160px; }
+  .toolbar { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+</style>
+</head>
+<body data-route="/app/inventario">
+
+<div class="shell">
+  <div data-shell></div>
+
+  <div class="main">
+    <header class="topbar" data-topbar></header>
+
+    <main class="content">
+
+      <div class="page-head">
+        <div class="page-head-copy">
+          <p class="eyebrow">Bodega</p>
+          <h1 class="page-title">Inventario</h1>
+          <p class="page-sub">Existencias del centro seleccionado. Los productos se dan de baja; no se borran.</p>
+        </div>
+        <button class="btn" id="nuevo" type="button">Nuevo producto<span class="btn-cap" data-ico="plus"></span></button>
+      </div>
+
+      <div id="sin-acopio" hidden>
+        <div class="table">
+          <div class="empty">
+            <div class="empty-mark" data-ico="lock" data-stroke="2"></div>
+            <h2 class="empty-title">El inventario vive en cada centro de acopio</h2>
+            <p class="empty-text">Primero creá un acopio. Sin al menos uno activo no hay dónde registrar existencias.</p>
+            <a class="btn" href="acopios.html">Ir a acopios<span class="btn-cap" data-ico="arrowRight"></span></a>
+          </div>
+        </div>
+      </div>
+
+      <div id="operativo" class="col gap-20">
+
+        <div class="chip-row" id="chips" role="listbox" aria-label="Centro de acopio"></div>
+        <p class="td-sub" id="acopio-dir"></p>
+
+        <div class="stat-grid" id="stats"></div>
+
+        <div class="toolbar">
+          <div class="field">
+            <label class="field-label" for="q">Buscar</label>
+            <div class="search-wrap">
+              <span data-ico="search"></span>
+              <input class="input" id="q" style="width:320px" placeholder="Nombre, marca, SKU…">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="cat">Categoría</label>
+            <select class="select" id="cat" style="width:280px"></select>
+          </div>
+          <label class="toggle" style="height:46px">
+            <input type="checkbox" id="bajas">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-label">Ver dados de baja</span>
+          </label>
+        </div>
+
+        <div class="table">
+          <div class="thead inv-head">
+            <span class="th">Producto</span><span class="th">Categoría</span>
+            <span class="th">Cantidad</span><span class="th">Vence</span>
+            <span class="th">Estado</span><span class="th" style="text-align:right">Acciones</span>
+          </div>
+          <div id="filas"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="backdrop" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <form class="modal modal-wide" id="form-item">
+    <div class="modal-head">
+      <div class="modal-head-copy">
+        <p class="eyebrow" id="modal-acopio"></p>
+        <h2 class="modal-title" id="modal-title">Nuevo producto</h2>
+        <p class="modal-sub" id="modal-sub">Cargá un ítem al centro de acopio seleccionado.</p>
+      </div>
+      <button class="modal-x" type="button" data-close aria-label="Cerrar"><span data-ico="x"></span></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <p class="form-group-label">Identificación</p>
+        <div class="form-grid">
+          <div class="field" style="grid-column:span 2">
+            <div class="row"><label class="field-label grow" for="f-nombre">Producto / ayuda</label><span class="field-req">Obligatorio</span></div>
+            <input class="input" id="f-nombre" minlength="2" required>
+          </div>
+          <div class="field"><label class="field-label" for="f-marca">Marca</label><input class="input" id="f-marca"></div>
+          <div class="field"><label class="field-label" for="f-categoria">Categoría</label><select class="select" id="f-categoria"></select></div>
+          <div class="field"><label class="field-label" for="f-catdet">Detalle de categoría</label><input class="input" id="f-catdet" placeholder="Solo si aplica"></div>
+          <div class="field"><label class="field-label" for="f-sku">SKU / código</label><input class="input" id="f-sku"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <p class="form-group-label">Presentación y destinatario</p>
+        <div class="form-grid">
+          <div class="field"><label class="field-label" for="f-pres">Presentación</label><input class="input" id="f-pres" placeholder="500 g, 900 ml…"></div>
+          <div class="field"><label class="field-label" for="f-talla">Talla</label><input class="input" id="f-talla"></div>
+          <div class="field"><label class="field-label" for="f-dest">Destinatario</label><select class="select" id="f-dest"></select></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <p class="form-group-label">Cantidad y estado</p>
+        <div class="form-grid">
+          <div class="field">
+            <div class="row"><label class="field-label grow" for="f-cant">Cantidad</label><span class="field-req">Obligatorio</span></div>
+            <input class="input" id="f-cant" type="number" min="0" step="any" inputmode="decimal" required>
+          </div>
+          <div class="field"><label class="field-label" for="f-unidad">Unidad</label><select class="select" id="f-unidad"></select></div>
+          <div class="field"><label class="field-label" for="f-unidet">Detalle de unidad</label><input class="input" id="f-unidet" placeholder="Solo si la unidad es «Otra»"></div>
+          <div class="field"><label class="field-label" for="f-venc">Vencimiento</label><input class="input" id="f-venc" type="date"></div>
+          <div class="field"><label class="field-label" for="f-estado">Estado</label><select class="select" id="f-estado"></select></div>
+          <div class="field"><label class="field-label" for="f-lote">Lote</label><input class="input" id="f-lote"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <p class="form-group-label">Ubicación y origen</p>
+        <div class="form-grid">
+          <div class="field"><label class="field-label" for="f-ubic">Ubicación en bodega</label><input class="input" id="f-ubic" placeholder="Estante, pasillo…"></div>
+          <div class="field"><label class="field-label" for="f-donante">Donante</label><input class="input" id="f-donante"></div>
+          <div class="field"><label class="field-label" for="f-contacto">Contacto del donante</label><input class="input" id="f-contacto"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="f-obs">Observaciones</label>
+        <textarea class="textarea" id="f-obs" rows="2"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <p class="td-sub grow">Esc cierra sin guardar. El producto nace activo.</p>
+      <button class="btn-ghost" type="button" data-close>Cancelar</button>
+      <button class="btn" type="submit" id="guardar">Crear producto<span class="btn-cap" data-ico="check"></span></button>
+    </div>
+  </form>
+</div>
+
+<script type="module">
+  import { el, fill, icon, openModal, closeModal, wireModal, toast } from './assets/app.js';
+  import {
+    ACOPIOS, INVENTORY, INVENTORY_CATEGORIAS, INVENTORY_UNIDADES,
+    INVENTORY_ESTADOS, INVENTORY_DESTINATARIOS, label,
+  } from './assets/data.js';
+
+  const CLAVE = 'soschoco.inventoryAcopio';
+  const items = INVENTORY.map((i) => ({ ...i }));
+  const activos = ACOPIOS.filter((a) => a.isActive);
+
+  let acopioId = localStorage.getItem(CLAVE);
+  if (!activos.some((a) => a.id === acopioId)) acopioId = activos[0]?.id ?? null;
+
+  const $ = (id) => document.getElementById(id);
+  const modal = $('modal');
+  wireModal(modal);
+
+  // Sin acopio activo la vista entera se reemplaza (InventoryPage.tsx:265).
+  if (!acopioId) {
+    $('sin-acopio').hidden = false;
+    $('operativo').hidden = true;
+    $('nuevo').hidden = true;
+  }
+
+  /* --------------------------------------------------------- selects */
+  const opts = (list) => list.map((o) => el('option', { value: o.value, text: o.label }));
+  fill($('cat'), [el('option', { value: '', text: 'Todas' }), ...opts(INVENTORY_CATEGORIAS)]);
+  fill($('f-categoria'), opts(INVENTORY_CATEGORIAS));
+  fill($('f-unidad'), opts(INVENTORY_UNIDADES));
+  fill($('f-estado'), opts(INVENTORY_ESTADOS));
+  fill($('f-dest'), opts(INVENTORY_DESTINATARIOS));
+  $('f-categoria').value = 'ALIMENTOS_NO_PERECEDEROS';
+  $('f-unidad').value = 'UNIDAD';
+  $('f-estado').value = 'BUEN_ESTADO';
+  $('f-dest').value = 'NO_APLICA';
+
+  /* ---------------------------------------------------------- chips */
+  function pintarChips() {
+    fill($('chips'), activos.map((a) => {
+      const btn = el('button', {
+        class: 'chip', type: 'button', role: 'option',
+        'aria-selected': a.id === acopioId ? 'true' : 'false',
+      }, [
+        el('span', { class: 'chip-name', text: a.nombre }),
+        el('span', { class: 'chip-meta', text: `${label(ACOPIO_FLUJOS_LBL, a.flujo)}${a.municipio ? ' · ' + a.municipio : ''}` }),
+      ]);
+      btn.addEventListener('click', () => {
+        acopioId = a.id;
+        localStorage.setItem(CLAVE, a.id);
+        pintarChips(); pintar();
+      });
+      return btn;
+    }));
+    const sel = activos.find((a) => a.id === acopioId);
+    $('acopio-dir').textContent = sel?.direccion || '';
+    $('modal-acopio').textContent = sel?.nombre || '';
+  }
+  const ACOPIO_FLUJOS_LBL = [
+    { value: 'RECIBIR', label: 'Recibir donaciones' },
+    { value: 'ENVIAR', label: 'Enviar donaciones' },
+    { value: 'AMBOS', label: 'Recibir y enviar' },
+  ];
+
+  /* --------------------------------------------------------- filtros */
+  const proximo = (v) => {
+    if (!v) return false;
+    const lim = new Date(); lim.setDate(lim.getDate() + 30);
+    return new Date(v) <= lim;
+  };
+
+  function visibles() {
+    const q = $('q').value.trim().toLowerCase();
+    const cat = $('cat').value;
+    const verBajas = $('bajas').checked;
+    return items.filter((i) => {
+      if (i.acopioId !== acopioId) return false;
+      if (!verBajas && !i.isActive) return false;
+      if (cat && i.categoria !== cat) return false;
+      if (!q) return true;
+      return [i.nombre, i.marca, i.sku, i.presentacion].filter(Boolean).join(' ').toLowerCase().includes(q);
+    });
+  }
+
+  /* ---------------------------------------------------------- pintar */
+  function pintar() {
+    const propios = items.filter((i) => i.acopioId === acopioId);
+    const act = propios.filter((i) => i.isActive);
+    const alertas = act.filter((i) => i.estado === 'VENCIDO' || i.estado === 'PROXIMO_A_VENCER' || proximo(i.vencimiento)).length;
+
+    const stats = [
+      ['Productos activos', act.length, false],
+      ['Cantidad en stock', act.reduce((s, i) => s + Number(i.cantidad), 0).toLocaleString('es-CO'), false],
+      ['Categorías', new Set(act.map((i) => i.categoria)).size, false],
+      ['Alertas de vencimiento', alertas, true],
+      ['Dados de baja', propios.length - act.length, false],
+    ];
+    fill($('stats'), stats.map(([l, v, alert]) => el('div', { class: alert ? 'stat stat-alert' : 'stat' }, [
+      el('span', { class: 'stat-label', text: l }),
+      el('span', { class: 'stat-value', text: String(v) }),
+    ])));
+
+    const rows = visibles();
+    if (!rows.length) {
+      fill($('filas'), el('div', { class: 'empty' }, [
+        el('div', { class: 'empty-mark' }, icon('search', 'ico', 2)),
+        el('p', { class: 'empty-title', text: 'No hay productos con esos filtros' }),
+        el('p', { class: 'empty-text', text: 'Usá Nuevo producto para cargar existencias, o quitá un filtro.' }),
+        el('button', { class: 'btn-ghost', type: 'button', text: 'Quitar filtros', onclick: () => {
+          $('q').value = ''; $('cat').value = ''; $('bajas').checked = false; pintar();
+        }}),
+      ]));
+      return;
+    }
+
+    fill($('filas'), rows.map((i) => {
+      const sub = [i.marca, i.presentacion, i.loteCodigo, i.sku].filter(Boolean).join(' · ');
+      const estadoCls = i.estado === 'PROXIMO_A_VENCER' ? 'td td-warn' : i.estado === 'VENCIDO' ? 'td td-danger' : 'td';
+      const vence = i.vencimiento || '—';
+
+      const editar = el('button', { class: 'btn-row', type: 'button', text: 'Editar' });
+      editar.addEventListener('click', () => abrir(i));
+
+      const baja = el('button', {
+        class: i.isActive ? 'btn-row btn-row-danger' : 'btn-row btn-row-ok',
+        type: 'button', text: i.isActive ? 'Dar de baja' : 'Reactivar',
+      });
+      baja.addEventListener('click', () => {
+        i.isActive = !i.isActive;
+        toast({
+          title: i.isActive ? 'Producto reactivado' : 'Producto dado de baja',
+          text: `${i.nombre} · el registro se conserva, no se borra.`,
+          ico: i.isActive ? 'check' : 'package',
+        });
+        pintar();
+      });
+
+      return el('div', { class: i.isActive ? 'trow inv-row' : 'trow inv-row trow-off' }, [
+        el('div', { class: 'col gap-4' }, [
+          el('span', { class: 'td-strong', text: i.nombre }),
+          sub ? el('span', { class: 'td-sub', text: sub }) : null,
+          !i.isActive ? el('span', { class: 'tag-off', text: 'Baja' }) : null,
+        ]),
+        el('span', { class: 'td', text: label(INVENTORY_CATEGORIAS, i.categoria) }),
+        el('span', { class: 'td-num', text: `${i.cantidad} ${label(INVENTORY_UNIDADES, i.unidad).toLowerCase()}` }),
+        el('span', { class: 'td mono', text: vence }),
+        el('span', { class: estadoCls, text: label(INVENTORY_ESTADOS, i.estado) }),
+        el('div', { class: 'row-actions' }, [editar, baja]),
+      ]);
+    }));
+  }
+
+  /* ---------------------------------------------------------- modal */
+  let editando = null;
+
+  function abrir(item) {
+    editando = item || null;
+    $('modal-title').textContent = item ? 'Editar producto' : 'Nuevo producto';
+    $('modal-sub').textContent = item
+      ? 'Actualizá ficha y cantidades. El registro se conserva.'
+      : 'Cargá un ítem al centro de acopio seleccionado.';
+    $('guardar').firstChild.textContent = item ? 'Guardar cambios' : 'Crear producto';
+
+    $('f-nombre').value = item?.nombre ?? '';
+    $('f-marca').value = item?.marca ?? '';
+    $('f-categoria').value = item?.categoria ?? 'ALIMENTOS_NO_PERECEDEROS';
+    $('f-catdet').value = ''; $('f-sku').value = item?.sku ?? '';
+    $('f-pres').value = item?.presentacion ?? ''; $('f-talla').value = '';
+    $('f-dest').value = 'NO_APLICA';
+    $('f-cant').value = item?.cantidad ?? '';
+    $('f-unidad').value = item?.unidad ?? 'UNIDAD';
+    $('f-unidet').value = ''; $('f-venc').value = item?.vencimiento ?? '';
+    $('f-estado').value = item?.estado ?? 'BUEN_ESTADO';
+    $('f-lote').value = item?.loteCodigo ?? '';
+    $('f-ubic').value = ''; $('f-donante').value = ''; $('f-contacto').value = ''; $('f-obs').value = '';
+    openModal(modal);
+  }
+
+  $('nuevo').addEventListener('click', () => abrir(null));
+
+  $('form-item').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const datos = {
+      nombre: $('f-nombre').value.trim(),
+      marca: $('f-marca').value.trim(),
+      categoria: $('f-categoria').value,
+      sku: $('f-sku').value.trim(),
+      presentacion: $('f-pres').value.trim(),
+      cantidad: Number($('f-cant').value),
+      unidad: $('f-unidad').value,
+      vencimiento: $('f-venc').value,
+      estado: $('f-estado').value,
+      loteCodigo: $('f-lote').value.trim(),
+    };
+    if (!datos.nombre || !Number.isFinite(datos.cantidad)) return;
+
+    if (editando) Object.assign(editando, datos);
+    else items.unshift({ id: 'i' + Date.now(), acopioId, isActive: true, ...datos });
+
+    closeModal(modal);
+    toast({ title: editando ? 'Producto actualizado' : 'Producto creado', text: datos.nombre, ico: 'check' });
+    editando = null;
+    pintar();
+  });
+
+  ['q', 'cat', 'bajas'].forEach((id) => $(id).addEventListener('input', pintar));
+
+  pintarChips();
+  pintar();
+</script>
+
+</body>
+</html>

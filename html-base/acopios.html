@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Centros de acopio — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+  @media (max-width: 1100px) { .cols { grid-template-columns: 1fr; } }
+  .acopio { padding: 16px 18px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .acopio-off { background: var(--ink-150); border-style: dashed; }
+  .acopio-ico { width: 40px; height: 40px; border-radius: 12px; background: var(--sage); display: flex; align-items: center; justify-content: center; color: var(--green); }
+  .acopio-ico svg { width: 19px; height: 19px; }
+</style>
+</head>
+<body data-route="/app/acopios">
+
+<div class="shell">
+  <div data-shell></div>
+
+  <div class="main">
+    <header class="topbar" data-topbar></header>
+
+    <main class="content">
+
+      <div class="page-head">
+        <div class="page-head-copy">
+          <p class="eyebrow">Acopios</p>
+          <h1 class="page-title">Centros de acopio</h1>
+          <p class="page-sub">Acá se registran las bodegas: si reciben donaciones, si las envían a zona, o ambas. No se crean al armar la organización.</p>
+        </div>
+      </div>
+
+      <div class="cols">
+
+        <section class="col gap-12">
+          <div class="row">
+            <h2 class="section-label grow">Registrados</h2>
+            <span class="td-sub mono" id="conteo"></span>
+          </div>
+          <div class="col gap-12" id="lista"></div>
+        </section>
+
+        <form class="card col gap-12" id="form">
+          <h2 style="font-size:19px;font-weight:700;letter-spacing:-.02em" id="form-title">Nuevo acopio</h2>
+
+          <div class="field">
+            <label class="field-label" for="a-nombre">Nombre</label>
+            <input class="input" id="a-nombre" placeholder="Bodega, punto o sede" required>
+          </div>
+          <div class="field">
+            <label class="field-label" for="a-flujo">Flujo de donaciones</label>
+            <select class="select" id="a-flujo"></select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="a-mun">Municipio</label>
+            <input class="input" id="a-mun" placeholder="Quibdó, Nuquí, Istmina…">
+          </div>
+          <div class="field">
+            <label class="field-label" for="a-dir">Dirección</label>
+            <input class="input" id="a-dir" placeholder="Calle, carrera, referencia">
+          </div>
+          <div class="field">
+            <label class="field-label" for="a-tel">Teléfono</label>
+            <input class="input" id="a-tel" placeholder="+57 000 000 0000">
+          </div>
+          <div class="field">
+            <label class="field-label" for="a-desc">Descripción</label>
+            <textarea class="textarea" id="a-desc" rows="2" placeholder="Horario, responsable, qué se recibe…"></textarea>
+          </div>
+          <div class="row gap-12">
+            <div class="field grow"><label class="field-label" for="a-lat">Lat</label><input class="input" id="a-lat" type="number" step="any" inputmode="decimal"></div>
+            <div class="field grow"><label class="field-label" for="a-lng">Lng</label><input class="input" id="a-lng" type="number" step="any" inputmode="decimal"></div>
+          </div>
+
+          <button class="btn btn-block" type="submit">Guardar<span class="btn-cap" data-ico="arrowRight"></span></button>
+          <button class="btn-ghost" type="button" id="cancelar" hidden style="justify-content:center">Cancelar edición</button>
+        </form>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="backdrop" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="m-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-copy">
+        <p class="eyebrow" style="color:var(--danger)">Confirmación</p>
+        <h2 class="modal-title" id="m-title">Eliminar este centro de acopio</h2>
+      </div>
+      <button class="modal-x" type="button" data-close aria-label="Cerrar"><span data-ico="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <p class="page-sub">Se borra de forma permanente. Las donaciones ya registradas en él quedan sin acopio asignado.</p>
+      <div class="note" id="m-target"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" type="button" data-close>Cancelar</button>
+      <button class="btn-danger" type="button" id="m-ok"><span data-ico="trash"></span>Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { el, fill, icon, openModal, closeModal, wireModal, toast } from './assets/app.js';
+  import { ACOPIOS, ACOPIO_FLUJOS, label } from './assets/data.js';
+
+  const rows = ACOPIOS.map((a) => ({ ...a }));
+  const $ = (id) => document.getElementById(id);
+  const modal = $('modal');
+  wireModal(modal);
+
+  fill($('a-flujo'), ACOPIO_FLUJOS.map((f) => el('option', { value: f.value, text: f.label })));
+  $('a-flujo').value = 'RECIBIR';
+
+  let editando = null;
+  let porBorrar = null;
+
+  function pintar() {
+    const act = rows.filter((r) => r.isActive).length;
+    $('conteo').textContent = `${act} activos · ${rows.length - act} en baja`;
+
+    if (!rows.length) {
+      fill($('lista'), el('div', { class: 'table' }, el('div', { class: 'empty' }, [
+        el('div', { class: 'empty-mark' }, icon('home', 'ico', 2)),
+        el('p', { class: 'empty-title', text: 'Todavía no hay centros de acopio' }),
+        el('p', { class: 'empty-text', text: 'Creá el primero con el formulario de la derecha. Sin un acopio activo no se puede cargar inventario ni asignar una donación.' }),
+      ])));
+      return;
+    }
+
+    fill($('lista'), rows.map((a) => {
+      const meta = [a.municipio, a.direccion, a.telefono].filter(Boolean).join(' · ') || 'Sin datos de ubicación';
+
+      const editar = el('button', { class: 'btn-row', type: 'button', text: 'Editar' });
+      editar.addEventListener('click', () => cargar(a));
+
+      const accion = el('button', {
+        class: a.isActive ? 'btn-row btn-row-danger' : 'btn-row btn-row-ok',
+        type: 'button', text: a.isActive ? 'Dar de baja' : 'Reactivar',
+      });
+      accion.addEventListener('click', () => {
+        if (a.isActive) { porBorrar = a; abrirConfirm(a); }
+        else { a.isActive = true; toast({ title: 'Acopio reactivado', text: a.nombre, ico: 'check' }); pintar(); }
+      });
+
+      return el('div', { class: a.isActive ? 'acopio' : 'acopio acopio-off' }, [
+        el('div', { class: 'acopio-ico' }, icon('home')),
+        el('div', { class: 'col gap-4 grow' }, [
+          el('div', { class: 'row gap-8' }, [
+            el('span', { class: 'td-strong', text: a.nombre }),
+            !a.isActive ? el('span', { class: 'tag-off', text: 'Baja' }) : null,
+          ]),
+          el('span', { class: 'td-sub' }, [
+            el('strong', { text: label(ACOPIO_FLUJOS, a.flujo), style: 'color:var(--ink-600)' }),
+            ` · ${meta}`,
+          ]),
+        ]),
+        el('div', { class: 'row-actions' }, [editar, accion]),
+      ]);
+    }));
+  }
+
+  function cargar(a) {
+    editando = a;
+    $('form-title').textContent = 'Editar acopio';
+    $('a-nombre').value = a.nombre; $('a-flujo').value = a.flujo;
+    $('a-mun').value = a.municipio ?? ''; $('a-dir').value = a.direccion ?? '';
+    $('a-tel').value = a.telefono ?? '';
+    $('cancelar').hidden = false;
+    $('a-nombre').focus();
+  }
+
+  $('cancelar').addEventListener('click', () => {
+    editando = null;
+    $('form').reset(); $('a-flujo').value = 'RECIBIR';
+    $('form-title').textContent = 'Nuevo acopio';
+    $('cancelar').hidden = true;
+  });
+
+  $('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const datos = {
+      nombre: $('a-nombre').value.trim(), flujo: $('a-flujo').value,
+      municipio: $('a-mun').value.trim(), direccion: $('a-dir').value.trim(),
+      telefono: $('a-tel').value.trim(),
+    };
+    if (!datos.nombre) return;
+
+    if (editando) { Object.assign(editando, datos); editando = null; $('cancelar').click(); }
+    else rows.push({ id: 'a' + Date.now(), isActive: true, ...datos });
+
+    $('form').reset(); $('a-flujo').value = 'RECIBIR';
+    $('form-title').textContent = 'Nuevo acopio';
+    toast({ title: 'Acopio guardado', text: datos.nombre, ico: 'check' });
+    pintar();
+  });
+
+  function abrirConfirm(a) {
+    fill($('m-target'), [
+      icon('home'),
+      el('p', { class: 'note-text' }, [
+        el('strong', { text: a.nombre }),
+        ` · ${label(ACOPIO_FLUJOS, a.flujo)}${a.municipio ? ' · ' + a.municipio : ''}`,
+      ]),
+    ]);
+    openModal(modal);
+  }
+
+  $('m-ok').addEventListener('click', () => {
+    if (porBorrar) {
+      porBorrar.isActive = false;
+      toast({ title: 'Centro dado de baja', text: `${porBorrar.nombre} · no admite inventario nuevo.`, ico: 'package' });
+      porBorrar = null;
+    }
+    closeModal(modal);
+    pintar();
+  });
+
+  pintar();
+</script>
+
+</body>
+</html>

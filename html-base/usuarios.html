@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usuarios — SOS Chocó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .u-head, .u-row { grid-template-columns: minmax(220px, 1.5fr) minmax(140px, 1fr) minmax(200px, 1.4fr) 230px 140px; }
+</style>
+</head>
+<body data-route="/app/usuarios">
+
+<div class="shell">
+  <div data-shell></div>
+
+  <div class="main">
+    <header class="topbar" data-topbar></header>
+
+    <main class="content">
+
+      <div class="page-head">
+        <div class="page-head-copy">
+          <p class="eyebrow">Personas</p>
+          <h1 class="page-title">Usuarios</h1>
+          <p class="page-sub">Miembros de la organización y el rol con el que entran.</p>
+        </div>
+      </div>
+
+      <form class="card col gap-16" id="invitar">
+        <div class="row row-wrap" style="align-items:flex-end;gap:14px">
+          <div class="field grow" style="max-width:380px">
+            <label class="field-label" for="correo">Correo de la persona a invitar</label>
+            <input class="input" id="correo" type="email" inputmode="email" autocomplete="email" placeholder="correo@org.org" required>
+          </div>
+          <div class="field" style="width:260px">
+            <label class="field-label" for="rol">Rol que tendrá</label>
+            <select class="select" id="rol"></select>
+          </div>
+          <button class="btn" type="submit">Agregar<span class="btn-cap" data-ico="plus"></span></button>
+          <p class="td-sub push" style="max-width:220px">La persona debe tener cuenta con ese correo antes de agregarla.</p>
+        </div>
+
+        <div class="alert alert-danger" id="err" hidden>
+          <span data-ico="alert"></span>
+          <div class="alert-copy">
+            <p class="alert-title" id="err-title"></p>
+            <p class="alert-text" id="err-text"></p>
+          </div>
+        </div>
+      </form>
+
+      <div class="table">
+        <div class="thead u-head">
+          <span class="th">Nombre</span><span class="th">Usuario</span><span class="th">Correo</span>
+          <span class="th">Rol</span><span class="th" style="text-align:right">Acciones</span>
+        </div>
+        <div id="filas"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div class="backdrop" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="m-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-copy">
+        <p class="eyebrow" style="color:var(--danger)">Confirmación</p>
+        <h2 class="modal-title" id="m-title">Dar de baja a esta persona</h2>
+      </div>
+      <button class="modal-x" type="button" data-close aria-label="Cerrar"><span data-ico="x"></span></button>
+    </div>
+    <div class="modal-body">
+      <p class="page-sub">Pierde el acceso a la organización. Se puede reactivar después, pero deja de ver los datos de inmediato.</p>
+      <div class="note" id="m-target"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" type="button" data-close>Cancelar</button>
+      <button class="btn-danger" type="button" id="m-ok">Dar de baja</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { el, fill, icon, openModal, closeModal, wireModal, toast } from './assets/app.js';
+  import { MEMBERS, ROLES, CUENTAS_REGISTRADAS, roleName } from './assets/data.js';
+
+  const rows = MEMBERS.map((m) => ({ ...m }));
+  const $ = (id) => document.getElementById(id);
+  const modal = $('modal');
+  wireModal(modal);
+  let porBajar = null;
+
+  const opciones = () => ROLES.map((r) => el('option', { value: r.slug, text: r.nombre }));
+  fill($('rol'), opciones());
+  $('rol').value = 'voluntario';
+
+  const iniciales = (n) => n.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+
+  function pintar() {
+    fill($('filas'), rows.map((m) => {
+      const sel = el('select', { class: 'select', style: 'height:38px;font-size:13px' }, opciones());
+      sel.value = m.roleSlug;
+      sel.addEventListener('change', () => {
+        m.roleSlug = sel.value;
+        toast({ title: 'Rol actualizado', text: `${m.nombre} ahora es ${roleName(sel.value)}.`, ico: 'shield' });
+      });
+
+      const accion = el('button', {
+        class: m.isActive ? 'btn-row btn-row-danger' : 'btn-row btn-row-ok',
+        type: 'button', text: m.isActive ? 'Dar de baja' : 'Reactivar',
+      });
+      accion.addEventListener('click', () => {
+        if (m.isActive) { porBajar = m; abrirConfirm(m); }
+        else { m.isActive = true; toast({ title: 'Persona reactivada', text: m.nombre, ico: 'check' }); pintar(); }
+      });
+
+      return el('div', { class: m.isActive ? 'trow u-row' : 'trow u-row trow-off' }, [
+        el('div', { class: 'row gap-12' }, [
+          el('div', { class: m.isActive ? 'avatar avatar-sm' : 'avatar avatar-sm avatar-off', text: iniciales(m.nombre) }),
+          el('div', { class: 'col gap-4' }, [
+            el('span', { class: 'td-strong', text: m.nombre }),
+            !m.isActive ? el('span', { class: 'tag-off', text: 'Baja' }) : null,
+          ]),
+        ]),
+        el('span', { class: 'td', text: m.usuario }),
+        el('span', { class: 'td', text: m.correo }),
+        m.isActive ? sel : el('span', { class: 'td', text: roleName(m.roleSlug) }),
+        el('div', { class: 'row-actions' }, accion),
+      ]);
+    }));
+  }
+
+  function abrirConfirm(m) {
+    fill($('m-target'), [
+      icon('users'),
+      el('p', { class: 'note-text' }, [el('strong', { text: m.nombre }), ` · ${m.correo} · ${roleName(m.roleSlug)}`]),
+    ]);
+    openModal(modal);
+  }
+
+  $('m-ok').addEventListener('click', () => {
+    if (porBajar) {
+      porBajar.isActive = false;
+      toast({ title: 'Persona dada de baja', text: `${porBajar.nombre} perdió el acceso.`, ico: 'logout' });
+      porBajar = null;
+    }
+    closeModal(modal);
+    pintar();
+  });
+
+  $('invitar').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const correo = $('correo').value.trim().toLowerCase();
+    const rol = $('rol').value;
+    const err = $('err');
+
+    const yaEsta = rows.find((m) => m.correo.toLowerCase() === correo);
+    if (yaEsta && yaEsta.isActive) {
+      return fallar('Esa persona ya pertenece a la organización', `${yaEsta.nombre} ya es ${roleName(yaEsta.roleSlug)} acá.`);
+    }
+    // El API exige que la cuenta exista antes de vincularla.
+    if (!CUENTAS_REGISTRADAS.map((c) => c.toLowerCase()).includes(correo)) {
+      return fallar('El usuario debe registrarse primero con ese correo',
+        `No existe ninguna cuenta con ${correo}. La invitación no crea usuarios: solo vincula a alguien que ya se registró.`);
+    }
+
+    err.hidden = true;
+    $('correo').classList.remove('input-invalid');
+
+    if (yaEsta) { yaEsta.isActive = true; yaEsta.roleSlug = rol; }
+    else rows.push({ id: 'm' + Date.now(), nombre: 'Lucía Moreno', usuario: 'lucia.moreno', correo, roleSlug: rol, isActive: true });
+
+    $('invitar').reset(); $('rol').value = 'voluntario';
+    toast({ title: 'Persona agregada', text: `${correo} entra como ${roleName(rol)}.`, ico: 'check' });
+    pintar();
+  });
+
+  function fallar(title, text) {
+    $('err-title').textContent = title;
+    $('err-text').textContent = text;
+    $('err').hidden = false;
+    $('correo').classList.add('input-invalid');
+  }
+
+  pintar();
+</script>
+
+</body>
+</html>
