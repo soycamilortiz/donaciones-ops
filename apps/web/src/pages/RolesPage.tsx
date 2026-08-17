@@ -43,7 +43,7 @@ export default function RolesPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void load().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'Error al cargar');
+      setError(err instanceof Error ? err.message : t('common.loadError'));
     });
   }, [orgId]);
 
@@ -72,7 +72,7 @@ export default function RolesPage() {
       );
       setRoles((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar');
+      setError(err instanceof Error ? err.message : t('roles.saveError'));
     } finally {
       setSaving(false);
     }
@@ -93,7 +93,7 @@ export default function RolesPage() {
       });
       setRoles((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo renombrar');
+      setError(err instanceof Error ? err.message : t('roles.renameError'));
     }
   }
 
@@ -115,7 +115,7 @@ export default function RolesPage() {
         current.map((item) => (item.slug === updated.slug ? updated : item)),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo editar el permiso');
+      setError(err instanceof Error ? err.message : t('roles.permissionError'));
     }
   }
 
@@ -138,7 +138,7 @@ export default function RolesPage() {
       form.reset();
       setRoles((current) => [...current, created]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear el rol');
+      setError(err instanceof Error ? err.message : t('roles.createError'));
     }
   }
 

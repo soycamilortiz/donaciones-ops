@@ -36,11 +36,12 @@ export default function VerifyEmailPage() {
     }
   }
 
+  // One-shot from the mail link: `complete` is redefined on every render, so
+  // listing it would re-verify the token on each keystroke.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: token from the URL should run once
   useEffect(() => {
     if (!token) return;
     void complete({ token });
-    // One-shot from the mail link.
-    // biome-ignore lint/correctness/useExhaustiveDependencies: token from the URL should run once
   }, [token]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -108,7 +109,12 @@ export default function VerifyEmailPage() {
         <button className="button" type="submit" disabled={ocupado}>
           {ocupado ? t('verifyEmail.verifying') : t('verifyEmail.submit')}
         </button>
-        <button type="button" className="linkish" disabled={ocupado} onClick={() => void onResend()}>
+        <button
+          type="button"
+          className="linkish"
+          disabled={ocupado}
+          onClick={() => void onResend()}
+        >
           {t('verifyEmail.resend')}
         </button>
         <p className="muted">

@@ -39,9 +39,16 @@ export default function NuevaRecepcionPage() {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Active acopios only: the API rejects receiving into one that was taken
+  // down, so offering it in the select just produces an error on save. Same for
+  // the remembered acopio, which may have been deactivated since the last visit.
   useEffect(() => {
     void request<Acopio[]>(`/api/v1/organizations/${orgId}/acopios`)
-      .then(setAcopios)
+      .then((filas) => {
+        const activos = filas.filter((fila) => fila.isActive !== false);
+        setAcopios(activos);
+        setAcopioId((actual) => (activos.some((fila) => fila.id === actual) ? actual : ''));
+      })
       .catch(() => setAcopios([]));
   }, [request, orgId]);
 

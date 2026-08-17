@@ -40,7 +40,7 @@ export default function SignInPage() {
         navigate(`${ROUTES.verificarCorreo}${q}`);
         return;
       }
-      setError(err instanceof Error ? err.message : 'No se pudo entrar');
+      setError(err instanceof Error ? err.message : t('auth.signInError'));
       onSubmitFailed(event);
     }
   }

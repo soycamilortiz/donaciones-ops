@@ -54,7 +54,7 @@ export default function UsersPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void load().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'Error al cargar');
+      setError(err instanceof Error ? err.message : t('common.loadError'));
     });
   }, [orgId]);
 
@@ -74,7 +74,7 @@ export default function UsersPage() {
       form.reset();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo agregar');
+      setError(err instanceof Error ? err.message : t('users.addError'));
     }
   }
 
@@ -87,7 +87,7 @@ export default function UsersPage() {
       });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cambiar el rol');
+      setError(err instanceof Error ? err.message : t('users.roleError'));
     }
   }
 
@@ -103,7 +103,7 @@ export default function UsersPage() {
       });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo reactivar');
+      setError(err instanceof Error ? err.message : t('users.reactivateError'));
     }
   }
 
