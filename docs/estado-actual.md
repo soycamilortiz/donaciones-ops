@@ -89,6 +89,7 @@ No hay proveedor externo. El API emite un JWT y el front lo guarda en `localStor
 | Google | `POST /api/v1/auth/google` — ID token del botón. Emite JWT o pide completar perfil |
 | Completar Google | `POST /api/v1/auth/google/completar` — usuario (y nombre opcional) tras el primer Google |
 | Captcha | `GET /api/v1/auth/captcha` — SVG, 5 minutos, un solo uso. La respuesta se guarda como SHA-256 |
+| Captcha apagado | `CAPTCHA_DISABLED=true` (así viene el `.env.example`): el API no emite ni valida captcha y el front no dibuja el campo. En serverless la variable no se respeta: con `true` la función no arranca |
 | Contraseña | bcrypt, 12 rounds. Nunca se persiste ni se devuelve en texto plano |
 | Sesión | `Authorization: Bearer <jwt>`. Default 8h (`JWT_EXPIRES_IN`) |
 | Rutas públicas | health, metadatos, Swagger, `/api/v1/auth/*` |
@@ -140,6 +141,7 @@ Variables del API:
 | `CORS_ORIGIN` | Orígenes separados por coma |
 | `JWT_SECRET` | Firma del token (mínimo 16 caracteres) |
 | `JWT_EXPIRES_IN` | Default `8h` |
+| `CAPTCHA_DISABLED` | Salta el captcha en registro y login. Sin definir, `true` salvo `NODE_ENV=production`. En serverless no se puede activar: la función no arranca |
 | `REDIS_URL` | Cola de reconocimiento. Default `redis://localhost:6379` |
 | `BLOB_READ_WRITE_TOKEN` | Obsoleto. Las donaciones suben a R2 |
 | `R2_ACCOUNT_ID` | Account ID de Cloudflare |

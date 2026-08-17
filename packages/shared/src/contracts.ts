@@ -50,6 +50,8 @@ export type GoogleAuthResult = AuthSession | GoogleProfilePending;
 export type Captcha = {
   captchaId: string;
   svg: string;
+  /** `true` cuando el API corre con CAPTCHA_DISABLED: el front no lo dibuja. */
+  disabled?: boolean;
 };
 
 export type Permission = {

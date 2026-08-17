@@ -13,12 +13,15 @@ export default function CaptchaFields({ refreshKey }: Props) {
   const [captchaId, setCaptchaId] = useState('');
   const [svg, setSvg] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // El API decide: con CAPTCHA_DISABLED no manda desafío y el campo no se pinta.
+  const [deshabilitado, setDeshabilitado] = useState(false);
   const { t } = useTranslation();
 
   const load = useCallback(async () => {
     setError(null);
     try {
       const captcha = await fetchCaptcha();
+      setDeshabilitado(Boolean(captcha.disabled));
       setCaptchaId(captcha.captchaId);
       setSvg(captcha.svg);
     } catch (err) {
@@ -30,6 +33,10 @@ export default function CaptchaFields({ refreshKey }: Props) {
   useEffect(() => {
     void load();
   }, [load, refreshKey]);
+
+  if (deshabilitado) {
+    return null;
+  }
 
   return (
     <div className="space-y-1.5">
@@ -67,11 +74,17 @@ export default function CaptchaFields({ refreshKey }: Props) {
   );
 }
 
-export function readCaptcha(form: FormData) {
-  return {
-    captchaId: String(form.get('captchaId') ?? ''),
-    captchaAnswer: String(form.get('captchaAnswer') ?? ''),
-  };
+/**
+ * Devuelve `{}` cuando el captcha está apagado: los campos no existen en el
+ * formulario y mandarlos vacíos haría fallar la validación del API.
+ */
+export function readCaptcha(form: FormData): { captchaId?: string; captchaAnswer?: string } {
+  const captchaId = form.get('captchaId');
+  const captchaAnswer = form.get('captchaAnswer');
+  if (captchaId === null || captchaAnswer === null) {
+    return {};
+  }
+  return { captchaId: String(captchaId), captchaAnswer: String(captchaAnswer) };
 }
 
 export function useCaptchaRefresh() {

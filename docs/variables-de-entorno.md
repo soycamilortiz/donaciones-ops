@@ -34,6 +34,7 @@ servicios con dirección pública.
 | `JOBS_USER` / `JOBS_PASSWORD` | — | — | ✅ | — |
 | `OCR_*` | — | ✅ | — | — |
 | `RBAC_SYNC_ON_BOOT` / `SWAGGER_ENABLED` | ✅ | — | — | — |
+| `CAPTCHA_DISABLED` | ✅ | — | — | — |
 
 El front **casi no lleva variables**: llama a `/api` en el mismo origen y el
 enrutamiento lo resuelve Traefik (en Docker) o un rewrite (en Vercel). La
@@ -127,6 +128,7 @@ serverless quien escucha es el runtime.
 | `JWT_SECRET` | 32+ caracteres aleatorios (`openssl rand -base64 32`) | ✅ |
 | `CORS_ORIGIN` | `https://donaciones-ops-web.vercel.app` | |
 | `JWT_EXPIRES_IN` | `8h` | |
+| `CAPTCHA_DISABLED` | no se define (la función rechaza `true` y no arranca) | |
 | `REDIS_URL` | `rediss://default:CLAVE@HOST.upstash.io:6379` | ✅ |
 | `R2_ACCOUNT_ID` | el de Cloudflare | |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | token S3 de R2 | ✅ |
