@@ -13,6 +13,7 @@ import {
 } from '@/components/molecules/AddressLocationPicker';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { FormField } from '@/components/molecules/FormField';
+import { useToast } from '@/components/molecules/Toast';
 import { useOrg } from '@/components/OrgGate';
 import { DEFAULT_DEPARTAMENTO } from '@/features/geo/colombia';
 import { ACOPIO_FLUJOS, type Acopio } from '@/lib/api';
@@ -35,6 +36,7 @@ function addressFromAcopio(row: Acopio | null): AddressLocationValue {
 export default function AcopiosPage() {
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const { avisar } = useToast();
   const request = useApi();
   const [rows, setRows] = useState<Acopio[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +113,7 @@ export default function AcopiosPage() {
       setAddress(addressFromAcopio(null));
       form.reset();
       await load();
+      avisar(t('acopios.saved'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('acopios.saveError'));
     }
@@ -124,6 +127,7 @@ export default function AcopiosPage() {
         body: JSON.stringify({ isActive: true }),
       });
       await load();
+      avisar(t('acopios.reactivated'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('acopios.reactivateError'));
     }
@@ -137,6 +141,7 @@ export default function AcopiosPage() {
         method: 'DELETE',
       });
       await load();
+      avisar(t('acopios.deactivated'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('acopios.deleteError'));
     } finally {

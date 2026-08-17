@@ -9,6 +9,7 @@ import { Select } from '@/components/atoms/Select';
 import { SkeletonList } from '@/components/atoms/Skeleton';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { FormField } from '@/components/molecules/FormField';
+import { useToast } from '@/components/molecules/Toast';
 import { useOrg } from '@/components/OrgGate';
 import type { Member, Role } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
@@ -27,6 +28,7 @@ function initials(nombre: string): string {
 export default function UsersPage() {
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const { avisar } = useToast();
   const request = useApi();
   const [members, setMembers] = useState<Member[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -68,6 +70,7 @@ export default function UsersPage() {
       });
       form.reset();
       await load();
+      avisar(t('users.invited'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('users.addError'));
     }
@@ -81,6 +84,7 @@ export default function UsersPage() {
         body: JSON.stringify({ roleSlug }),
       });
       await load();
+      avisar(t('users.roleChanged'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('users.roleError'));
     }
@@ -97,6 +101,7 @@ export default function UsersPage() {
         }),
       });
       await load();
+      avisar(t('users.reactivated'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('users.reactivateError'));
     }
@@ -110,6 +115,7 @@ export default function UsersPage() {
         method: 'DELETE',
       });
       await load();
+      avisar(t('users.removed'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('users.removeError'));
     } finally {
