@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon } from '@/components/atoms/Icon';
+import logoMark from '@/assets/logo-mark.png';
 import { APP_NAME, ROUTES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import type { AuthLayoutProps } from './AuthLayout.types';
@@ -22,10 +22,10 @@ export function AuthLayout({
       >
         <Link
           to={ROUTES.home}
-          className="mb-6 flex items-center justify-center gap-2 font-semibold text-primary"
+          aria-label={`${APP_NAME} — inicio`}
+          className="mb-6 flex justify-center"
         >
-          <Icon name="heart" className="text-primary" />
-          {APP_NAME}
+          <img src={logoMark} alt={APP_NAME} className="h-11 w-auto" />
         </Link>
         {title ? (
           <h1 className="text-center text-3xl font-semibold tracking-tight text-primary">
