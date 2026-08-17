@@ -12,7 +12,10 @@ export function DataTable<T extends Record<string, unknown>>({
 }: DataTableProps<T>): ReactElement {
   return (
     <div
-      className={cn('w-full overflow-x-auto rounded-lg border border-border bg-card', className)}
+      className={cn(
+        'ds-datatable w-full overflow-x-auto rounded-lg border border-border bg-card',
+        className,
+      )}
     >
       <table className="w-full caption-bottom text-sm">
         {caption ? (
@@ -52,6 +55,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 {columns.map((col) => (
                   <td
                     key={col.key}
+                    data-label={col.header}
                     className={cn(
                       'px-4 py-3.5 align-middle',
                       col.align === 'right' && 'text-right',

@@ -92,3 +92,48 @@
     animation-iteration-count: infinite !important;
   }
 }
+
+/*
+ * DataTable en móvil: bajo 900px la tabla deja de desplazarse en horizontal y
+ * cada fila se apila como tarjeta, igual que el html-base colapsa `.trow`. La
+ * cabecera se oculta porque cada celda lleva su propia etiqueta vía
+ * `::before` con `attr(data-label)`, así no se pierde el contexto de columna.
+ * Va acá (no en un archivo Tailwind) porque necesita el pseudo-elemento y el
+ * archivo está excluido de biome.
+ */
+@media (max-width: 900px) {
+  .ds-datatable table,
+  .ds-datatable tbody,
+  .ds-datatable tr,
+  .ds-datatable td {
+    display: block;
+  }
+
+  .ds-datatable thead {
+    display: none;
+  }
+
+  .ds-datatable tbody tr {
+    padding: 8px 16px;
+  }
+
+  .ds-datatable td[data-label] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    text-align: right;
+  }
+
+  .ds-datatable td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+  }
+}
