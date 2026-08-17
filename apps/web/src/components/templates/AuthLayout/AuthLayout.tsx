@@ -12,7 +12,8 @@ export function AuthLayout({
   className,
 }: AuthLayoutProps): ReactElement {
   return (
-    <div className="grid min-h-screen place-items-center bg-muted/30 p-6">
+    // Skin html-base: fondo salvia, tarjeta centrada (<=460px) radio 20px.
+    <div className="grid min-h-screen place-items-center bg-background p-6">
       <div
         className={cn(
           'w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg',
@@ -21,13 +22,15 @@ export function AuthLayout({
       >
         <Link
           to={ROUTES.home}
-          className="mb-6 flex items-center justify-center gap-2 font-semibold"
+          className="mb-6 flex items-center justify-center gap-2 font-semibold text-primary"
         >
           <Icon name="heart" className="text-primary" />
           {APP_NAME}
         </Link>
         {title ? (
-          <h1 className="text-center text-2xl font-semibold text-card-foreground">{title}</h1>
+          <h1 className="text-center text-3xl font-semibold tracking-tight text-primary">
+            {title}
+          </h1>
         ) : null}
         {subtitle ? (
           <p className="mt-1 text-center text-sm text-muted-foreground">{subtitle}</p>
