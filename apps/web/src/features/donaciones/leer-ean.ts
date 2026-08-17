@@ -1,7 +1,9 @@
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 
-type BarcodeDetectorCtor = new (options?: { formats?: string[] }) => {
+type BarcodeDetectorCtor = new (options?: {
+  formats?: string[];
+}) => {
   detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue: string }>>;
 };
 

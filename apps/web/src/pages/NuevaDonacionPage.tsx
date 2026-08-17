@@ -110,7 +110,9 @@ export default function NuevaDonacionPage() {
 
       {acopios.length > 0 ? (
         <label className="block space-y-1">
-          <span className="text-sm font-medium text-foreground">{t('newDonation.acopioLabel')}</span>
+          <span className="text-sm font-medium text-foreground">
+            {t('newDonation.acopioLabel')}
+          </span>
           <select
             className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             value={acopioId}
@@ -218,7 +220,9 @@ function Resultado({
   const [nombre, setNombre] = useState(lectura?.nombre ?? '');
   const [marca, setMarca] = useState(lectura?.marca ?? '');
   const [cantidad, setCantidad] = useState(String(lectura?.cantidad ?? 1));
-  const [inventoryItemId, setInventoryItemId] = useState(mejor && mejor.score >= 0.82 ? mejor.id : '');
+  const [inventoryItemId, setInventoryItemId] = useState(
+    mejor && mejor.score >= 0.82 ? mejor.id : '',
+  );
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmada, setConfirmada] = useState(false);
@@ -272,7 +276,9 @@ function Resultado({
       </div>
       {lectura?.coincidencias.length ? (
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-foreground">{t('newDonation.mergeHint')}</legend>
+          <legend className="text-sm font-medium text-foreground">
+            {t('newDonation.mergeHint')}
+          </legend>
           <label className="flex items-center gap-2 text-sm">
             <input
               type="radio"
@@ -309,7 +315,13 @@ function Resultado({
       </label>
       <label className="block space-y-1">
         <span className="text-sm font-medium text-foreground">{t('newDonation.quantity')}</span>
-        <Input type="number" min={1} step={1} value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
+        <Input
+          type="number"
+          min={1}
+          step={1}
+          value={cantidad}
+          onChange={(e) => setCantidad(e.target.value)}
+        />
       </label>
       {error ? (
         <p role="alert" className="text-sm text-error">
