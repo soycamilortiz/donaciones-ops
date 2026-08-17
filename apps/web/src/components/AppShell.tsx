@@ -4,6 +4,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import logoMarkCream from '@/assets/logo-mark-cream.png';
 import { Avatar } from '@/components/atoms/Avatar';
 import { Button } from '@/components/atoms/Button';
+import type { IconName } from '@/components/atoms/Icon';
 import { Icon } from '@/components/atoms/Icon';
 import { NavItem } from '@/components/molecules/NavItem';
 import { useSession } from '../lib/AuthProvider';
@@ -27,13 +28,14 @@ export default function AppShell() {
   }, [pathname]);
 
   // Dashboard matches exactly (like NavLink `end`); the rest match their subtree.
-  const navItems = [
-    { href: '/app', label: t('nav.dashboard'), exact: true },
-    { href: '/app/usuarios', label: t('nav.users') },
-    { href: '/app/roles', label: t('nav.roles') },
-    { href: '/app/acopios', label: t('nav.acopios') },
-    { href: '/app/inventario', label: t('nav.inventory') },
-    { href: '/app/donaciones', label: t('nav.donations') },
+  // Icons mirror html-base's NAV table (html-base/assets/app.js).
+  const navItems: { href: string; label: string; icon: IconName; exact?: boolean }[] = [
+    { href: '/app', label: t('nav.dashboard'), icon: 'grid', exact: true },
+    { href: '/app/usuarios', label: t('nav.users'), icon: 'users' },
+    { href: '/app/roles', label: t('nav.roles'), icon: 'shield' },
+    { href: '/app/acopios', label: t('nav.acopios'), icon: 'home' },
+    { href: '/app/inventario', label: t('nav.inventory'), icon: 'package' },
+    { href: '/app/donaciones', label: t('nav.donations'), icon: 'camera' },
   ];
 
   const initials =
@@ -107,6 +109,7 @@ export default function AppShell() {
               key={item.href}
               href={item.href}
               label={item.label}
+              icon={item.icon}
               active={item.exact ? pathname === item.href : undefined}
               className="shrink-0 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
             />
