@@ -325,7 +325,9 @@
     "googleCompleteSubmit": "Crear cuenta",
     "googleCompleting": "Guardando…",
     "googleCompleteError": "No se pudo completar el registro",
-    "signInError": "No se pudo entrar"
+    "signInError": "No se pudo entrar",
+    "signingIn": "Entrando…",
+    "registering": "Creando cuenta…"
   },
   "verifyEmail": {
     "title": "Verificá tu correo",

@@ -325,7 +325,9 @@
     "googleCompleteSubmit": "Create account",
     "googleCompleting": "Saving…",
     "googleCompleteError": "Could not complete registration",
-    "signInError": "Could not sign in"
+    "signInError": "Could not sign in",
+    "signingIn": "Signing in…",
+    "registering": "Creating account…"
   },
   "verifyEmail": {
     "title": "Verify your email",

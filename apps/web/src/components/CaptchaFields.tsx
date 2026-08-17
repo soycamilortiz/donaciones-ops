@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
@@ -79,8 +79,12 @@ export function useCaptchaRefresh() {
   return {
     refreshKey,
     refreshCaptcha: () => setRefreshKey((value) => value + 1),
-    onSubmitFailed: (event: FormEvent<HTMLFormElement>) => {
-      const form = event.currentTarget;
+    /**
+     * Takes the form element, not the event: React nulls `currentTarget` once
+     * the handler yields, and every caller awaits the request first. Reading it
+     * from the event left a stale answer sitting under a freshly drawn captcha.
+     */
+    onSubmitFailed: (form: HTMLFormElement | null) => {
       const answer = form?.elements.namedItem('captchaAnswer');
       if (answer instanceof HTMLInputElement) {
         answer.value = '';
