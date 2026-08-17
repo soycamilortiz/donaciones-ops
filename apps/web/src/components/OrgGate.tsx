@@ -123,7 +123,7 @@ export default function OrgGate() {
           aria-live="polite"
           className="flex items-center gap-2 text-sm text-muted-foreground"
         >
-          <Spinner aria-hidden="true" className="h-4 w-4" />
+          <Spinner className="h-4 w-4" />
           {t('session.loading')}
         </p>
       </Estado>

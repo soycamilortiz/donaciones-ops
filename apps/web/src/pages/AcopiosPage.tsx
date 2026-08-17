@@ -5,6 +5,7 @@ import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { SkeletonList } from '@/components/atoms/Skeleton';
 import {
   AddressLocationPicker,
@@ -18,10 +19,6 @@ import { ACOPIO_FLUJOS, type Acopio } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { cn } from '@/lib/utils';
 
-// Estilo compartido: no hay atomo Select/Textarea en el DS, asi que se calcan
-// las clases base de Input para que ambos campos midan y se vean igual.
-const selectClassName =
-  'flex h-11 w-full cursor-pointer appearance-none rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground ring-offset-background transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 const textareaClassName =
   'flex min-h-[4.5rem] w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base md:text-sm text-foreground ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
@@ -167,7 +164,7 @@ export default function AcopiosPage() {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               {t('acopios.listTitle')}
             </h2>
             {!cargando && rows.length > 0 ? (
@@ -282,10 +279,9 @@ export default function AcopiosPage() {
             </FormField>
 
             <FormField label={t('acopios.fields.flow')} htmlFor="a-flujo">
-              <select
+              <Select
                 id="a-flujo"
                 name="flujo"
-                className={selectClassName}
                 defaultValue={editing?.flujo ?? AcopioFlujo.Recibir}
               >
                 {ACOPIO_FLUJOS.map((item) => (
@@ -293,7 +289,7 @@ export default function AcopiosPage() {
                     {item.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FormField>
 
             <AddressLocationPicker value={address} onChange={setAddress} mapPosition="above" />

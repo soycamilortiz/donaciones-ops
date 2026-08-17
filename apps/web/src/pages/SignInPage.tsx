@@ -82,7 +82,7 @@ export default function SignInPage() {
         ) : null}
         <Button type="submit" size="lg" className="w-full" disabled={enviando}>
           {/* The button label already announces the pending state. */}
-          {enviando ? <Spinner aria-hidden="true" className="h-4 w-4" /> : null}
+          {enviando ? <Spinner className="h-4 w-4" /> : null}
           {enviando ? t('auth.signingIn') : t('auth.signIn')}
         </Button>
         <p className="text-center text-sm text-muted-foreground">

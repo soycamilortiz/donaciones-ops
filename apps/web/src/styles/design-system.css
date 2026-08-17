@@ -30,7 +30,11 @@
   --color-secondary: #E6E9DE;
   --color-secondary-foreground: #1B241C;
   --color-accent: #F2C230;              /* gold */
-  --color-accent-foreground: #9C7208;   /* gold-deep */
+  /* gold-deep. Medido: 4,66:1 sobre el dorado, 7,68 sobre card y 6,57 sobre el
+     fondo salvia — pasa AA en las tres. El #9C7208 anterior daba 2,60 sobre su
+     propio fondo y 4,28 sobre card, o sea que el token llamado
+     `accent-foreground` no era legible sobre `accent`. */
+  --color-accent-foreground: #6B4D05;
 
   --color-success: #1D7A46;             /* ok */
   --color-success-foreground: #FFFDF8;
@@ -130,7 +134,8 @@
     content: attr(data-label);
     flex: 0 0 auto;
     text-align: left;
-    font-size: 10px;
+    /* 12px: a 10px la etiqueta de columna no se lee con reflejo ni en marcha. */
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;

@@ -5,6 +5,7 @@ import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { Skeleton, SkeletonList } from '@/components/atoms/Skeleton';
 import { FormField } from '@/components/molecules/FormField';
 import { StatCard } from '@/components/molecules/StatCard';
@@ -28,7 +29,6 @@ const ACOPIO_KEY = 'soschoco.inventoryAcopio';
 // expone átomos propios para esos dos; el <input> sí usa el átomo Input.
 const fieldControlClass =
   'flex h-11 w-full rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-const fieldSelectClass = `${fieldControlClass} cursor-pointer`;
 const fieldTextareaClass = `${fieldControlClass} h-auto min-h-[72px] resize-y py-2.5 leading-relaxed`;
 
 // Tabla de 6 columnas en desktop; bajo 721px cada fila se apila como tarjeta
@@ -36,8 +36,8 @@ const fieldTextareaClass = `${fieldControlClass} h-auto min-h-[72px] resize-y py
 const ROW_GRID =
   'min-[721px]:grid-cols-[minmax(200px,2fr)_minmax(120px,1.2fr)_96px_92px_116px_220px]';
 const cellLabelClass =
-  'text-[10px] font-bold uppercase tracking-wider text-muted-foreground min-[721px]:hidden';
-const thClass = 'text-[10px] font-bold uppercase tracking-wider text-muted-foreground';
+  'text-xs font-bold uppercase tracking-wider text-muted-foreground min-[721px]:hidden';
+const thClass = 'text-xs font-bold uppercase tracking-wider text-muted-foreground';
 
 function labelOf(options: readonly { value: string; label: string }[], value: string) {
   return options.find((item) => item.value === value)?.label ?? value;
@@ -468,6 +468,9 @@ export default function InventoryPage() {
             />
             <Input
               id="inv-q"
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t('inventory.searchPlaceholder')}
@@ -476,11 +479,10 @@ export default function InventoryPage() {
           </div>
         </FormField>
         <FormField label={t('inventory.category')} htmlFor="inv-cat" className="min-[721px]:w-64">
-          <select
+          <Select
             id="inv-cat"
             value={categoria}
             onChange={(event) => setCategoria(event.target.value)}
-            className={fieldSelectClass}
           >
             <option value="">{t('inventory.allCategories')}</option>
             {INVENTORY_CATEGORIAS.map((item) => (
@@ -488,7 +490,7 @@ export default function InventoryPage() {
                 {item.label}
               </option>
             ))}
-          </select>
+          </Select>
         </FormField>
         <label className="inline-flex min-h-11 cursor-pointer select-none items-center gap-2.5">
           <span className="relative inline-flex h-[22px] w-[38px] shrink-0 items-center rounded-pill bg-muted-foreground/40 p-[3px] transition-colors has-[:checked]:bg-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background">
@@ -708,7 +710,7 @@ export default function InventoryPage() {
 
               <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupIdentification')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
@@ -730,18 +732,17 @@ export default function InventoryPage() {
                       <Input id="f-marca" name="marca" defaultValue={editing?.marca ?? ''} />
                     </FormField>
                     <FormField label={t('inventory.category')} htmlFor="f-categoria">
-                      <select
+                      <Select
                         id="f-categoria"
                         name="categoria"
                         defaultValue={editing?.categoria ?? 'ALIMENTOS_NO_PERECEDEROS'}
-                        className={fieldSelectClass}
                       >
                         {INVENTORY_CATEGORIAS.map((item) => (
                           <option key={item.value} value={item.value}>
                             {item.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </FormField>
                     <FormField label={t('inventory.categoryDetail')} htmlFor="f-catdet">
                       <Input
@@ -758,7 +759,7 @@ export default function InventoryPage() {
                 </fieldset>
 
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupPresentation')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
@@ -774,24 +775,23 @@ export default function InventoryPage() {
                       <Input id="f-talla" name="talla" defaultValue={editing?.talla ?? ''} />
                     </FormField>
                     <FormField label={t('inventory.recipient')} htmlFor="f-dest">
-                      <select
+                      <Select
                         id="f-dest"
                         name="destinatario"
                         defaultValue={editing?.destinatario ?? 'NO_APLICA'}
-                        className={fieldSelectClass}
                       >
                         {INVENTORY_DESTINATARIOS.map((item) => (
                           <option key={item.value} value={item.value}>
                             {item.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </FormField>
                   </div>
                 </fieldset>
 
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupQuantity')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
@@ -808,18 +808,17 @@ export default function InventoryPage() {
                       />
                     </FormField>
                     <FormField label={t('inventory.unit')} htmlFor="f-unidad">
-                      <select
+                      <Select
                         id="f-unidad"
                         name="unidad"
                         defaultValue={editing?.unidad ?? 'UNIDAD'}
-                        className={fieldSelectClass}
                       >
                         {INVENTORY_UNIDADES.map((item) => (
                           <option key={item.value} value={item.value}>
                             {item.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </FormField>
                     <FormField label={t('inventory.unitDetail')} htmlFor="f-unidet">
                       <Input
@@ -838,18 +837,17 @@ export default function InventoryPage() {
                       />
                     </FormField>
                     <FormField label={t('inventory.status')} htmlFor="f-estado">
-                      <select
+                      <Select
                         id="f-estado"
                         name="estado"
                         defaultValue={editing?.estado ?? 'BUEN_ESTADO'}
-                        className={fieldSelectClass}
                       >
                         {INVENTORY_ESTADOS.map((item) => (
                           <option key={item.value} value={item.value}>
                             {item.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </FormField>
                     <FormField label={t('inventory.batch')} htmlFor="f-lote">
                       <Input
@@ -862,7 +860,7 @@ export default function InventoryPage() {
                 </fieldset>
 
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupLocation')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">

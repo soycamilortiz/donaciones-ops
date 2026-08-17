@@ -5,18 +5,13 @@ import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { SkeletonList } from '@/components/atoms/Skeleton';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { FormField } from '@/components/molecules/FormField';
 import { useOrg } from '@/components/OrgGate';
 import type { Member, Role } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
-import { cn } from '@/lib/utils';
-
-// Shared with the invite-form role picker and the per-row role selects (mobile
-// card + desktop table), so the three stay visually identical.
-const roleSelectBase =
-  'min-h-11 w-full cursor-pointer rounded-md border border-border bg-card px-3.5 text-sm font-medium text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 /** First letter of up to two words, for the round avatar fallback. */
 function initials(nombre: string): string {
@@ -128,8 +123,8 @@ export default function UsersPage() {
   function roleField(member: Member, className?: string) {
     if (can('members:role') && member.isActive !== false) {
       return (
-        <select
-          className={cn(roleSelectBase, className)}
+        <Select
+          className={className}
           value={member.roleSlug}
           aria-label={`${t('users.columns.role')}: ${member.nombre}`}
           onChange={(event) => void onRole(member.userId, event.target.value)}
@@ -139,7 +134,7 @@ export default function UsersPage() {
               {role.nombre}
             </option>
           ))}
-        </select>
+        </Select>
       );
     }
     return <span className="text-sm text-foreground">{member.roleNombre}</span>;
@@ -209,18 +204,13 @@ export default function UsersPage() {
               />
             </FormField>
             <FormField label={t('users.inviteRole')} htmlFor="invitar-rol" className="sm:w-56">
-              <select
-                id="invitar-rol"
-                name="roleSlug"
-                defaultValue="voluntario"
-                className={roleSelectBase}
-              >
+              <Select id="invitar-rol" name="roleSlug" defaultValue="voluntario">
                 {activeRoles.map((role) => (
                   <option key={role.slug} value={role.slug}>
                     {role.nombre}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FormField>
             <Button type="submit">
               {t('users.add')}
@@ -275,7 +265,7 @@ export default function UsersPage() {
                 </p>
 
                 <div className="space-y-1.5">
-                  <span className="block text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                  <span className="block text-xs font-bold uppercase tracking-wide text-muted-foreground">
                     {t('users.columns.role')}
                   </span>
                   {roleField(member)}
@@ -293,31 +283,31 @@ export default function UsersPage() {
                 <tr>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.name')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.username')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.email')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.role')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-right align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-right align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.actions')}
                   </th>

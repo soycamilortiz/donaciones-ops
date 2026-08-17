@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { FormField } from '@/components/molecules/FormField';
 import { fetchCaptcha } from '../lib/api';
@@ -56,8 +57,19 @@ export default function CaptchaFields({ refreshKey }: Props) {
             </p>
           )}
         </div>
-        <Button type="button" variant="ghost" size="sm" onClick={() => void load()}>
-          {t('auth.captchaImage')}
+        {/* Icono y ancho fijo: con la etiqueta escrita, «Otro captcha» se comía
+            122 de los 375 px de un móvil y dejaba la imagen en 152. El captcha
+            está distorsionado a propósito; comprimido no hay quien lo lea. */}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="shrink-0"
+          onClick={() => void load()}
+          aria-label={t('auth.captchaImage')}
+          title={t('auth.captchaImage')}
+        >
+          <Icon name="refresh" size={18} />
         </Button>
       </div>
       <FormField label={t('auth.captchaText')} htmlFor="captchaAnswer" error={error ?? undefined}>

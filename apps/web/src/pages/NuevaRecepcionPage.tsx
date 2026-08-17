@@ -11,15 +11,13 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { FormField } from '@/components/molecules/FormField';
 import { useOrg } from '@/components/OrgGate';
 import { leerAcopioRecordado, recordarAcopio } from '@/features/donaciones/acopio-recordado';
 import { crearRecepcion } from '@/features/recepciones/recepciones-service';
 import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
-
-const selectClassName =
-  'flex h-11 w-full cursor-pointer appearance-none rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground ring-offset-background transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 export default function NuevaRecepcionPage() {
   const navigate = useNavigate();
@@ -96,9 +94,8 @@ export default function NuevaRecepcionPage() {
 
       <div className="max-w-xl space-y-4 rounded-lg border border-border bg-card p-5">
         <FormField label={t('newDonation.acopioLabel')} htmlFor="recepcion-acopio" required>
-          <select
+          <Select
             id="recepcion-acopio"
-            className={selectClassName}
             value={acopioId}
             onChange={(event) => {
               setAcopioId(event.target.value);
@@ -113,13 +110,12 @@ export default function NuevaRecepcionPage() {
                 {acopio.municipio ? ` — ${acopio.municipio}` : ''}
               </option>
             ))}
-          </select>
+          </Select>
         </FormField>
 
         <FormField label={t('receptions.columns.type')} htmlFor="recepcion-tipo">
-          <select
+          <Select
             id="recepcion-tipo"
-            className={selectClassName}
             value={tipo}
             onChange={(event) => setTipo(event.target.value)}
           >
@@ -128,13 +124,12 @@ export default function NuevaRecepcionPage() {
                 {t(`receptions.tipo.${item.value}`)}
               </option>
             ))}
-          </select>
+          </Select>
         </FormField>
 
         <FormField label={t('receptions.presentation')} htmlFor="recepcion-presentacion">
-          <select
+          <Select
             id="recepcion-presentacion"
-            className={selectClassName}
             value={presentacion}
             onChange={(event) => setPresentacion(event.target.value)}
           >
@@ -143,7 +138,7 @@ export default function NuevaRecepcionPage() {
                 {t(`receptions.presentacion.${item.value}`)}
               </option>
             ))}
-          </select>
+          </Select>
         </FormField>
 
         <FormField label={t('receptions.donor')} htmlFor="recepcion-donante">
@@ -190,9 +185,8 @@ export default function NuevaRecepcionPage() {
             />
           </FormField>
           <FormField label={t('receptions.unitType')} htmlFor="recepcion-ul-tipo">
-            <select
+            <Select
               id="recepcion-ul-tipo"
-              className={selectClassName}
               value={tipoUnidad}
               onChange={(e) => setTipoUnidad(e.target.value)}
             >
@@ -201,7 +195,7 @@ export default function NuevaRecepcionPage() {
                   {t(`receptions.ulTipo.${item.value}`)}
                 </option>
               ))}
-            </select>
+            </Select>
           </FormField>
         </fieldset>
 
