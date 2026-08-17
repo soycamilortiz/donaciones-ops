@@ -77,7 +77,10 @@ describe('DonacionesService', () => {
         { provide: R2StorageService, useValue: r2 },
         { provide: InventoryService, useValue: inventario },
         { provide: OpenFoodFactsService, useValue: off },
-        { provide: VisionProductoService, useValue: { leerImagen: jest.fn().mockResolvedValue(null) } },
+        {
+          provide: VisionProductoService,
+          useValue: { leerImagen: jest.fn().mockResolvedValue(null) },
+        },
       ],
     }).compile();
 

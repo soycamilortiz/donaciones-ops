@@ -5,7 +5,10 @@ function clienteR2(env: Env): S3Client | null {
   if (!env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_ENDPOINT) {
     return null;
   }
-  const endpoint = env.R2_ENDPOINT.replace(/\/+$/, '').replace(new RegExp(`/${env.R2_BUCKET}$`), '');
+  const endpoint = env.R2_ENDPOINT.replace(/\/+$/, '').replace(
+    new RegExp(`/${env.R2_BUCKET}$`),
+    '',
+  );
   return new S3Client({
     region: 'auto',
     endpoint,
@@ -23,9 +26,7 @@ export async function descargarObjetoR2(env: Env, key: string): Promise<Buffer> 
   if (!cliente) {
     throw new Error('R2 no configurado en el worker (faltan ACCESS_KEY, SECRET o ENDPOINT)');
   }
-  const respuesta = await cliente.send(
-    new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: key }),
-  );
+  const respuesta = await cliente.send(new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: key }));
   if (!respuesta.Body) {
     throw new Error('R2 devolvió un objeto vacío');
   }

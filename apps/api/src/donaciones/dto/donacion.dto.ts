@@ -168,7 +168,9 @@ export class ConfirmarDonacionDto {
   @IsString()
   marca?: string;
 
-  @ApiPropertyOptional({ description: 'Sumar a este ítem aunque el nombre no coincida letra a letra' })
+  @ApiPropertyOptional({
+    description: 'Sumar a este ítem aunque el nombre no coincida letra a letra',
+  })
   @IsOptional()
   @IsUUID()
   inventoryItemId?: string;

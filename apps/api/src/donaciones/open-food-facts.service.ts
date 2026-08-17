@@ -35,9 +35,7 @@ export class OpenFoodFactsService {
       return null;
     }
 
-    const base = this.config
-      .get('OPEN_FOOD_FACTS_BASE_URL', { infer: true })
-      .replace(/\/$/, '');
+    const base = this.config.get('OPEN_FOOD_FACTS_BASE_URL', { infer: true }).replace(/\/$/, '');
     const userAgent = this.config.get('OPEN_FOOD_FACTS_USER_AGENT', { infer: true });
     const timeoutMs = this.config.get('OPEN_FOOD_FACTS_TIMEOUT_MS', { infer: true });
     const url = `${base}/api/v2/product/${ean}.json?fields=code,product_name,product_name_es,brands,image_url`;

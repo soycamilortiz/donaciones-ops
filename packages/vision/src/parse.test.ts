@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { parseLecturaProducto } from './parse.js';
 import { createVisionClient } from './create-client.js';
+import { parseLecturaProducto } from './parse.js';
 
 describe('parseLecturaProducto', () => {
   it('normaliza nombre, marca y ean', () => {

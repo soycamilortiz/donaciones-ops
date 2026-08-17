@@ -96,8 +96,7 @@ export class DonacionesService {
       throw new ForbiddenException('La ruta no corresponde a esta organización');
     }
 
-    const blobUrl =
-      this.r2.publicUrlFor(dto.pathname) ?? `r2://${this.r2.bucket}/${dto.pathname}`;
+    const blobUrl = this.r2.publicUrlFor(dto.pathname) ?? `r2://${this.r2.bucket}/${dto.pathname}`;
 
     if (dto.acopioId) {
       await this.verificarAcopio(organizationId, dto.acopioId);
@@ -184,11 +183,13 @@ export class DonacionesService {
       throw new NotFoundException('Producto no encontrado');
     }
 
-    return this.prisma.donacionImagen.update({
-      where: { id },
-      data: { productoId, estado: DonacionImagenEstado.Procesada, error: null },
-      include: IMAGEN_CON_PRODUCTO,
-    }).then((imagen) => this.conUrlVisible(imagen));
+    return this.prisma.donacionImagen
+      .update({
+        where: { id },
+        data: { productoId, estado: DonacionImagenEstado.Procesada, error: null },
+        include: IMAGEN_CON_PRODUCTO,
+      })
+      .then((imagen) => this.conUrlVisible(imagen));
   }
 
   /** Vuelve a encolar una imagen fallida, por ejemplo tras corregir el catálogo. */
@@ -391,14 +392,16 @@ export class DonacionesService {
         where: { ean: { in: variantesEan(ean) } },
       });
       if (!ya) {
-        await this.prisma.producto.create({
-          data: {
-            nombre: dto.nombre.trim(),
-            marca: dto.marca?.trim() || null,
-            ean,
-            alias: [],
-          },
-        }).catch(() => undefined);
+        await this.prisma.producto
+          .create({
+            data: {
+              nombre: dto.nombre.trim(),
+              marca: dto.marca?.trim() || null,
+              ean,
+              alias: [],
+            },
+          })
+          .catch(() => undefined);
       }
     }
 
@@ -443,8 +446,7 @@ export class DonacionesService {
     return {
       ...imagen,
       blobUrl: await this.r2.urlParaMostrar(imagen.blobPathname, imagen.blobUrl),
-      cantidadDetectada:
-        imagen.cantidadDetectada == null ? null : Number(imagen.cantidadDetectada),
+      cantidadDetectada: imagen.cantidadDetectada == null ? null : Number(imagen.cantidadDetectada),
     };
   }
 

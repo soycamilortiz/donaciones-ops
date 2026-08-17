@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import type { Env } from '../config/env.schema';
 import { OpenFoodFactsService } from './open-food-facts.service';
 
 describe('OpenFoodFactsService', () => {
@@ -14,7 +15,7 @@ describe('OpenFoodFactsService', () => {
     }),
   };
 
-  const service = new OpenFoodFactsService(config as unknown as ConfigService);
+  const service = new OpenFoodFactsService(config as unknown as ConfigService<Env, true>);
 
   afterEach(() => {
     jest.restoreAllMocks();

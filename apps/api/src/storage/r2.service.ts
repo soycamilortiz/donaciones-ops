@@ -1,4 +1,9 @@
-import { GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  HeadBucketCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -83,11 +88,9 @@ export class R2StorageService {
     if (!this.client) {
       throw new Error(`R2 no configurado (${this.missingConfig().join(', ')})`);
     }
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
-      { expiresIn },
-    );
+    return getSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
+      expiresIn,
+    });
   }
 
   publicUrlFor(key: string): string | null {
