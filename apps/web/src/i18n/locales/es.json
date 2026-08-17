@@ -168,7 +168,18 @@
     "captchaText": "Texto del captcha",
     "noAccount": "¿No tenés cuenta?",
     "captchaLoading": "Cargando captcha…",
-    "captchaError": "No se pudo cargar el captcha"
+    "captchaError": "No se pudo cargar el captcha",
+    "createAccount": "Crear cuenta",
+    "name": "Nombre",
+    "username": "Usuario",
+    "usernameHint": "3 a 32 caracteres. Letras, números, punto y guion bajo.",
+    "email": "Correo",
+    "confirmPassword": "Confirmar contraseña",
+    "passwordHint": "Mínimo 8 caracteres, con letras y números.",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "registerError": "No se pudo registrar",
+    "signUpSubmit": "Registrarme",
+    "haveAccount": "¿Ya tenés cuenta?"
   },
   "onboarding": {
     "chooseTitle": "¿Cómo querés seguir?",

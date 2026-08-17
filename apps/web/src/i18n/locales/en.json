@@ -168,7 +168,18 @@
     "captchaText": "Captcha text",
     "noAccount": "No account yet?",
     "captchaLoading": "Loading captcha…",
-    "captchaError": "Could not load the captcha"
+    "captchaError": "Could not load the captcha",
+    "createAccount": "Create account",
+    "name": "Name",
+    "username": "Username",
+    "usernameHint": "3 to 32 characters. Letters, numbers, dot and underscore.",
+    "email": "Email",
+    "confirmPassword": "Confirm password",
+    "passwordHint": "At least 8 characters, with letters and numbers.",
+    "passwordMismatch": "Passwords do not match",
+    "registerError": "Could not register",
+    "signUpSubmit": "Sign up",
+    "haveAccount": "Already have an account?"
   },
   "onboarding": {
     "chooseTitle": "How do you want to continue?",

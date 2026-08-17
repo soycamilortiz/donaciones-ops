@@ -1,5 +1,11 @@
 import { type FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
+import { FormField } from '@/components/molecules/FormField';
+import { AuthLayout } from '@/components/templates/AuthLayout';
+import { ROUTES } from '@/lib/constants';
 import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
 import { useSession } from '../lib/AuthProvider';
 import { type AuthSession, apiRequest } from '../lib/api';
@@ -8,6 +14,7 @@ export default function SignUpPage() {
   const { setSession } = useSession();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
   const { refreshKey, onSubmitFailed } = useCaptchaRefresh();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -17,7 +24,7 @@ export default function SignUpPage() {
     const password = String(data.get('password') ?? '');
     const confirm = String(data.get('confirm') ?? '');
     if (password !== confirm) {
-      setError('Las contraseñas no coinciden');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
@@ -35,72 +42,81 @@ export default function SignUpPage() {
       setSession(session.accessToken);
       navigate('/empezar');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo registrar');
+      setError(err instanceof Error ? err.message : t('auth.registerError'));
       onSubmitFailed(event);
     }
   }
 
   return (
-    <div className="auth-page">
-      <Link to="/" className="brand">
-        SOS Chocó
-      </Link>
-      <form className="form auth-form" onSubmit={(event) => void onSubmit(event)}>
-        <h1>Crear cuenta</h1>
-        <label className="field">
-          Nombre
-          <input name="nombre" required minLength={2} autoComplete="name" />
-        </label>
-        <label className="field">
-          Usuario
-          <input
+    <AuthLayout title={t('auth.createAccount')}>
+      <form className="space-y-5" onSubmit={(event) => void onSubmit(event)}>
+        <FormField label={t('auth.name')} htmlFor="nombre" required>
+          <Input id="nombre" name="nombre" required minLength={2} autoComplete="name" />
+        </FormField>
+        <FormField
+          label={t('auth.username')}
+          htmlFor="usuario"
+          required
+          hint={t('auth.usernameHint')}
+        >
+          <Input
+            id="usuario"
             name="usuario"
             required
             minLength={3}
             maxLength={32}
             pattern="[a-zA-Z0-9._]+"
-            title="Letras, números, punto y guion bajo"
+            title={t('auth.usernameHint')}
             autoComplete="username"
           />
-        </label>
-        <label className="field">
-          Correo
-          <input name="correo" type="email" required autoComplete="email" />
-        </label>
-        <label className="field">
-          Contraseña
-          <input
+        </FormField>
+        <FormField label={t('auth.email')} htmlFor="correo" required>
+          <Input id="correo" name="correo" type="email" required autoComplete="email" />
+        </FormField>
+        <FormField label={t('auth.password')} htmlFor="password" required>
+          <Input
+            id="password"
             name="password"
             type="password"
             required
             minLength={8}
             autoComplete="new-password"
           />
-        </label>
-        <label className="field">
-          Confirmar contraseña
-          <input
+        </FormField>
+        <FormField
+          label={t('auth.confirmPassword')}
+          htmlFor="confirm"
+          required
+          hint={t('auth.passwordHint')}
+        >
+          <Input
+            id="confirm"
             name="confirm"
             type="password"
             required
             minLength={8}
             autoComplete="new-password"
           />
-        </label>
-        <p className="muted">Mínimo 8 caracteres, con letras y números.</p>
+        </FormField>
         <CaptchaFields refreshKey={refreshKey} />
         {error ? (
-          <p role="alert" className="error">
+          <p role="alert" className="text-sm font-medium text-error">
             {error}
           </p>
         ) : null}
-        <button className="button" type="submit">
-          Registrarme
-        </button>
-        <p className="muted">
-          ¿Ya tenés cuenta? <Link to="/sign-in">Entrar</Link>
+        <Button type="submit" size="lg" className="w-full">
+          {t('auth.signUpSubmit')}
+        </Button>
+        <p className="text-center text-sm text-muted-foreground">
+          {t('auth.haveAccount')}{' '}
+          <Link
+            to={ROUTES.signIn}
+            className="font-semibold text-primary underline underline-offset-4"
+          >
+            {t('auth.signIn')}
+          </Link>
         </p>
       </form>
-    </div>
+    </AuthLayout>
   );
 }
