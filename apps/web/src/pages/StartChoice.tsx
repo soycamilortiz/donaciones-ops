@@ -17,7 +17,9 @@ export default function StartChoice() {
   const { me } = useOutletContext<OutletCtx>();
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10 sm:px-6">
+    // PendingShell ya aporta el landmark <main>; aca va un contenedor simple
+    // para no anidar dos <main> en la ruta /empezar.
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10 sm:px-6">
       <div className="flex flex-col gap-2">
         <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
           {t('onboarding.greeting', { nombre: me.nombre })}
@@ -48,7 +50,7 @@ export default function StartChoice() {
 
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-6">
           <span className="grid h-10 w-10 place-items-center rounded-md bg-secondary text-primary">
-            <Icon name="bell" size={20} />
+            <Icon name="mail" size={20} />
           </span>
           <h2 className="text-lg font-bold text-foreground">{t('onboarding.waitInvite')}</h2>
           <p className="text-sm text-muted-foreground">
@@ -68,6 +70,6 @@ export default function StartChoice() {
         <Icon name="info" className="shrink-0 text-primary" />
         <p className="text-sm text-foreground">{t('onboarding.roleNote')}</p>
       </div>
-    </main>
+    </div>
   );
 }
