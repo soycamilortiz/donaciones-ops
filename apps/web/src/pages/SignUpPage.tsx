@@ -48,56 +48,63 @@ export default function SignUpPage() {
   }
 
   return (
-    <AuthLayout title={t('auth.createAccount')}>
+    // Card mas ancha en desktop para el layout a dos columnas; en movil queda
+    // en max-w-md (una sola columna, mobile-first).
+    <AuthLayout title={t('auth.createAccount')} className="sm:max-w-2xl">
       <form className="space-y-5" onSubmit={(event) => void onSubmit(event)}>
-        <FormField label={t('auth.name')} htmlFor="nombre" required>
-          <Input id="nombre" name="nombre" required minLength={2} autoComplete="name" />
-        </FormField>
-        <FormField
-          label={t('auth.username')}
-          htmlFor="usuario"
-          required
-          hint={t('auth.usernameHint')}
-        >
-          <Input
-            id="usuario"
-            name="usuario"
+        {/* Mobile-first: una columna; a partir de sm, pares a dos columnas. */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FormField label={t('auth.name')} htmlFor="nombre" required>
+            <Input id="nombre" name="nombre" required minLength={2} autoComplete="name" />
+          </FormField>
+          <FormField
+            label={t('auth.username')}
+            htmlFor="usuario"
             required
-            minLength={3}
-            maxLength={32}
-            pattern="[a-zA-Z0-9._]+"
-            title={t('auth.usernameHint')}
-            autoComplete="username"
-          />
-        </FormField>
+            hint={t('auth.usernameHint')}
+          >
+            <Input
+              id="usuario"
+              name="usuario"
+              required
+              minLength={3}
+              maxLength={32}
+              pattern="[a-zA-Z0-9._]+"
+              title={t('auth.usernameHint')}
+              autoComplete="username"
+            />
+          </FormField>
+        </div>
         <FormField label={t('auth.email')} htmlFor="correo" required>
           <Input id="correo" name="correo" type="email" required autoComplete="email" />
         </FormField>
-        <FormField label={t('auth.password')} htmlFor="password" required>
-          <Input
-            id="password"
-            name="password"
-            type="password"
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FormField label={t('auth.password')} htmlFor="password" required>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </FormField>
+          <FormField
+            label={t('auth.confirmPassword')}
+            htmlFor="confirm"
             required
-            minLength={8}
-            autoComplete="new-password"
-          />
-        </FormField>
-        <FormField
-          label={t('auth.confirmPassword')}
-          htmlFor="confirm"
-          required
-          hint={t('auth.passwordHint')}
-        >
-          <Input
-            id="confirm"
-            name="confirm"
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-        </FormField>
+            hint={t('auth.passwordHint')}
+          >
+            <Input
+              id="confirm"
+              name="confirm"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </FormField>
+        </div>
         <CaptchaFields refreshKey={refreshKey} />
         {error ? (
           <p role="alert" className="text-sm font-medium text-error">
