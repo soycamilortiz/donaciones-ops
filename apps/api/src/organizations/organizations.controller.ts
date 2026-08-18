@@ -23,7 +23,9 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import {
   AddMemberDto,
+  CreatedVolunteerDto,
   CreateOrganizationDto,
+  CreateVolunteerDto,
   MemberDto,
   OrganizationDto,
   UpdateMemberDto,
@@ -91,6 +93,19 @@ export class OrganizationsController {
       correo: dto.correo.toLowerCase(),
     });
     return this.toMember(row);
+  }
+
+  @Post(':orgId/members/nuevo')
+  @RequirePermission(PermissionSlug.MembersInvite)
+  @ApiOperation({ summary: 'Crear un voluntario con clave temporal (sin registro previo)' })
+  @ApiCreatedResponse({ type: CreatedVolunteerDto })
+  @ApiConflictResponse({ description: 'El usuario o el correo ya existen' })
+  async createVolunteer(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @Body() dto: CreateVolunteerDto,
+  ): Promise<CreatedVolunteerDto> {
+    const { membership, claveTemporal } = await this.organizations.createVolunteer(orgId, dto);
+    return { member: this.toMember(membership), claveTemporal };
   }
 
   @Patch(':orgId/members/:userId')
