@@ -8,9 +8,11 @@ import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
 import { SkeletonList } from '@/components/atoms/Skeleton';
+import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { useOrg } from '@/components/OrgGate';
 import {
   agregarItemManual,
+  anularRecepcion,
   generarUnidades,
   inspeccionarItem,
   obtenerRecepcion,
@@ -18,6 +20,7 @@ import {
 } from '@/features/recepciones/recepciones-service';
 import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
+import { cn } from '@/lib/utils';
 
 const ESTADO_VARIANTE: Record<string, BadgeVariant> = {
   BORRADOR: 'secondary',
@@ -30,6 +33,31 @@ const ESTADO_VARIANTE: Record<string, BadgeVariant> = {
 };
 
 const ABIERTA = new Set(['BORRADOR', 'EN_RECEPCION', 'EN_INSPECCION', 'PENDIENTE_VALIDACION']);
+
+// Tabla de 7 columnas en desktop; bajo 721px cada línea se apila como tarjeta
+// (UX-005) para no forzar scroll horizontal con el móvil en la mano.
+const ROW_GRID =
+  'min-[721px]:grid-cols-[minmax(160px,1.8fr)_minmax(84px,1fr)_64px_minmax(64px,0.7fr)_minmax(88px,1fr)_minmax(88px,1fr)_minmax(88px,1fr)_minmax(150px,1.5fr)]';
+const cellLabelClass =
+  'text-[10px] font-bold uppercase tracking-wider text-muted-foreground min-[721px]:hidden';
+const thClass = 'text-[10px] font-bold uppercase tracking-wider text-muted-foreground';
+
+// Compara con épsilon: las cantidades pueden ser kilos (decimales) y la suma
+// de floats no es exacta.
+const cuadra = (sum: number, target: number) => Math.abs(sum - target) < 1e-9;
+
+// Al validar, el backend desvía lo aprobado a cuarentena cuando falta el lote o
+// el vencimiento que el producto exige (UX-003). El DTO ya trae esas reglas, así
+// que lo anticipamos en pantalla en vez de dejar que el stock desaparezca.
+function willQuarantine(item: RecepcionItem): boolean {
+  const producto = item.producto;
+  if (!producto) {
+    return false;
+  }
+  const faltaLote = Boolean(producto.requiereLote) && !item.lote?.codigoOrigen;
+  const faltaVencimiento = Boolean(producto.requiereVencimiento) && !item.lote?.vencimiento;
+  return faltaLote || faltaVencimiento;
+}
 
 export default function RecepcionDetailPage() {
   const { id = '' } = useParams();
@@ -50,6 +78,7 @@ export default function RecepcionDetailPage() {
   const [manualVence, setManualVence] = useState('');
   const [manualUnidad, setManualUnidad] = useState('UNIDAD');
   const [guardando, setGuardando] = useState(false);
+  const [confirmAnular, setConfirmAnular] = useState(false);
 
   const cargar = useCallback(async () => {
     const row = await obtenerRecepcion(request, orgId, id);
@@ -97,6 +126,10 @@ export default function RecepcionDetailPage() {
   const fotoQuery = (ulId?: string) => {
     return `${ROUTES.recepcionFoto(recepcion.id)}${ulId ? `?ulId=${ulId}` : ''}`;
   };
+
+  const cuarentenaCount = recepcion.items.filter(
+    (item) => item.estadoLinea !== 'VALIDADA' && willQuarantine(item),
+  ).length;
 
   return (
     <div className="space-y-8 py-2">
@@ -172,6 +205,7 @@ export default function RecepcionDetailPage() {
                 type="number"
                 min={1}
                 max={200}
+                inputMode="numeric"
                 value={ulCantidad}
                 onChange={(e) => setUlCantidad(e.target.value)}
               />
@@ -222,37 +256,24 @@ export default function RecepcionDetailPage() {
         {recepcion.items.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('receptions.noLines')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[40rem] text-left text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th scope="col" className="py-2 pr-3">
-                    {t('receptions.columns.product')}
-                  </th>
-                  <th scope="col" className="py-2 pr-3">
-                    {t('receptions.columns.ul')}
-                  </th>
-                  <th scope="col" className="py-2 pr-3">
-                    {t('receptions.columns.received')}
-                  </th>
-                  <th scope="col" className="py-2 pr-3">
-                    {t('receptions.columns.measure')}
-                  </th>
-                  <th scope="col" className="py-2 pr-3">
-                    {t('receptions.columns.approved')}
-                  </th>
-                  <th scope="col" className="py-2 pr-3">
-                    {t('receptions.columns.quarantine')}
-                  </th>
-                  <th scope="col" className="py-2 pr-3">
-                    {t('receptions.columns.rejected')}
-                  </th>
-                  <th scope="col" className="py-2">
-                    {t('receptions.columns.status')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
+            <div className="min-[721px]:overflow-x-auto">
+              <div className="min-[721px]:min-w-[960px]">
+                <div
+                  className={cn(
+                    'hidden gap-3 border-b border-border bg-secondary px-4 min-[721px]:grid min-[721px]:h-11 min-[721px]:items-center',
+                    ROW_GRID,
+                  )}
+                >
+                  <span className={thClass}>{t('receptions.columns.product')}</span>
+                  <span className={thClass}>{t('receptions.columns.ul')}</span>
+                  <span className={thClass}>{t('receptions.columns.received')}</span>
+                  <span className={thClass}>{t('receptions.columns.measure')}</span>
+                  <span className={thClass}>{t('receptions.columns.approved')}</span>
+                  <span className={thClass}>{t('receptions.columns.quarantine')}</span>
+                  <span className={thClass}>{t('receptions.columns.rejected')}</span>
+                  <span className={thClass}>{t('receptions.columns.status')}</span>
+                </div>
                 {recepcion.items.map((item) => (
                   <Linea
                     key={item.id}
@@ -264,8 +285,8 @@ export default function RecepcionDetailPage() {
                     }
                   />
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         )}
       </section>
@@ -296,6 +317,7 @@ export default function RecepcionDetailPage() {
                 id="manual-cantidad"
                 type="number"
                 min={0.001}
+                inputMode="decimal"
                 value={manualCantidad}
                 onChange={(e) => setManualCantidad(e.target.value)}
               />
@@ -303,7 +325,7 @@ export default function RecepcionDetailPage() {
             <label className="space-y-1">
               <span className="text-sm font-medium">{t('receptions.measureUnit')}</span>
               <select
-                className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm"
+                className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-base md:text-sm"
                 value={manualUnidad}
                 onChange={(e) => setManualUnidad(e.target.value)}
               >
@@ -379,12 +401,29 @@ export default function RecepcionDetailPage() {
               {t('receptions.validateWarning')}
             </p>
           ) : null}
-          <Button
-            disabled={guardando || recepcion.items.length === 0}
-            onClick={() => void run(() => validarRecepcion(request, orgId, recepcion.id))}
-          >
-            {t('receptions.validate')}
-          </Button>
+          {cuarentenaCount > 0 ? (
+            <p
+              role="status"
+              className="rounded-md bg-warning-soft px-4 py-3 text-sm font-medium text-warning"
+            >
+              {t('receptions.quarantineSummary', { count: cuarentenaCount })}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              disabled={guardando || recepcion.items.length === 0}
+              onClick={() => void run(() => validarRecepcion(request, orgId, recepcion.id))}
+            >
+              {t('receptions.validate')}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={guardando}
+              onClick={() => setConfirmAnular(true)}
+            >
+              {t('receptions.void')}
+            </Button>
+          </div>
         </div>
       ) : null}
 
@@ -400,6 +439,20 @@ export default function RecepcionDetailPage() {
           </Button>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        abierto={confirmAnular}
+        titulo={t('receptions.voidConfirmTitle')}
+        descripcion={t('receptions.voidConfirmDescription')}
+        etiquetaConfirmar={t('receptions.voidConfirmAction')}
+        etiquetaCancelar={t('common.cancel')}
+        ocupado={guardando}
+        onCancelar={() => setConfirmAnular(false)}
+        onConfirmar={() => {
+          setConfirmAnular(false);
+          void run(() => anularRecepcion(request, orgId, recepcion.id));
+        }}
+      />
     </div>
   );
 }
@@ -420,73 +473,123 @@ function Linea({
   }) => void;
 }) {
   const { t } = useTranslation();
+  const editable = writable && item.estadoLinea !== 'VALIDADA';
   const [aprobada, setAprobada] = useState(String(item.cantidadAprobada || item.cantidadRecibida));
   const [cuarentena, setCuarentena] = useState(String(item.cantidadCuarentena));
   const [rechazada, setRechazada] = useState(String(item.cantidadRechazada));
 
+  const suma = (Number(aprobada) || 0) + (Number(cuarentena) || 0) + (Number(rechazada) || 0);
+  const sumCuadra = cuadra(suma, item.cantidadRecibida);
+  const divertira = willQuarantine(item);
+
+  const numberField = (
+    label: string,
+    value: string,
+    onChange: (value: string) => void,
+    fallback: number,
+  ) => (
+    <div className="flex items-center justify-between gap-3 min-[721px]:block">
+      <span className={cellLabelClass}>{label}</span>
+      {editable ? (
+        <Input
+          type="number"
+          min={0}
+          inputMode="numeric"
+          aria-label={label}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-28 min-[721px]:w-full"
+        />
+      ) : (
+        <span className="text-sm tabular-nums text-foreground">{fallback}</span>
+      )}
+    </div>
+  );
+
   return (
-    <tr className="border-b border-border align-top">
-      <td className="py-2 pr-3">
-        <div className="font-medium">{item.producto?.nombre ?? t('receptions.pendingId')}</div>
-        <div className="text-xs text-muted-foreground">
+    <div
+      className={cn(
+        'flex flex-col gap-2 border-b border-border p-4 last:border-b-0 min-[721px]:grid min-[721px]:items-start min-[721px]:gap-3 min-[721px]:px-4 min-[721px]:py-3',
+        ROW_GRID,
+      )}
+    >
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-foreground">
+          {item.producto?.nombre ?? t('receptions.pendingId')}
+        </span>
+        <span className="text-xs text-muted-foreground">
           {item.producto?.sku}
           {item.lote?.codigo ? ` · ${item.lote.codigo}` : ''}
           {item.lote?.codigoOrigen ? ` · ${item.lote.codigoOrigen}` : ''}
           {item.lote?.vencimiento ? ` · ${item.lote.vencimiento.slice(0, 10)}` : ''}
-        </div>
-        {item.alertaValidacion === 'FALTA_VENCIMIENTO' ? (
-          <p className="mt-1 text-xs text-warning">{t('receptions.expiryMissing')}</p>
+        </span>
+        {divertira ? (
+          <div className="mt-1 flex flex-col gap-1">
+            <Badge variant="warning" className="w-fit">
+              {t('receptions.columns.quarantine')}
+            </Badge>
+            <span className="text-xs text-warning">{t('receptions.willQuarantineHint')}</span>
+          </div>
         ) : null}
-      </td>
-      <td className="py-2 pr-3">{item.unidadLogistica?.codigo ?? t('receptions.loose')}</td>
-      <td className="py-2 pr-3">{item.cantidadRecibida}</td>
-      <td className="py-2 pr-3">{etiquetaUnidad(item.unidad, t)}</td>
-      <td className="py-2 pr-3">
-        {writable && item.estadoLinea !== 'VALIDADA' ? (
-          <Input
-            type="number"
-            min={0}
-            aria-label={t('receptions.columns.approved')}
-            value={aprobada}
-            onChange={(e) => setAprobada(e.target.value)}
-          />
-        ) : (
-          item.cantidadAprobada
-        )}
-      </td>
-      <td className="py-2 pr-3">
-        {writable && item.estadoLinea !== 'VALIDADA' ? (
-          <Input
-            type="number"
-            min={0}
-            aria-label={t('receptions.columns.quarantine')}
-            value={cuarentena}
-            onChange={(e) => setCuarentena(e.target.value)}
-          />
-        ) : (
-          item.cantidadCuarentena
-        )}
-      </td>
-      <td className="py-2 pr-3">
-        {writable && item.estadoLinea !== 'VALIDADA' ? (
-          <Input
-            type="number"
-            min={0}
-            aria-label={t('receptions.columns.rejected')}
-            value={rechazada}
-            onChange={(e) => setRechazada(e.target.value)}
-          />
-        ) : (
-          item.cantidadRechazada
-        )}
-      </td>
-      <td className="py-2">
-        <div className="space-y-2">
-          <Badge variant="outline">{t(`receptions.linea.${item.estadoLinea}`)}</Badge>
-          {writable && item.estadoLinea !== 'VALIDADA' ? (
+        {item.alertaValidacion === 'FALTA_VENCIMIENTO' ? (
+          <span className="mt-1 text-xs text-warning">{t('receptions.expiryMissing')}</span>
+        ) : null}
+      </div>
+
+      <div className="flex items-center justify-between gap-3 min-[721px]:block">
+        <span className={cellLabelClass}>{t('receptions.columns.ul')}</span>
+        <span className="text-sm text-muted-foreground">
+          {item.unidadLogistica?.codigo ?? t('receptions.loose')}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 min-[721px]:block">
+        <span className={cellLabelClass}>{t('receptions.columns.received')}</span>
+        <span className="text-sm font-bold tabular-nums text-foreground">
+          {item.cantidadRecibida}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 min-[721px]:block">
+        <span className={cellLabelClass}>{t('receptions.columns.measure')}</span>
+        <span className="text-sm text-muted-foreground">{etiquetaUnidad(item.unidad, t)}</span>
+      </div>
+
+      {numberField(t('receptions.columns.approved'), aprobada, setAprobada, item.cantidadAprobada)}
+      {numberField(
+        t('receptions.columns.quarantine'),
+        cuarentena,
+        setCuarentena,
+        item.cantidadCuarentena,
+      )}
+      {numberField(
+        t('receptions.columns.rejected'),
+        rechazada,
+        setRechazada,
+        item.cantidadRechazada,
+      )}
+
+      <div className="flex flex-col gap-2 pt-1 min-[721px]:pt-0">
+        <Badge variant="outline" className="w-fit">
+          {t(`receptions.linea.${item.estadoLinea}`)}
+        </Badge>
+        {editable ? (
+          <>
+            <p
+              className={cn(
+                'text-xs font-medium tabular-nums',
+                sumCuadra ? 'text-success' : 'text-warning',
+              )}
+            >
+              {t('receptions.assignedOf', { sum: suma, received: item.cantidadRecibida })}
+            </p>
+            {!sumCuadra ? (
+              <span className="text-xs text-warning">{t('receptions.sumMismatch')}</span>
+            ) : null}
             <Button
               variant="outline"
-              disabled={disabled}
+              disabled={disabled || !sumCuadra}
+              className="w-full min-[721px]:w-auto"
               onClick={() =>
                 onInspect({
                   cantidadAprobada: Number(aprobada) || 0,
@@ -497,10 +600,10 @@ function Linea({
             >
               {t('receptions.inspect')}
             </Button>
-          ) : null}
-        </div>
-      </td>
-    </tr>
+          </>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
