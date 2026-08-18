@@ -7,7 +7,7 @@ import { Badge, type BadgeVariant } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
-import { Spinner } from '@/components/atoms/Spinner';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { useOrg } from '@/components/OrgGate';
 import {
   agregarItemManual,
@@ -79,9 +79,9 @@ export default function RecepcionDetailPage() {
 
   if (cargando) {
     return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
+      <div className="py-8">
+        <SkeletonList filas={4} etiqueta={t('common.loading')} />
+      </div>
     );
   }
 

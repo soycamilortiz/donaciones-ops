@@ -105,6 +105,25 @@
  * Va acá (no en un archivo Tailwind) porque necesita el pseudo-elemento y el
  * archivo está excluido de biome.
  */
+/*
+ * `viewport-fit=cover` deja la app llegar hasta el borde físico, así que lo que
+ * queda pegado a un lado tiene que apartarse del notch y del indicador de
+ * inicio por su cuenta. Sin esto la barra de avisos, que es lo único fijo
+ * abajo, queda debajo de la raya del iPhone.
+ */
+.ds-safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.ds-safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.ds-safe-x {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
 @media (max-width: 900px) {
   .ds-datatable table,
   .ds-datatable tbody,
@@ -159,4 +178,20 @@
     text-transform: uppercase;
     color: var(--color-muted-foreground);
   }
+}
+
+/*
+ * Los controles de zoom de Leaflet vienen a 30px y la app se usa con guantes:
+ * las reglas del proyecto piden 44px para todo lo pulsable.
+ *
+ * Va aquí y con esta especificidad a propósito. `styles.css` entra por
+ * `@import ... layer(app-base)` y el CSS de Leaflet llega sin capa, así que
+ * cualquier regla de la capa pierde por mucha especificidad que tenga.
+ */
+.address-map .leaflet-bar a.leaflet-control-zoom-in,
+.address-map .leaflet-bar a.leaflet-control-zoom-out {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  font-size: 20px;
 }

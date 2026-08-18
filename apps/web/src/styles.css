@@ -474,7 +474,9 @@ td {
   gap: 14px;
 }
 
-@media (max-width: 800px) {
+/* Alineado con el corte de 720px del design system: la app entera cambia
+   de columna en los mismos dos anchos (720 y 900) en vez de en cinco. */
+@media (max-width: 720px) {
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -687,7 +689,8 @@ td {
   margin-top: 0;
 }
 
-@media (max-width: 960px) {
+/* Alineado con el corte de 900px del design system. */
+@media (max-width: 900px) {
   .stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

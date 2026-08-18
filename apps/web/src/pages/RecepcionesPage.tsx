@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Badge, type BadgeVariant } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
-import { Spinner } from '@/components/atoms/Spinner';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { useOrg } from '@/components/OrgGate';
 import { DataTable, type DataTableColumn } from '@/components/organisms/DataTable';
 import { listarRecepciones } from '@/features/recepciones/recepciones-service';
@@ -116,9 +116,7 @@ export default function RecepcionesPage() {
       ) : null}
 
       {cargando ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner /> {t('common.loading')}
-        </p>
+        <SkeletonList filas={4} etiqueta={t('common.loading')} />
       ) : (
         <DataTable
           columns={columns}

@@ -61,7 +61,7 @@ export default function AppShell() {
       </a>
 
       {/* UX-028: below 900px the sidebar collapses into a sticky horizontal strip. */}
-      <aside className="sticky top-0 z-30 flex w-full items-center gap-3.5 overflow-x-auto bg-primary px-4 py-3 text-primary-foreground min-[900px]:h-screen min-[900px]:w-64 min-[900px]:flex-col min-[900px]:items-stretch min-[900px]:gap-6 min-[900px]:overflow-x-visible min-[900px]:overflow-y-auto min-[900px]:px-4 min-[900px]:py-6">
+      <aside className="ds-safe-top sticky top-0 z-30 flex w-full items-center gap-3.5 overflow-x-auto bg-primary px-4 pb-3 text-primary-foreground min-[900px]:h-screen min-[900px]:w-64 min-[900px]:flex-col min-[900px]:items-stretch min-[900px]:gap-6 min-[900px]:overflow-x-visible min-[900px]:overflow-y-auto min-[900px]:px-4 min-[900px]:py-6">
         <Link
           to="/app"
           className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary min-[900px]:px-2"
