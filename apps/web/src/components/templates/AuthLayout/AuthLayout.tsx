@@ -13,10 +13,13 @@ export function AuthLayout({
 }: AuthLayoutProps): ReactElement {
   return (
     // Skin html-base: fondo salvia, tarjeta centrada (<=460px) radio 20px.
-    <div className="grid min-h-screen place-items-center bg-background p-6">
+    // flex (no grid place-items-center): en grid de columna `auto`, `w-full`
+    // del hijo resuelve contra su `max-w-*` y desborda en viewports angostos;
+    // con flex el `w-full` se acota al ancho del contenedor (el viewport).
+    <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
       <div
         className={cn(
-          'w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-lg',
+          'w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg sm:p-8',
           className,
         )}
       >
