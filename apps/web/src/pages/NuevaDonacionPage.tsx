@@ -7,6 +7,8 @@ import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { Spinner } from '@/components/atoms/Spinner';
 import { useOrg } from '@/components/OrgGate';
 import {
@@ -26,19 +28,29 @@ type Fase = 'inicio' | 'optimizando' | 'subiendo' | 'reconociendo' | 'listo' | '
 const UL_SUELTA = 'suelta';
 
 const fieldLabel = 'text-xs font-bold uppercase tracking-wider text-muted-foreground';
-const selectClassName =
-  'min-h-11 w-full cursor-pointer rounded-md border border-border bg-card px-3.5 text-sm font-medium text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
-
 /**
  * Progress bars upload → recognize → confirm. Presentational only: it reads
  * the real state machine `fase`.
  */
 function Stepper({ activo }: { activo: number }) {
+  const { t } = useTranslation();
+  const total = 3;
   return (
-    <div aria-hidden className="flex gap-2">
+    // Las barras son decoración; el progreso lo lleva el `progressbar`, que sí
+    // se anuncia. Antes todo el bloque era `aria-hidden`: quien no ve la
+    // pantalla no tenía forma de saber en qué paso iba la captura.
+    <div
+      role="progressbar"
+      aria-valuemin={1}
+      aria-valuemax={total}
+      aria-valuenow={Math.max(activo + 1, 1)}
+      aria-valuetext={t('newDonation.stepOf', { step: Math.max(activo + 1, 1), total })}
+      className="flex gap-2"
+    >
       {[0, 1, 2].map((paso) => (
         <span
           key={paso}
+          aria-hidden
           className={cn(
             'h-1 flex-1 rounded-pill',
             paso < activo ? 'bg-success' : paso === activo ? 'bg-accent' : 'bg-muted',
@@ -62,9 +74,8 @@ function UnidadSelect({
   return (
     <label className="flex flex-col gap-1.5" htmlFor="donacion-ul">
       <span className={fieldLabel}>{t('newDonation.unitLabel')}</span>
-      <select
+      <Select
         id="donacion-ul"
-        className={selectClassName}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required
@@ -76,7 +87,7 @@ function UnidadSelect({
             {ul.codigo} · #{ul.nroEnRecepcion} · {t(`receptions.ulTipo.${ul.tipo}`)}
           </option>
         ))}
-      </select>
+      </Select>
       <span className="text-xs text-muted-foreground">{t('newDonation.unitHint')}</span>
     </label>
   );
@@ -215,9 +226,9 @@ export default function NuevaDonacionPage() {
 
   if (carga === 'pendiente') {
     return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
+      <div className="py-8">
+        <SkeletonList filas={3} etiqueta={t('common.loading')} />
+      </div>
     );
   }
 
@@ -277,6 +288,8 @@ export default function NuevaDonacionPage() {
           <Input
             id="donacion-ean"
             inputMode="numeric"
+            enterKeyHint="done"
+            autoComplete="off"
             value={eanManual}
             onChange={(e) => setEanManual(e.target.value)}
             placeholder="3017620422003"
@@ -569,9 +582,8 @@ function Resultado({
       </label>
       <label className="flex flex-col gap-1.5" htmlFor="donacion-unidad">
         <span className={fieldLabel}>{t('newDonation.measureUnit')}</span>
-        <select
+        <Select
           id="donacion-unidad"
-          className={selectClassName}
           value={unidad}
           onChange={(e) => setUnidad(e.target.value)}
         >
@@ -580,7 +592,7 @@ function Resultado({
               {t(`inventoryUnits.${item.value}`)}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="flex flex-col gap-1.5" htmlFor="donacion-lote">
         <span className={fieldLabel}>{t('newDonation.lotOrigin')}</span>
@@ -608,7 +620,13 @@ function Resultado({
         </p>
       ) : null}
 
-      <Button onClick={() => void onConfirmar()} disabled={guardando}>
+      <Button
+        onClick={() => void onConfirmar()}
+        disabled={guardando}
+        // Pegado al borde inferior en móvil: el teclado numérico de la cantidad
+        // tapaba el botón y había que cerrarlo a mano para poder confirmar.
+        className="ds-safe-bottom sticky bottom-0 z-10 w-full shadow-lg md:static md:w-auto md:shadow-none"
+      >
         {guardando ? t('common.saving') : t('newDonation.confirm')}
       </Button>
     </div>

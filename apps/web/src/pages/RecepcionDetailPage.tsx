@@ -6,7 +6,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Badge, type BadgeVariant } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
-import { Spinner } from '@/components/atoms/Spinner';
+import { Select } from '@/components/atoms/Select';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { useOrg } from '@/components/OrgGate';
 import {
   agregarItemManual,
@@ -79,9 +80,9 @@ export default function RecepcionDetailPage() {
 
   if (cargando) {
     return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
+      <div className="py-8">
+        <SkeletonList filas={4} etiqueta={t('common.loading')} />
+      </div>
     );
   }
 
@@ -177,17 +178,13 @@ export default function RecepcionDetailPage() {
             </label>
             <label className="space-y-1">
               <span className="text-sm font-medium">{t('receptions.unitType')}</span>
-              <select
-                className="min-h-11 cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm"
-                value={ulTipo}
-                onChange={(e) => setUlTipo(e.target.value)}
-              >
+              <Select className="w-auto" value={ulTipo} onChange={(e) => setUlTipo(e.target.value)}>
                 {UNIDAD_LOGISTICA_TIPOS.map((item) => (
                   <option key={item.value} value={item.value}>
                     {t(`receptions.ulTipo.${item.value}`)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <Button
               variant="outline"
@@ -303,18 +300,14 @@ export default function RecepcionDetailPage() {
             </label>
             <label className="space-y-1">
               <span className="text-sm font-medium">{t('receptions.columns.ul')}</span>
-              <select
-                className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-sm"
-                value={manualUl}
-                onChange={(e) => setManualUl(e.target.value)}
-              >
+              <Select value={manualUl} onChange={(e) => setManualUl(e.target.value)}>
                 <option value="">{t('receptions.loose')}</option>
                 {recepcion.unidades.map((ul) => (
                   <option key={ul.id} value={ul.id}>
                     {ul.codigo}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="space-y-1" htmlFor="manual-lote">
               <span className="text-sm font-medium">{t('receptions.lotOrigin')}</span>

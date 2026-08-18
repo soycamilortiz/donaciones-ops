@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import logoMarkCream from '@/assets/logo-mark-cream.png';
 import { Avatar } from '@/components/atoms/Avatar';
 import { Button } from '@/components/atoms/Button';
 import type { IconName } from '@/components/atoms/Icon';
 import { Icon } from '@/components/atoms/Icon';
 import { NavItem } from '@/components/molecules/NavItem';
+import { useToast } from '@/components/molecules/Toast';
 import { useSession } from '../lib/AuthProvider';
 import { LanguageSwitcher } from './molecules/LanguageSwitcher';
 import { useOrg } from './OrgGate';
@@ -16,6 +17,8 @@ export default function AppShell() {
   const { logout } = useSession();
   const { t } = useTranslation();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { avisar } = useToast();
   const mainRef = useRef<HTMLElement>(null);
 
   // UX-009: on route change move focus into the content region and reset the
@@ -62,7 +65,7 @@ export default function AppShell() {
       </a>
 
       {/* UX-028: below 900px the sidebar collapses into a sticky horizontal strip. */}
-      <aside className="sticky top-0 z-30 flex w-full items-center gap-3.5 overflow-x-auto bg-primary px-4 py-3 text-primary-foreground min-[900px]:h-screen min-[900px]:w-64 min-[900px]:flex-col min-[900px]:items-stretch min-[900px]:gap-6 min-[900px]:overflow-x-visible min-[900px]:overflow-y-auto min-[900px]:px-4 min-[900px]:py-6">
+      <aside className="ds-safe-top sticky top-0 z-30 flex w-full items-center gap-3.5 overflow-x-auto bg-primary px-4 pb-3 text-primary-foreground min-[900px]:h-screen min-[900px]:w-64 min-[900px]:flex-col min-[900px]:items-stretch min-[900px]:gap-6 min-[900px]:overflow-x-visible min-[900px]:overflow-y-auto min-[900px]:px-4 min-[900px]:py-6">
         <Link
           to="/app"
           className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary min-[900px]:px-2"
@@ -86,7 +89,18 @@ export default function AppShell() {
           <select
             aria-label={t('common.organization')}
             value={orgId}
-            onChange={(event) => setOrgId(event.target.value)}
+            onChange={(event) => {
+              const elegida = me.memberships.find(
+                (item) => item.organization.id === event.target.value,
+              );
+              setOrgId(event.target.value);
+              // Sin volver al panel te quedabas en, por ejemplo, /app/inventario
+              // mirando datos de la organización anterior.
+              navigate('/app');
+              if (elegida) {
+                avisar(t('session.orgSwitched', { name: elegida.organization.nombre }));
+              }
+            }}
             className="min-h-11 w-auto max-w-[12rem] cursor-pointer rounded-md border-none bg-primary-panel px-3 py-2 text-sm font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary min-[900px]:w-full min-[900px]:max-w-none"
           >
             {me.memberships.map((item) => (
@@ -99,7 +113,7 @@ export default function AppShell() {
               </option>
             ))}
           </select>
-          <p className="whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-accent min-[900px]:mt-0.5 min-[900px]:px-2">
+          <p className="whitespace-nowrap text-xs font-bold uppercase tracking-wider text-accent min-[900px]:mt-0.5 min-[900px]:px-2">
             {membership.role.nombre}
           </p>
         </div>

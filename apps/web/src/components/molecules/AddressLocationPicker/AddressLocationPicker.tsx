@@ -1,6 +1,6 @@
 import L from 'leaflet';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -59,9 +59,10 @@ async function applyLatLng(
       return {
         departamento,
         municipio,
-        direccion: options?.keepDireccion && current.direccion.trim()
-          ? current.direccion
-          : hit.direccion || current.direccion,
+        direccion:
+          options?.keepDireccion && current.direccion.trim()
+            ? current.direccion
+            : hit.direccion || current.direccion,
         lat,
         lng,
       };
@@ -129,6 +130,7 @@ export function AddressLocationPicker({
     return marker;
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: map instance must not remount on each keystroke
   useEffect(() => {
     if (!mapEl.current || mapRef.current) return;
 
@@ -153,9 +155,9 @@ export function AddressLocationPicker({
       mapRef.current = null;
       markerRef.current = null;
     };
-    // biome-ignore lint/correctness/useExhaustiveDependencies: map instance must not remount on each keystroke
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ensureMarker is redefined every render; the coordinates are the real trigger
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -199,6 +201,7 @@ export function AddressLocationPicker({
   }
 
   // Auto-locate once for new forms (no coordinates yet).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot geolocation when the form has no coords yet
   useEffect(() => {
     if (!autoGeolocate || geoTriedRef.current) return;
     if (value.lat != null && value.lng != null) {
@@ -207,7 +210,6 @@ export function AddressLocationPicker({
     }
     geoTriedRef.current = true;
     locateMe(true);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot geolocation when the form has no coords yet
   }, [autoGeolocate]);
 
   useEffect(() => {
@@ -223,9 +225,7 @@ export function AddressLocationPicker({
       setBuscando(true);
       setSearchError(null);
       const bias =
-        value.lat != null && value.lng != null
-          ? { lat: value.lat, lng: value.lng }
-          : CHOCO_BIAS;
+        value.lat != null && value.lng != null ? { lat: value.lat, lng: value.lng } : CHOCO_BIAS;
       void buscarDirecciones(q, ctrl.signal, bias)
         .then((rows) => {
           setSuggestions(rows);
@@ -325,12 +325,7 @@ export function AddressLocationPicker({
           {geoStatus === 'pending' ? t('address.geoPending') : t('address.useMyLocation')}
         </button>
       </div>
-      <div
-        ref={mapEl}
-        className="address-map"
-        role="img"
-        aria-label={t('address.mapLabel')}
-      />
+      <div ref={mapEl} className="address-map" role="img" aria-label={t('address.mapLabel')} />
       <span className="muted">{geoHint}</span>
     </div>
   );
@@ -341,10 +336,7 @@ export function AddressLocationPicker({
 
       <label className="field">
         {t('address.departamento')}
-        <select
-          value={value.departamento}
-          onChange={(e) => onDepartamentoChange(e.target.value)}
-        >
+        <select value={value.departamento} onChange={(e) => onDepartamentoChange(e.target.value)}>
           <option value="">{t('address.departamentoPlaceholder')}</option>
           {departamentos.map((name) => (
             <option key={name} value={name}>
@@ -393,21 +385,24 @@ export function AddressLocationPicker({
             }}
             onFocus={() => suggestions.length > 0 && setOpen(true)}
           />
+          {/* The options carry the role themselves: a `role="option"` wrapper
+              around a button is neither focusable nor valid ARIA. */}
           {open && suggestions.length > 0 ? (
-            <ul id={`${listId}-list`} role="listbox" className="address-suggest-list">
+            <div id={`${listId}-list`} role="listbox" className="address-suggest-list">
               {suggestions.map((hit) => (
-                <li key={hit.id} role="option">
-                  <button
-                    type="button"
-                    className="address-suggest-item"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => applySuggestion(hit)}
-                  >
-                    {hit.label}
-                  </button>
-                </li>
+                <button
+                  key={hit.id}
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  className="address-suggest-item"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applySuggestion(hit)}
+                >
+                  {hit.label}
+                </button>
               ))}
-            </ul>
+            </div>
           ) : null}
         </div>
         {buscando ? (

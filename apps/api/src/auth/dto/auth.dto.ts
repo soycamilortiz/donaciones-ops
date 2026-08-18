@@ -14,6 +14,9 @@ export class CaptchaResponseDto implements Captcha {
 
   @ApiProperty({ description: 'SVG del captcha' })
   svg: string;
+
+  @ApiProperty({ description: 'true si el API corre con CAPTCHA_DISABLED' })
+  disabled: boolean;
 }
 
 export class RegisterDto {
@@ -45,14 +48,17 @@ export class RegisterDto {
   })
   password: string;
 
-  @ApiProperty()
-  @IsString()
-  captchaId: string;
-
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'No hace falta con CAPTCHA_DISABLED=true' })
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  captchaAnswer: string;
+  captchaId?: string;
+
+  @ApiPropertyOptional({ description: 'No hace falta con CAPTCHA_DISABLED=true' })
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  captchaAnswer?: string;
 }
 
 export class LoginDto {
@@ -66,14 +72,17 @@ export class LoginDto {
   @MinLength(8)
   password: string;
 
-  @ApiProperty()
-  @IsString()
-  captchaId: string;
-
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'No hace falta con CAPTCHA_DISABLED=true' })
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  captchaAnswer: string;
+  captchaId?: string;
+
+  @ApiPropertyOptional({ description: 'No hace falta con CAPTCHA_DISABLED=true' })
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  captchaAnswer?: string;
 }
 
 export class AuthUserDto implements AuthUser {

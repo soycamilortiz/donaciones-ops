@@ -1,15 +1,32 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import svgCaptcha from 'svg-captcha';
+import type { Env } from '../config/env.schema';
 import { PrismaService } from '../prisma/prisma.service';
 
 const TTL_MS = 5 * 60 * 1000;
 
 @Injectable()
 export class CaptchaService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CaptchaService.name);
 
-  async issue(): Promise<{ captchaId: string; svg: string }> {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
+
+  /** `CAPTCHA_DISABLED=true`: ni se emite ni se valida. Solo fuera de producción. */
+  get disabled(): boolean {
+    return this.config.get('CAPTCHA_DISABLED', { infer: true });
+  }
+
+  async issue(): Promise<{ captchaId: string; svg: string; disabled: boolean }> {
+    if (this.disabled) {
+      // Sin fila en la base: no hay nada que consumir después.
+      return { captchaId: '', svg: '', disabled: true };
+    }
+
     const captcha = svgCaptcha.create({
       size: 5,
       noise: 3,
@@ -25,10 +42,18 @@ export class CaptchaService {
         expiresAt: new Date(Date.now() + TTL_MS),
       },
     });
-    return { captchaId: id, svg: captcha.data };
+    return { captchaId: id, svg: captcha.data, disabled: false };
   }
 
-  async consume(captchaId: string, answer: string): Promise<void> {
+  async consume(captchaId?: string, answer?: string): Promise<void> {
+    if (this.disabled) {
+      this.logger.warn('CAPTCHA_DISABLED=true · registro y login sin captcha');
+      return;
+    }
+    if (!captchaId || !answer) {
+      throw new UnprocessableEntityException('Falta el captcha');
+    }
+
     const row = await this.prisma.captchaChallenge.findUnique({
       where: { id: captchaId },
     });

@@ -203,11 +203,7 @@ export class AuthService {
     return this.issueToken(this.toAuthUser(user));
   }
 
-  private issueProfileToken(profile: {
-    googleId: string;
-    correo: string;
-    nombre: string;
-  }): string {
+  private issueProfileToken(profile: { googleId: string; correo: string; nombre: string }): string {
     return this.jwt.sign(
       {
         typ: 'google_profile',

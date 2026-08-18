@@ -20,7 +20,9 @@ const variants: Record<ButtonVariant, string> = {
   outline: 'border border-border bg-card text-foreground hover:bg-background',
   ghost: 'text-foreground hover:bg-secondary',
   destructive: 'bg-error text-error-foreground hover:bg-error/90',
-  link: 'min-h-0 min-w-0 rounded-none text-primary underline underline-offset-4 hover:brightness-110',
+  // Conserva `min-h-11` de la base: un enlace-boton suelto tambien se pulsa con
+  // guantes. Solo cede el ancho minimo, que en un enlace no aporta nada.
+  link: 'min-w-0 rounded-none px-1 text-primary underline underline-offset-4 hover:brightness-110',
 };
 
 const sizes: Record<ButtonSize, string> = {
@@ -39,6 +41,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       isLoading = false,
       disabled,
       children,
+      // Sin `type`, el HTML asume `submit` y cualquier boton dentro de un
+      // formulario lo envia al pulsarlo. Los que sí envían lo declaran.
+      type = 'button',
       ...props
     },
     ref,
@@ -46,12 +51,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         className={cn(base, variants[variant], sizes[size], className)}
         disabled={disabled || isLoading}
         aria-busy={isLoading || undefined}
         {...props}
       >
-        {isLoading ? <Spinner className="h-4 w-4" aria-hidden /> : null}
+        {isLoading ? <Spinner className="h-4 w-4" /> : null}
         {children}
       </button>
     );

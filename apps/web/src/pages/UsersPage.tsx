@@ -5,18 +5,14 @@ import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { SkeletonList } from '@/components/atoms/Skeleton';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { FormField } from '@/components/molecules/FormField';
+import { useToast } from '@/components/molecules/Toast';
 import { useOrg } from '@/components/OrgGate';
 import type { Member, Role } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
-import { cn } from '@/lib/utils';
-
-// Shared with the invite-form role picker and the per-row role selects (mobile
-// card + desktop table), so the three stay visually identical.
-const roleSelectBase =
-  'min-h-11 w-full cursor-pointer rounded-md border border-border bg-card px-3.5 text-sm font-medium text-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 /** First letter of up to two words, for the round avatar fallback. */
 function initials(nombre: string): string {
@@ -32,6 +28,7 @@ function initials(nombre: string): string {
 export default function UsersPage() {
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const { avisar } = useToast();
   const request = useApi();
   const [members, setMembers] = useState<Member[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -54,7 +51,7 @@ export default function UsersPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void load().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'Error al cargar');
+      setError(err instanceof Error ? err.message : t('common.loadError'));
     });
   }, [orgId]);
 
@@ -73,21 +70,31 @@ export default function UsersPage() {
       });
       form.reset();
       await load();
+      avisar(t('users.invited'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo agregar');
+      setError(err instanceof Error ? err.message : t('users.addError'));
     }
   }
 
+  /** Cambia la fila al instante y la revierte si el API dice que no. */
   async function onRole(userId: string, roleSlug: string) {
     setError(null);
+    const previos = members;
+    setMembers((actuales) =>
+      actuales.map((row) => (row.userId === userId ? { ...row, roleSlug } : row)),
+    );
     try {
       await request(`/api/v1/organizations/${orgId}/members/${userId}`, {
         method: 'PATCH',
         body: JSON.stringify({ roleSlug }),
       });
       await load();
+      avisar(t('users.roleChanged'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cambiar el rol');
+      setMembers(previos);
+      const mensaje = err instanceof Error ? err.message : t('users.roleError');
+      setError(mensaje);
+      avisar(mensaje, { tono: 'error' });
     }
   }
 
@@ -102,8 +109,9 @@ export default function UsersPage() {
         }),
       });
       await load();
+      avisar(t('users.reactivated'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo reactivar');
+      setError(err instanceof Error ? err.message : t('users.reactivateError'));
     }
   }
 
@@ -115,6 +123,7 @@ export default function UsersPage() {
         method: 'DELETE',
       });
       await load();
+      avisar(t('users.removed'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('users.removeError'));
     } finally {
@@ -128,8 +137,8 @@ export default function UsersPage() {
   function roleField(member: Member, className?: string) {
     if (can('members:role') && member.isActive !== false) {
       return (
-        <select
-          className={cn(roleSelectBase, className)}
+        <Select
+          className={className}
           value={member.roleSlug}
           aria-label={`${t('users.columns.role')}: ${member.nombre}`}
           onChange={(event) => void onRole(member.userId, event.target.value)}
@@ -139,7 +148,7 @@ export default function UsersPage() {
               {role.nombre}
             </option>
           ))}
-        </select>
+        </Select>
       );
     }
     return <span className="text-sm text-foreground">{member.roleNombre}</span>;
@@ -209,18 +218,13 @@ export default function UsersPage() {
               />
             </FormField>
             <FormField label={t('users.inviteRole')} htmlFor="invitar-rol" className="sm:w-56">
-              <select
-                id="invitar-rol"
-                name="roleSlug"
-                defaultValue="voluntario"
-                className={roleSelectBase}
-              >
+              <Select id="invitar-rol" name="roleSlug" defaultValue="voluntario">
                 {activeRoles.map((role) => (
                   <option key={role.slug} value={role.slug}>
                     {role.nombre}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FormField>
             <Button type="submit">
               {t('users.add')}
@@ -275,7 +279,7 @@ export default function UsersPage() {
                 </p>
 
                 <div className="space-y-1.5">
-                  <span className="block text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                  <span className="block text-xs font-bold uppercase tracking-wide text-muted-foreground">
                     {t('users.columns.role')}
                   </span>
                   {roleField(member)}
@@ -293,31 +297,31 @@ export default function UsersPage() {
                 <tr>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.name')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.username')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.email')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-left align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.role')}
                   </th>
                   <th
                     scope="col"
-                    className="h-11 px-4 text-right align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                    className="h-11 px-4 text-right align-middle text-xs font-bold uppercase tracking-wider text-muted-foreground"
                   >
                     {t('users.columns.actions')}
                   </th>

@@ -13,7 +13,10 @@
     "unspecified": "Not specified",
     "signOut": "Sign out",
     "organization": "Organization",
-    "language": "Language"
+    "language": "Language",
+    "loadError": "Could not load",
+    "saved": "Changes saved",
+    "undo": "Undo"
   },
   "nav": {
     "dashboard": "Overview",
@@ -90,7 +93,8 @@
     "lotOrigin": "Donor lot (if they brought one)",
     "expiry": "Expiry date",
     "expiryHint": "Food and medicine need an expiry date to post to inventory when you validate.",
-    "needExpiry": "Enter the expiry date: without it, this line goes to quarantine on validate and does not add stock."
+    "needExpiry": "Enter the expiry date: without it, this line goes to quarantine on validate and does not add stock.",
+    "stepOf": "Step {{step}} of {{total}}"
   },
   "receptions": {
     "title": "Receptions",
@@ -246,7 +250,10 @@
       "descriptionPlaceholder": "Hours, contact person, what it accepts…",
       "lat": "Lat",
       "lng": "Lng"
-    }
+    },
+    "saved": "Collection centre saved",
+    "deactivated": "Collection centre deactivated",
+    "reactivated": "Collection centre reactivated"
   },
   "address": {
     "departamento": "Department",
@@ -284,7 +291,14 @@
       "email": "Email",
       "role": "Role",
       "actions": "Actions"
-    }
+    },
+    "addError": "Could not add",
+    "roleError": "Could not change the role",
+    "reactivateError": "Could not reactivate",
+    "invited": "Person added to the organisation",
+    "roleChanged": "Role updated",
+    "removed": "Person deactivated",
+    "reactivated": "Person reactivated"
   },
   "roles": {
     "title": "Roles and permissions",
@@ -304,7 +318,14 @@
     "reactivate": "Reactivate",
     "deactivate": "Deactivate",
     "newRole": "New role",
-    "create": "Create role"
+    "create": "Create role",
+    "saveError": "Could not save",
+    "renameError": "Could not rename",
+    "permissionError": "Could not edit the permission",
+    "createError": "Could not create the role",
+    "permissionsSaved": "Permissions updated",
+    "created": "Role created",
+    "deleted": "Role deactivated"
   },
   "auth": {
     "signIn": "Sign in",
@@ -333,7 +354,10 @@
     "googleCompleteSubtitle": "Pick a username for SOS Chocó. Your email comes from Google.",
     "googleCompleteSubmit": "Create account",
     "googleCompleting": "Saving…",
-    "googleCompleteError": "Could not complete registration"
+    "googleCompleteError": "Could not complete registration",
+    "signInError": "Could not sign in",
+    "signingIn": "Signing in…",
+    "registering": "Creating account…"
   },
   "verifyEmail": {
     "title": "Verify your email",
@@ -422,7 +446,9 @@
   "session": {
     "loading": "Loading session…",
     "noActiveOrg": "No active organisation.",
-    "profileError": "Could not load the profile"
+    "profileError": "Could not load the profile",
+    "noActiveOrgAction": "Choose an organisation",
+    "orgSwitched": "You are now in {{name}}"
   },
   "dashboard": {
     "roleLine": "Type {{tipo}} · your role is {{rol}}",
@@ -553,7 +579,12 @@
     "createProduct": "Create product",
     "saveChanges": "Save changes",
     "saveError": "Could not save",
-    "statusUpdateError": "Could not update status"
+    "statusUpdateError": "Could not update status",
+    "saved": "Product saved",
+    "deactivated": "Product deactivated",
+    "reactivated": "Product reactivated",
+    "showing": "Showing {{shown}} of {{total}}",
+    "showMore": "Show {{count}} more"
   },
   "locations": {
     "title": "Locations",

@@ -3,6 +3,7 @@ import { InventoryUnidad } from '@prisma/client';
 import {
   DonacionImagenEstado,
   FuenteCatalogo,
+  IMAGEN_PESO_MAX,
   MAX_IMAGEN_BYTES,
   normalizarTipoImagen,
   TIPOS_IMAGEN_ACEPTADOS,
@@ -10,6 +11,7 @@ import {
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsIn,
   IsNumber,
@@ -55,8 +57,17 @@ export class RutaSubidaDto {
   @ApiProperty({ enum: TIPOS_IMAGEN_ACEPTADOS, isArray: true })
   tiposAceptados: readonly string[];
 
-  @ApiProperty({ example: MAX_IMAGEN_BYTES })
+  @ApiProperty({
+    example: IMAGEN_PESO_MAX,
+    description: 'Tope del objeto ya comprimido que se sube a R2',
+  })
   maxBytes: number;
+
+  @ApiProperty({
+    example: MAX_IMAGEN_BYTES,
+    description: 'Tope del archivo crudo del móvil antes de comprimir en la PWA',
+  })
+  maxBytesEntrada: number;
 }
 
 export class RegistrarImagenDto {
@@ -218,9 +229,9 @@ export class ConfirmarDonacionDto {
   @MaxLength(80)
   loteCodigoOrigen?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: '2027-06-15' })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   vencimiento?: string;
 
   @ApiPropertyOptional({ enum: InventoryUnidad })

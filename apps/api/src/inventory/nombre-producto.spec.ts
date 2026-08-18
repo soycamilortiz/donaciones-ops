@@ -14,6 +14,15 @@ describe('nombre-producto', () => {
     );
   });
 
+  it('ignora la medida pegada al número', () => {
+    expect(normalizarNombreProducto('Arroz Diana 500g')).toBe(
+      normalizarNombreProducto('arroz diana 500 g'),
+    );
+    expect(similitudNombres('Aceite Girasol 1L', 'aceite de girasol')).toBeGreaterThan(
+      UMBRAL_MISMO_PRODUCTO,
+    );
+  });
+
   it('no fusiona arroz con agua', () => {
     expect(similitudNombres('Arroz Diana 500g', 'Agua Brisa')).toBeLessThan(0.5);
   });

@@ -38,6 +38,11 @@ export function normalizarNombreProducto(texto: string): string {
     .replace(/\p{M}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
+    // Labels write the measure glued to the number ("600ml", "500g", "x6").
+    // Without splitting it, the token survives both filters below and two
+    // spellings of the same product stop matching.
+    .replace(/(\d)([a-z])/g, '$1 $2')
+    .replace(/([a-z])(\d)/g, '$1 $2')
     .trim();
   const tokens = sinAcento
     .split(/\s+/)

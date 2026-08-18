@@ -4,6 +4,7 @@ import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { FormField } from '@/components/molecules/FormField';
+import { useToast } from '@/components/molecules/Toast';
 import { cn } from '@/lib/utils';
 import { SkeletonList } from '../components/atoms/Skeleton';
 import { ConfirmDialog } from '../components/molecules/ConfirmDialog';
@@ -17,6 +18,7 @@ const ROL_BLOQUEADO = 'administrador_acopio';
 export default function RolesPage() {
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const { avisar } = useToast();
   const request = useApi();
   const writable = can('roles:write');
   const [roles, setRoles] = useState<Role[]>([]);
@@ -43,7 +45,7 @@ export default function RolesPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void load().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'Error al cargar');
+      setError(err instanceof Error ? err.message : t('common.loadError'));
     });
   }, [orgId]);
 
@@ -56,23 +58,56 @@ export default function RolesPage() {
 
   const selectedRole = roles.find((role) => role.id === rolMovil) ?? roles[0];
 
+  /**
+   * La casilla se marca antes de salir a la red y se desmarca sola si la
+   * petición falla.
+   *
+   * Sin esto la matriz no se movía hasta que volvía el ida y vuelta: sobre una
+   * conexión de campo son segundos mirando una casilla que no responde, así que
+   * se vuelve a pulsar y se manda la petición contraria. El error, además,
+   * aparecía en un `role="alert"` clavado arriba del panel, fuera de pantalla
+   * bajo catorce filas de permisos; ahora va también al aviso flotante.
+   */
   async function toggle(role: Role, slug: string, enabled: boolean) {
     if (!writable) {
       return;
     }
     setError(null);
     setSaving(true);
+    const previos = role.permissions;
     const next = enabled
       ? [...new Set([...role.permissions.map((item) => item.slug), slug])]
       : role.permissions.map((item) => item.slug).filter((item) => item !== slug);
+
+    const permiso = permissions.find((item) => item.slug === slug);
+    setRoles((current) =>
+      current.map((item) =>
+        item.id === role.id
+          ? {
+              ...item,
+              permissions: enabled
+                ? [...item.permissions, permiso ?? { slug, nombre: slug, descripcion: null }]
+                : item.permissions.filter((p) => p.slug !== slug),
+            }
+          : item,
+      ),
+    );
+
     try {
       const updated = await request<Role>(
         `/api/v1/organizations/${orgId}/roles/${role.id}/permissions`,
         { method: 'PUT', body: JSON.stringify({ permissionSlugs: next }) },
       );
       setRoles((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      avisar(t('roles.permissionsSaved'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar');
+      // Deshacer el salto optimista: la matriz vuelve a lo que la base dice.
+      setRoles((current) =>
+        current.map((item) => (item.id === role.id ? { ...item, permissions: previos } : item)),
+      );
+      const mensaje = err instanceof Error ? err.message : t('roles.saveError');
+      setError(mensaje);
+      avisar(mensaje, { tono: 'error' });
     } finally {
       setSaving(false);
     }
@@ -92,8 +127,9 @@ export default function RolesPage() {
         body: JSON.stringify(body),
       });
       setRoles((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      avisar(t('common.saved'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo renombrar');
+      setError(err instanceof Error ? err.message : t('roles.renameError'));
     }
   }
 
@@ -115,7 +151,7 @@ export default function RolesPage() {
         current.map((item) => (item.slug === updated.slug ? updated : item)),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo editar el permiso');
+      setError(err instanceof Error ? err.message : t('roles.permissionError'));
     }
   }
 
@@ -137,8 +173,9 @@ export default function RolesPage() {
       });
       form.reset();
       setRoles((current) => [...current, created]);
+      avisar(t('roles.created'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear el rol');
+      setError(err instanceof Error ? err.message : t('roles.createError'));
     }
   }
 
@@ -155,6 +192,7 @@ export default function RolesPage() {
         method: 'DELETE',
       });
       await load();
+      avisar(t('roles.deleted'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('roles.deleteError'));
     } finally {
