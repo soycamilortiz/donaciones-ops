@@ -4,18 +4,13 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { FormField } from '@/components/molecules/FormField';
 import { AuthLayout } from '@/components/templates/AuthLayout';
 import { type Me, ORGANIZATION_TIPOS, storeOrgId } from '../lib/api';
 import { useApi } from '../lib/useApi';
 
 type OutletCtx = { me: Me; refresh: () => Promise<void> };
-
-// Skin html-base: mismo tratamiento visual que el atomo Input (radio, borde,
-// alto tactil de 44px, foco con anillo verde), pero sin `appearance-none`
-// para conservar la flecha nativa del <select> (igual que LanguageSwitcher).
-const selectClass =
-  'flex h-11 w-full cursor-pointer items-center rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground ring-offset-background transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 const textareaClass =
   'flex w-full resize-y rounded-md border border-border bg-card px-3.5 py-2.5 text-base md:text-sm text-foreground ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
@@ -95,10 +90,9 @@ export default function Onboarding() {
           />
         </FormField>
         <FormField label={t('onboarding.type')} htmlFor="tipo">
-          <select
+          <Select
             id="tipo"
             name="tipo"
-            className={selectClass}
             value={tipo}
             onChange={(event) => setTipo(event.target.value)}
           >
@@ -107,7 +101,7 @@ export default function Onboarding() {
                 {item.label}
               </option>
             ))}
-          </select>
+          </Select>
         </FormField>
         {tipo === 'OTRO' ? (
           <div className="flex flex-col gap-1.5 rounded-md bg-accent-soft p-3.5">

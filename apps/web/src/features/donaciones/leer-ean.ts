@@ -1,6 +1,3 @@
-import { BrowserMultiFormatReader } from '@zxing/browser';
-import { BarcodeFormat, DecodeHintType } from '@zxing/library';
-
 type BarcodeDetectorCtor = new (options?: {
   formats?: string[];
 }) => {
@@ -32,9 +29,19 @@ async function leerConBarcodeDetector(archivo: File): Promise<string | null> {
   }
 }
 
+/**
+ * ZXing pesa cerca de 300 KB y solo hace falta cuando el navegador no trae
+ * `BarcodeDetector` (Safari, escritorio). Cargarlo bajo demanda saca ese peso
+ * del arranque, que en campo se paga con datos móviles en cada primera visita.
+ * El service worker igual lo precachea, así que sigue disponible sin conexión.
+ */
 async function leerConZxing(archivo: File): Promise<string | null> {
   const url = URL.createObjectURL(archivo);
   try {
+    const [{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }] = await Promise.all([
+      import('@zxing/browser'),
+      import('@zxing/library'),
+    ]);
     const hints = new Map();
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [
       BarcodeFormat.EAN_13,

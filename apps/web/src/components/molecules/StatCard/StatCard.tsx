@@ -17,9 +17,7 @@ export function StatCard({
       {...props}
     >
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-          {label}
-        </p>
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
         {icon ? (
           <span className="grid h-9 w-9 place-items-center rounded-md bg-secondary text-primary">
             <Icon name={icon} size={18} />

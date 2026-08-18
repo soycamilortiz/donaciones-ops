@@ -31,6 +31,19 @@ model User {
   imagenesSubidas      DonacionImagen[]
   emailVerifications   EmailVerification[]
   recepciones          Recepcion[]
+  movimientos          InventoryMovimiento[]
+  putawaysCreados      Putaway[]             @relation("PutawayCreado")
+  putawaysConfirmados  Putaway[]             @relation("PutawayConfirmado")
+  demandasCreadas      Demanda[]
+  reservasCreadas      Reserva[]
+  controlesCreados     ControlLote[]
+  consolidacionesCreadas Consolidacion[]
+  planesPalletizacionCreados PlanPalletizacion[]
+  palletsDespachoCreados     PalletDespacho[]
+  despachosCreados           Despacho[]
+  viajesCreados              Viaje[]
+  palletItemsEscaneados      PalletDespachoItem[] @relation("PalletItemEscaneadoPor")
+  cargaItemsEscaneados       CargaItem[]          @relation("CargaItemEscaneadoPor")
 
   @@map("users")
 }
@@ -81,6 +94,21 @@ model Organization {
   recepciones Recepcion[]
   lotes       Lote[]
   counters    OrgCounter[]
+  movimientos InventoryMovimiento[]
+  putaways    Putaway[]
+  kits             Kit[]
+  demandas         Demanda[]
+  reservas         Reserva[]
+  kitInstancias    KitInstancia[]
+  controles        ControlLote[]
+  consolidaciones      Consolidacion[]
+  planesPalletizacion  PlanPalletizacion[]
+  palletsDespacho      PalletDespacho[]
+  despachos            Despacho[]
+  viajes               Viaje[]
+  transportistas       Transportista[]
+  vehiculos            Vehiculo[]
+  conductores          Conductor[]
 
   @@map("organizations")
 }
@@ -111,6 +139,18 @@ model Acopio {
   inventoryItems InventoryItem[]
   imagenes       DonacionImagen[]
   recepciones    Recepcion[]
+  ubicaciones    Ubicacion[]
+  movimientos    InventoryMovimiento[]
+  putaways       Putaway[]
+  demandas        Demanda[]
+  reservas        Reserva[]
+  kitInstancias   KitInstancia[]
+  controles       ControlLote[]
+  consolidaciones     Consolidacion[]
+  planesPalletizacion PlanPalletizacion[]
+  palletsDespacho     PalletDespacho[]
+  despachos           Despacho[]
+  viajes              Viaje[]
 
   @@index([organizationId])
   @@map("acopios")
@@ -255,6 +295,11 @@ model InventoryItem {
   producto       Producto?       @relation(fields: [productoId], references: [id], onDelete: SetNull)
   lote           Lote?           @relation(fields: [loteId], references: [id], onDelete: SetNull)
   recepcionItems RecepcionItem[]
+  balances       InventoryBalance[]
+  movimientos    InventoryMovimiento[]
+  putaways       Putaway[]
+  reservaAsignaciones ReservaAsignacion[]
+  kitInstanciaItems   KitInstanciaItem[]
 
   @@index([acopioId])
   @@index([acopioId, categoria])
@@ -295,6 +340,11 @@ model Producto {
   lotes          Lote[]
   recepcionItems RecepcionItem[]
   inventoryItems InventoryItem[]
+  kitComponentes    KitComponente[]
+  demandaItems      DemandaItem[]
+  reservaItems      ReservaItem[]
+  kitInstanciaItems KitInstanciaItem[]
+  palletDespachoItems PalletDespachoItem[]
 
   @@index([marca])
   @@index([isActive])
@@ -524,4 +574,1004 @@ model RecepcionItem {
   @@index([productoId])
   @@index([unidadLogisticaId])
   @@map("recepcion_items")
+}
+
+/// Nivel físico en el árbol (zona → pasillo → rack → …). No todas las bodegas
+/// usan todos los niveles: una chica puede parar en ZONA.
+enum UbicacionTipo {
+  ZONA
+  PASILLO
+  RACK
+  NIVEL
+  POSICION
+  OTRO
+}
+
+/// Para qué sirve el nodo. Un inventario aprobado va a ALMACENAMIENTO, no a
+/// RECHAZADO ni a CUARENTENA.
+enum UbicacionFuncion {
+  RECEPCION
+  CUARENTENA
+  ALMACENAMIENTO
+  PICKING
+  KITTING
+  DESPACHO
+  DEVOLUCION
+  RECHAZADO
+}
+
+enum UbicacionEstado {
+  ACTIVA
+  INACTIVA
+  BLOQUEADA
+  MANTENIMIENTO
+}
+
+enum InventoryMovimientoTipo {
+  RECEPCION
+  PUTAWAY
+  REUBICACION
+  PICKING
+  AJUSTE
+  DESPACHO
+}
+
+enum PutawayEstado {
+  PENDIENTE
+  COMPLETADO
+  ANULADO
+}
+
+/// Lugar físico (o zona) dentro de un acopio. Jerárquico vía parent_id.
+model Ubicacion {
+  id                   String           @id @default(uuid()) @db.Uuid
+  acopioId             String           @map("acopio_id") @db.Uuid
+  parentId             String?          @map("parent_id") @db.Uuid
+  codigo               String
+  nombre               String
+  tipo                 UbicacionTipo
+  funcion              UbicacionFuncion
+  estado               UbicacionEstado  @default(ACTIVA)
+  capacidadPesoKg      Decimal?         @map("capacidad_peso_kg") @db.Decimal(14, 3)
+  capacidadVolumen     Decimal?         @map("capacidad_volumen") @db.Decimal(14, 3)
+  capacidadUnidades    Decimal?         @map("capacidad_unidades") @db.Decimal(14, 3)
+  zonaTemperatura      String?          @map("zona_temperatura")
+  permiteAlimentos     Boolean          @default(true) @map("permite_alimentos")
+  permiteMedicamentos  Boolean          @default(true) @map("permite_medicamentos")
+  permiteRopa          Boolean          @default(true) @map("permite_ropa")
+  /// Muelle / cuarentena de sistema: no se dan de baja a mano.
+  esSistema            Boolean          @default(false) @map("es_sistema")
+  isActive             Boolean          @default(true) @map("is_active")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+
+  acopio   Acopio      @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  parent   Ubicacion?  @relation("UbicacionArbol", fields: [parentId], references: [id], onDelete: SetNull)
+  children Ubicacion[] @relation("UbicacionArbol")
+
+  balances            InventoryBalance[]
+  movimientosOrigen   InventoryMovimiento[] @relation("MovimientoOrigen")
+  movimientosDestino  InventoryMovimiento[] @relation("MovimientoDestino")
+  putawayOrigen       PutawayLinea[]        @relation("PutawayOrigen")
+  putawayDestino      PutawayLinea[]        @relation("PutawayDestino")
+  reservaAsignaciones ReservaAsignacion[]
+  kitInstanciasZona   KitInstancia[]        @relation("KitInstanciaZonaKitting")
+  kitItemOrigenes     KitInstanciaItem[]    @relation("KitItemOrigen")
+
+  @@unique([acopioId, codigo])
+  @@index([acopioId, estado])
+  @@index([acopioId, funcion])
+  @@index([parentId])
+  @@map("ubicaciones")
+}
+
+/// Cuánto de un ítem está hoy en una ubicación. Un inventario puede partirse.
+model InventoryBalance {
+  id              String   @id @default(uuid()) @db.Uuid
+  inventoryItemId String   @map("inventory_item_id") @db.Uuid
+  ubicacionId     String   @map("ubicacion_id") @db.Uuid
+  cantidad        Decimal  @db.Decimal(14, 3)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  ubicacion     Ubicacion     @relation(fields: [ubicacionId], references: [id], onDelete: Restrict)
+
+  @@unique([inventoryItemId, ubicacionId])
+  @@index([ubicacionId])
+  @@map("inventory_balances")
+}
+
+/// Historial: nunca se cambia un saldo sin dejar movimiento.
+model InventoryMovimiento {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  codigo             String
+  organizationId     String                   @map("organization_id") @db.Uuid
+  acopioId           String                   @map("acopio_id") @db.Uuid
+  inventoryItemId    String                   @map("inventory_item_id") @db.Uuid
+  tipo               InventoryMovimientoTipo
+  cantidad           Decimal                  @db.Decimal(14, 3)
+  origenUbicacionId  String?                  @map("origen_ubicacion_id") @db.Uuid
+  destinoUbicacionId String?                  @map("destino_ubicacion_id") @db.Uuid
+  putawayId          String?                  @map("putaway_id") @db.Uuid
+  kitInstanciaItemId String?                  @map("kit_instancia_item_id") @db.Uuid
+  despachoId         String?                  @map("despacho_id") @db.Uuid
+  usuarioId          String                   @map("usuario_id") @db.Uuid
+  observaciones      String?
+  isActive           Boolean                  @default(true) @map("is_active")
+  createdAt          DateTime                 @default(now()) @map("created_at")
+
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio           Acopio            @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  inventoryItem    InventoryItem     @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  origenUbicacion  Ubicacion?        @relation("MovimientoOrigen", fields: [origenUbicacionId], references: [id], onDelete: SetNull)
+  destinoUbicacion Ubicacion?        @relation("MovimientoDestino", fields: [destinoUbicacionId], references: [id], onDelete: SetNull)
+  putaway          Putaway?          @relation(fields: [putawayId], references: [id], onDelete: SetNull)
+  kitInstanciaItem KitInstanciaItem? @relation(fields: [kitInstanciaItemId], references: [id], onDelete: SetNull)
+  despacho         Despacho?         @relation(fields: [despachoId], references: [id], onDelete: SetNull)
+  usuario          User              @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, codigo])
+  @@index([inventoryItemId, createdAt])
+  @@index([acopioId, createdAt])
+  @@index([despachoId])
+  @@map("inventory_movimientos")
+}
+
+/// Tarea de llevar mercancía del muelle a almacenamiento. Completarla exige
+/// confirmar el código de la ubicación destino (el sistema no ubica solo).
+model Putaway {
+  id              String         @id @default(uuid()) @db.Uuid
+  codigo          String
+  organizationId  String         @map("organization_id") @db.Uuid
+  acopioId        String         @map("acopio_id") @db.Uuid
+  inventoryItemId String         @map("inventory_item_id") @db.Uuid
+  estado          PutawayEstado  @default(PENDIENTE)
+  createdById     String         @map("created_by_id") @db.Uuid
+  confirmedById   String?        @map("confirmed_by_id") @db.Uuid
+  confirmedAt     DateTime?      @map("confirmed_at")
+  isActive        Boolean        @default(true) @map("is_active")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio        Acopio        @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  createdBy     User          @relation("PutawayCreado", fields: [createdById], references: [id], onDelete: Restrict)
+  confirmedBy   User?         @relation("PutawayConfirmado", fields: [confirmedById], references: [id], onDelete: SetNull)
+  lineas        PutawayLinea[]
+  movimientos   InventoryMovimiento[]
+
+  @@unique([organizationId, codigo])
+  @@index([acopioId, estado])
+  @@index([inventoryItemId])
+  @@map("putaways")
+}
+
+model PutawayLinea {
+  id                 String        @id @default(uuid()) @db.Uuid
+  putawayId          String        @map("putaway_id") @db.Uuid
+  origenUbicacionId  String        @map("origen_ubicacion_id") @db.Uuid
+  destinoUbicacionId String        @map("destino_ubicacion_id") @db.Uuid
+  cantidad           Decimal       @db.Decimal(14, 3)
+  estado             PutawayEstado @default(PENDIENTE)
+  confirmedAt        DateTime?     @map("confirmed_at")
+  isActive           Boolean       @default(true) @map("is_active")
+  createdAt          DateTime      @default(now()) @map("created_at")
+
+  putaway          Putaway   @relation(fields: [putawayId], references: [id], onDelete: Restrict)
+  origenUbicacion  Ubicacion @relation("PutawayOrigen", fields: [origenUbicacionId], references: [id], onDelete: Restrict)
+  destinoUbicacion Ubicacion @relation("PutawayDestino", fields: [destinoUbicacionId], references: [id], onDelete: Restrict)
+
+  @@index([putawayId])
+  @@map("putaway_lineas")
+}
+
+enum DemandaPrioridad {
+  CRITICA
+  ALTA
+  MEDIA
+  BAJA
+}
+
+enum DemandaEstado {
+  ABIERTA
+  PARCIAL
+  CUBIERTA
+  CANCELADA
+  CERRADA
+}
+
+enum DemandaItemTipo {
+  KIT
+  PRODUCTO
+}
+
+enum ReservaEstado {
+  PRE_RESERVA
+  RESERVADA
+  LIBERADA
+  CANCELADA
+  CONSUMIDA
+}
+
+/// Receta de un kit humanitario (BOM). El código lo genera el sistema.
+model Kit {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  codigo         String
+  nombre         String
+  descripcion    String?
+  pesoKgEstimado Decimal? @map("peso_kg_estimado") @db.Decimal(14, 3)
+  altoMEstimado  Decimal? @map("alto_m_estimado") @db.Decimal(8, 3)
+  esCritico      Boolean  @default(false) @map("es_critico")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  componentes     KitComponente[]
+  demandaItems    DemandaItem[]
+  reservas        Reserva[]
+  instancias      KitInstancia[]
+
+  @@unique([organizationId, codigo])
+  @@index([organizationId, isActive])
+  @@map("kits")
+}
+
+model KitComponente {
+  id        String  @id @default(uuid()) @db.Uuid
+  kitId     String  @map("kit_id") @db.Uuid
+  productoId String @map("producto_id") @db.Uuid
+  cantidad  Decimal @db.Decimal(14, 3)
+  isActive  Boolean @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  kit      Kit      @relation(fields: [kitId], references: [id], onDelete: Restrict)
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+
+  @@unique([kitId, productoId])
+  @@index([productoId])
+  @@map("kit_componentes")
+}
+
+/// Necesidad de un destino. No compromete inventario: eso lo hace la reserva.
+model Demanda {
+  id                  String           @id @default(uuid()) @db.Uuid
+  codigo              String
+  organizationId      String           @map("organization_id") @db.Uuid
+  acopioId            String           @map("acopio_id") @db.Uuid
+  destinoNombre       String           @map("destino_nombre")
+  destinoMunicipio    String?          @map("destino_municipio")
+  destinoDepartamento String?          @map("destino_departamento")
+  prioridad           DemandaPrioridad @default(MEDIA)
+  estado              DemandaEstado    @default(ABIERTA)
+  fechaRequerida      DateTime?        @map("fecha_requerida") @db.Date
+  poblacionAfectada   Int?             @map("poblacion_afectada")
+  tipoEmergencia      String?          @map("tipo_emergencia")
+  observaciones       String?
+  createdById         String           @map("created_by_id") @db.Uuid
+  isActive            Boolean          @default(true) @map("is_active")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio       Acopio       @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  items        DemandaItem[]
+  reservas     Reserva[]
+  kitInstancias KitInstancia[]
+  controles     ControlLote[]
+  consolidaciones     Consolidacion[]
+  planesPalletizacion PlanPalletizacion[]
+  palletsDespacho     PalletDespacho[]
+  despachos           Despacho[]
+
+  @@unique([organizationId, codigo])
+  @@index([organizationId, estado])
+  @@index([acopioId, prioridad])
+  @@map("demandas")
+}
+
+model DemandaItem {
+  id                  String          @id @default(uuid()) @db.Uuid
+  demandaId           String          @map("demanda_id") @db.Uuid
+  tipo                DemandaItemTipo
+  kitId               String?         @map("kit_id") @db.Uuid
+  productoId          String?         @map("producto_id") @db.Uuid
+  cantidadSolicitada  Decimal         @map("cantidad_solicitada") @db.Decimal(14, 3)
+  isActive            Boolean         @default(true) @map("is_active")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  demanda  Demanda   @relation(fields: [demandaId], references: [id], onDelete: Restrict)
+  kit      Kit?      @relation(fields: [kitId], references: [id], onDelete: Restrict)
+  producto Producto? @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  reservas Reserva[]
+
+  @@index([demandaId])
+  @@map("demanda_items")
+}
+
+/// Compromiso de inventario para una línea de demanda. No mueve stock físico.
+model Reserva {
+  id              String        @id @default(uuid()) @db.Uuid
+  codigo          String
+  organizationId  String        @map("organization_id") @db.Uuid
+  acopioId        String        @map("acopio_id") @db.Uuid
+  demandaId       String        @map("demanda_id") @db.Uuid
+  demandaItemId   String        @map("demanda_item_id") @db.Uuid
+  kitId           String?       @map("kit_id") @db.Uuid
+  estado          ReservaEstado @default(PRE_RESERVA)
+  cantidad        Decimal       @db.Decimal(14, 3)
+  observaciones   String?
+  createdById     String        @map("created_by_id") @db.Uuid
+  confirmedAt     DateTime?     @map("confirmed_at")
+  releasedAt      DateTime?     @map("released_at")
+  isActive        Boolean       @default(true) @map("is_active")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio       Acopio       @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  demanda      Demanda      @relation(fields: [demandaId], references: [id], onDelete: Restrict)
+  demandaItem  DemandaItem  @relation(fields: [demandaItemId], references: [id], onDelete: Restrict)
+  kit          Kit?         @relation(fields: [kitId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  items        ReservaItem[]
+  kitInstancias KitInstancia[]
+  controles     ControlLote[]
+
+  @@unique([organizationId, codigo])
+  @@index([demandaId, estado])
+  @@index([acopioId, estado])
+  @@map("reservas")
+}
+
+model ReservaItem {
+  id                 String  @id @default(uuid()) @db.Uuid
+  reservaId          String  @map("reserva_id") @db.Uuid
+  productoId         String  @map("producto_id") @db.Uuid
+  cantidadRequerida  Decimal @map("cantidad_requerida") @db.Decimal(14, 3)
+  cantidadAsignada   Decimal @map("cantidad_asignada") @db.Decimal(14, 3)
+  isActive           Boolean @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  reserva      Reserva             @relation(fields: [reservaId], references: [id], onDelete: Restrict)
+  producto     Producto            @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  asignaciones ReservaAsignacion[]
+
+  @@index([reservaId])
+  @@index([productoId])
+  @@map("reserva_items")
+}
+
+model ReservaAsignacion {
+  id              String  @id @default(uuid()) @db.Uuid
+  reservaItemId   String  @map("reserva_item_id") @db.Uuid
+  inventoryItemId String  @map("inventory_item_id") @db.Uuid
+  ubicacionId     String  @map("ubicacion_id") @db.Uuid
+  cantidad        Decimal @db.Decimal(14, 3)
+  isActive        Boolean @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  reservaItem   ReservaItem   @relation(fields: [reservaItemId], references: [id], onDelete: Restrict)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  ubicacion     Ubicacion     @relation(fields: [ubicacionId], references: [id], onDelete: Restrict)
+
+  @@index([reservaItemId])
+  @@index([inventoryItemId, ubicacionId])
+  @@map("reserva_asignaciones")
+}
+
+enum KitInstanciaEstado {
+  PENDIENTE_PICK
+  ARMADO
+  EN_CONTROL
+  APROBADO
+  OBSERVADO
+  RECHAZADO
+  CONSOLIDADO
+  PALLETIZADO
+  DESPACHADO
+}
+
+enum ControlModo {
+  TOTAL
+  MUESTREO
+}
+
+enum ControlLoteEstado {
+  ABIERTO
+  REQUIERE_TOTAL
+  CERRADO
+}
+
+enum ControlResultado {
+  PENDIENTE
+  APROBADO
+  OBSERVADO
+  RECHAZADO
+}
+
+enum ConsolidacionEstado {
+  ABIERTA
+  LISTA
+  CERRADA
+}
+
+/// Kit físico (o identidad armada) a partir de una reserva. Picking aún no descuenta stock.
+model KitInstancia {
+  id             String             @id @default(uuid()) @db.Uuid
+  codigo         String
+  organizationId String             @map("organization_id") @db.Uuid
+  acopioId       String             @map("acopio_id") @db.Uuid
+  demandaId      String             @map("demanda_id") @db.Uuid
+  reservaId      String             @map("reserva_id") @db.Uuid
+  kitId                  String             @map("kit_id") @db.Uuid
+  zonaKittingUbicacionId String?            @map("zona_kitting_ubicacion_id") @db.Uuid
+  estado                 KitInstanciaEstado @default(PENDIENTE_PICK)
+  isActive       Boolean            @default(true) @map("is_active")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio       Acopio       @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  demanda      Demanda      @relation(fields: [demandaId], references: [id], onDelete: Restrict)
+  reserva      Reserva      @relation(fields: [reservaId], references: [id], onDelete: Restrict)
+  kit          Kit          @relation(fields: [kitId], references: [id], onDelete: Restrict)
+  zonaKitting  Ubicacion?   @relation("KitInstanciaZonaKitting", fields: [zonaKittingUbicacionId], references: [id], onDelete: SetNull)
+  items        KitInstanciaItem[]
+  inspecciones ControlInspeccion[]
+  consolidacionKits ConsolidacionKit[]
+  palletItems       PalletDespachoItem[]
+
+  @@unique([organizationId, codigo])
+  @@index([reservaId, estado])
+  @@index([demandaId, estado])
+  @@map("kit_instancias")
+}
+
+model KitInstanciaItem {
+  id                 String    @id @default(uuid()) @db.Uuid
+  kitInstanciaId     String    @map("kit_instancia_id") @db.Uuid
+  productoId         String    @map("producto_id") @db.Uuid
+  inventoryItemId    String?   @map("inventory_item_id") @db.Uuid
+  origenUbicacionId  String?   @map("origen_ubicacion_id") @db.Uuid
+  loteCodigo         String?   @map("lote_codigo")
+  vencimiento        DateTime? @db.Date
+  cantidad           Decimal   @db.Decimal(14, 3)
+  pickConfirmadoAt   DateTime? @map("pick_confirmado_at")
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  kitInstancia     KitInstancia          @relation(fields: [kitInstanciaId], references: [id], onDelete: Restrict)
+  producto         Producto              @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  inventoryItem    InventoryItem?        @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  origenUbicacion  Ubicacion?            @relation("KitItemOrigen", fields: [origenUbicacionId], references: [id], onDelete: SetNull)
+  movimientos      InventoryMovimiento[]
+
+  @@index([kitInstanciaId])
+  @@index([productoId])
+  @@index([loteCodigo])
+  @@index([origenUbicacionId])
+  @@map("kit_instancia_items")
+}
+
+model ControlLote {
+  id               String            @id @default(uuid()) @db.Uuid
+  codigo           String
+  organizationId   String            @map("organization_id") @db.Uuid
+  acopioId         String            @map("acopio_id") @db.Uuid
+  demandaId        String            @map("demanda_id") @db.Uuid
+  reservaId        String            @map("reserva_id") @db.Uuid
+  modo             ControlModo       @default(MUESTREO)
+  muestraObjetivo  Int               @map("muestra_objetivo")
+  umbralDefecto    Decimal           @default(0.05) @map("umbral_defecto") @db.Decimal(5, 4)
+  estado           ControlLoteEstado @default(ABIERTO)
+  createdById      String            @map("created_by_id") @db.Uuid
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio       Acopio       @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  demanda      Demanda      @relation(fields: [demandaId], references: [id], onDelete: Restrict)
+  reserva      Reserva      @relation(fields: [reservaId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  inspecciones ControlInspeccion[]
+
+  @@unique([organizationId, codigo])
+  @@index([reservaId, estado])
+  @@map("control_lotes")
+}
+
+model ControlInspeccion {
+  id              String           @id @default(uuid()) @db.Uuid
+  controlLoteId   String           @map("control_lote_id") @db.Uuid
+  kitInstanciaId  String           @map("kit_instancia_id") @db.Uuid
+  resultado       ControlResultado @default(PENDIENTE)
+  observaciones   String?
+  inspeccionadoAt DateTime?        @map("inspeccionado_at")
+  isActive        Boolean          @default(true) @map("is_active")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  controlLote  ControlLote   @relation(fields: [controlLoteId], references: [id], onDelete: Restrict)
+  kitInstancia KitInstancia  @relation(fields: [kitInstanciaId], references: [id], onDelete: Restrict)
+
+  @@unique([controlLoteId, kitInstanciaId])
+  @@index([kitInstanciaId])
+  @@map("control_inspecciones")
+}
+
+/// Agrupa kits aprobados de una demanda para viajar juntos. Palletización física = siguiente etapa.
+model Consolidacion {
+  id               String              @id @default(uuid()) @db.Uuid
+  codigo           String
+  organizationId   String              @map("organization_id") @db.Uuid
+  acopioId         String              @map("acopio_id") @db.Uuid
+  demandaId        String              @map("demanda_id") @db.Uuid
+  destinoNombre    String              @map("destino_nombre")
+  estado           ConsolidacionEstado @default(ABIERTA)
+  kitPesoKg        Decimal             @default(20) @map("kit_peso_kg") @db.Decimal(14, 3)
+  palletPesoMaxKg  Decimal             @default(800) @map("pallet_peso_max_kg") @db.Decimal(14, 3)
+  kitAltoM         Decimal?            @map("kit_alto_m") @db.Decimal(8, 3)
+  palletAltoMaxM   Decimal?            @map("pallet_alto_max_m") @db.Decimal(8, 3)
+  createdById      String              @map("created_by_id") @db.Uuid
+  isActive         Boolean             @default(true) @map("is_active")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio       Acopio       @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  demanda      Demanda      @relation(fields: [demandaId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  kits              ConsolidacionKit[]
+  planPalletizacion PlanPalletizacion?
+
+  @@unique([organizationId, codigo])
+  @@index([demandaId, estado])
+  @@map("consolidaciones")
+}
+
+enum PlanPalletizacionEstado {
+  BORRADOR
+  ACTIVO
+  CERRADO
+  CANCELADO
+}
+
+enum PalletDespachoEstado {
+  CREADO
+  EN_CONSTRUCCION
+  COMPLETO
+  LISTO_PARA_DESPACHO
+  CARGADO
+  DESPACHADO
+  BLOQUEADO
+  CANCELADO
+}
+
+enum DespachoEstado {
+  BORRADOR
+  PLANIFICADO
+  LISTO_PARA_CARGA
+  CARGANDO
+  CARGADO
+  DESPACHADO
+  EN_TRANSITO
+  ENTREGADO
+  PARCIAL
+  CANCELADO
+  RETENIDO
+  DEVUELTO
+  EN_CARGA
+  LISTO
+  EN_RUTA
+  ANULADO
+}
+
+enum ViajeEstado {
+  PLANIFICADO
+  CARGANDO
+  CARGADO
+  DESPACHADO
+  EN_TRANSITO
+  ENTREGADO
+  CANCELADO
+}
+
+enum CargaEstado {
+  ABIERTA
+  CARGANDO
+  COMPLETA
+  CERRADA
+}
+
+enum CargaItemTipo {
+  PALLET
+  CAJA
+  CONTENEDOR
+  PRODUCTO
+}
+
+enum PalletDespachoItemTipo {
+  KIT
+  PRODUCTO
+}
+
+/// Plan de estiba outbound a partir de una consolidación.
+model PlanPalletizacion {
+  id              String                  @id @default(uuid()) @db.Uuid
+  codigo          String
+  organizationId  String                  @map("organization_id") @db.Uuid
+  acopioId        String                  @map("acopio_id") @db.Uuid
+  demandaId       String                  @map("demanda_id") @db.Uuid
+  consolidacionId String                  @unique @map("consolidacion_id") @db.Uuid
+  destinoNombre   String                  @map("destino_nombre")
+  estado          PlanPalletizacionEstado @default(ACTIVO)
+  kitPesoKg       Decimal                 @default(20) @map("kit_peso_kg") @db.Decimal(14, 3)
+  palletPesoMaxKg Decimal                 @default(800) @map("pallet_peso_max_kg") @db.Decimal(14, 3)
+  kitAltoM        Decimal?                @map("kit_alto_m") @db.Decimal(8, 3)
+  palletAltoMaxM  Decimal?                @map("pallet_alto_max_m") @db.Decimal(8, 3)
+  palletCount     Int                     @map("pallet_count")
+  kitsPorPallet   Int                     @map("kits_por_pallet")
+  createdById     String                  @map("created_by_id") @db.Uuid
+  isActive        Boolean                 @default(true) @map("is_active")
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  organization  Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio        Acopio           @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  demanda       Demanda          @relation(fields: [demandaId], references: [id], onDelete: Restrict)
+  consolidacion Consolidacion    @relation(fields: [consolidacionId], references: [id], onDelete: Restrict)
+  createdBy     User             @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  slots         PlanPalletSlot[]
+  pallets       PalletDespacho[]
+  despachos     Despacho[]
+
+  @@unique([organizationId, codigo])
+  @@index([demandaId, estado])
+  @@map("planes_palletizacion")
+}
+
+model PlanPalletSlot {
+  id            String   @id @default(uuid()) @db.Uuid
+  planId        String   @map("plan_id") @db.Uuid
+  sequence      Int
+  kitsObjetivo  Int      @map("kits_objetivo")
+  pesoTeoricoKg Decimal  @map("peso_teorico_kg") @db.Decimal(14, 3)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  plan   PlanPalletizacion @relation(fields: [planId], references: [id], onDelete: Restrict)
+  pallet PalletDespacho?
+
+  @@unique([planId, sequence])
+  @@index([planId])
+  @@map("plan_pallet_slots")
+}
+
+/// Unidad logística de despacho (estiba física outbound).
+model PalletDespacho {
+  id              String               @id @default(uuid()) @db.Uuid
+  codigo          String
+  organizationId  String               @map("organization_id") @db.Uuid
+  acopioId        String               @map("acopio_id") @db.Uuid
+  demandaId       String               @map("demanda_id") @db.Uuid
+  planId          String               @map("plan_id") @db.Uuid
+  slotId          String               @unique @map("slot_id") @db.Uuid
+  consolidacionId String               @map("consolidacion_id") @db.Uuid
+  despachoId      String?              @map("despacho_id") @db.Uuid
+  destinoNombre   String               @map("destino_nombre")
+  sequence        Int
+  estado          PalletDespachoEstado @default(CREADO)
+  kitsObjetivo    Int                  @map("kits_objetivo")
+  pesoPalletKg    Decimal              @default(25) @map("peso_pallet_kg") @db.Decimal(14, 3)
+  pesoNetoKg      Decimal?             @map("peso_neto_kg") @db.Decimal(14, 3)
+  pesoBrutoKg     Decimal?             @map("peso_bruto_kg") @db.Decimal(14, 3)
+  altoM           Decimal?             @map("alto_m") @db.Decimal(8, 3)
+  anchoM          Decimal?             @map("ancho_m") @db.Decimal(8, 3)
+  largoM          Decimal?             @map("largo_m") @db.Decimal(8, 3)
+  finalizadoAt    DateTime?            @map("finalizado_at")
+  createdById     String               @map("created_by_id") @db.Uuid
+  isActive        Boolean              @default(true) @map("is_active")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  organization  Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio        Acopio               @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  demanda       Demanda              @relation(fields: [demandaId], references: [id], onDelete: Restrict)
+  plan          PlanPalletizacion    @relation(fields: [planId], references: [id], onDelete: Restrict)
+  slot          PlanPalletSlot       @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  despacho      Despacho?            @relation(fields: [despachoId], references: [id], onDelete: SetNull)
+  cargaItem     CargaItem?
+  createdBy     User                 @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  items         PalletDespachoItem[]
+
+  @@unique([organizationId, codigo])
+  @@index([planId, estado])
+  @@index([despachoId])
+  @@map("pallets_despacho")
+}
+
+model PalletDespachoItem {
+  id               String                 @id @default(uuid()) @db.Uuid
+  palletDespachoId String                 @map("pallet_despacho_id") @db.Uuid
+  tipo             PalletDespachoItemTipo @default(KIT)
+  kitInstanciaId   String?                @map("kit_instancia_id") @db.Uuid
+  productoId       String?                @map("producto_id") @db.Uuid
+  cantidad         Decimal?               @db.Decimal(14, 3)
+  escaneadoAt      DateTime?              @map("escaneado_at")
+  escaneadoPorId   String?                @map("escaneado_por_id") @db.Uuid
+  retiradoAt       DateTime?              @map("retirado_at")
+  retiradoMotivo   String?                @map("retirado_motivo")
+  isActive         Boolean                @default(true) @map("is_active")
+  createdAt        DateTime               @default(now()) @map("created_at")
+
+  palletDespacho PalletDespacho @relation(fields: [palletDespachoId], references: [id], onDelete: Restrict)
+  kitInstancia   KitInstancia?  @relation(fields: [kitInstanciaId], references: [id], onDelete: Restrict)
+  producto       Producto?      @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  escaneadoPor   User?          @relation("PalletItemEscaneadoPor", fields: [escaneadoPorId], references: [id], onDelete: SetNull)
+
+  @@index([palletDespachoId, isActive])
+  @@index([kitInstanciaId])
+  @@map("pallet_despacho_items")
+}
+
+/// Expedición outbound: necesidad logística de salida (puede tener varios viajes).
+model Despacho {
+  id                  String           @id @default(uuid()) @db.Uuid
+  codigo              String
+  organizationId      String           @map("organization_id") @db.Uuid
+  acopioId            String           @map("acopio_id") @db.Uuid
+  demandaId           String           @map("demanda_id") @db.Uuid
+  planId              String           @map("plan_id") @db.Uuid
+  destinoNombre       String           @map("destino_nombre")
+  estado              DespachoEstado   @default(BORRADOR)
+  prioridad           DemandaPrioridad @default(MEDIA)
+  palletsEsperados    Int              @map("pallets_esperados")
+  kitsEsperados       Int              @default(0) @map("kits_esperados")
+  palletsDespachados  Int              @default(0) @map("pallets_despachados")
+  kitsDespachados     Int              @default(0) @map("kits_despachados")
+  pesoTotalKg         Decimal?         @map("peso_total_kg") @db.Decimal(14, 3)
+  volumenTotalM3      Decimal?         @map("volumen_total_m3") @db.Decimal(14, 3)
+  esParcial           Boolean          @default(false) @map("es_parcial")
+  vehiculoPlaca       String?          @map("vehiculo_placa")
+  transportista       String?
+  conductorNombre     String?          @map("conductor_nombre")
+  conductorDocumento  String?          @map("conductor_documento")
+  documentoTransporte String?        @map("documento_transporte")
+  observaciones       String?
+  salidaProgramada    DateTime?        @map("salida_programada")
+  salidaReal          DateTime?        @map("salida_real")
+  createdById         String           @map("created_by_id") @db.Uuid
+  isActive            Boolean          @default(true) @map("is_active")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio       Acopio            @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  demanda      Demanda           @relation(fields: [demandaId], references: [id], onDelete: Restrict)
+  plan         PlanPalletizacion @relation(fields: [planId], references: [id], onDelete: Restrict)
+  createdBy    User              @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  pallets      PalletDespacho[]
+  viajes       Viaje[]
+  cargas       Carga[]
+  movimientos  InventoryMovimiento[]
+  manifiesto   DespachoManifiesto?
+  checklist    DespachoChecklist?
+  pod          ProofOfDelivery?
+
+  @@unique([organizationId, codigo])
+  @@index([demandaId, estado])
+  @@index([planId])
+  @@map("despachos")
+}
+
+model Transportista {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  nombre         String
+  documento      String?
+  telefono       String?
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  viajes       Viaje[]
+
+  @@index([organizationId, isActive])
+  @@map("transportistas")
+}
+
+model Vehiculo {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  placa          String
+  tipo           String?
+  capacidadKg    Decimal? @map("capacidad_kg") @db.Decimal(14, 3)
+  capacidadM3    Decimal? @map("capacidad_m3") @db.Decimal(14, 3)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  viajes       Viaje[]
+
+  @@unique([organizationId, placa])
+  @@index([organizationId, isActive])
+  @@map("vehiculos")
+}
+
+model Conductor {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  nombre         String
+  documento      String
+  telefono       String?
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  viajes       Viaje[]
+
+  @@unique([organizationId, documento])
+  @@index([organizationId, isActive])
+  @@map("conductores")
+}
+
+/// Movimiento físico con vehículo (puede haber varios por despacho).
+model Viaje {
+  id                  String      @id @default(uuid()) @db.Uuid
+  codigo              String
+  organizationId      String      @map("organization_id") @db.Uuid
+  acopioId            String      @map("acopio_id") @db.Uuid
+  despachoId          String      @map("despacho_id") @db.Uuid
+  vehiculoId          String?     @map("vehiculo_id") @db.Uuid
+  transportistaId     String?     @map("transportista_id") @db.Uuid
+  conductorId         String?     @map("conductor_id") @db.Uuid
+  vehiculoPlaca       String?     @map("vehiculo_placa")
+  transportistaNombre String?     @map("transportista_nombre")
+  conductorNombre     String?     @map("conductor_nombre")
+  conductorDocumento  String?     @map("conductor_documento")
+  estado              ViajeEstado @default(PLANIFICADO)
+  palletsEsperados    Int         @map("pallets_esperados")
+  palletsCargados     Int         @default(0) @map("pallets_cargados")
+  pesoCargadoKg       Decimal     @default(0) @map("peso_cargado_kg") @db.Decimal(14, 3)
+  salidaProgramada    DateTime?   @map("salida_programada")
+  salidaReal          DateTime?   @map("salida_real")
+  createdById         String      @map("created_by_id") @db.Uuid
+  isActive            Boolean     @default(true) @map("is_active")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio        Acopio         @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  despacho      Despacho       @relation(fields: [despachoId], references: [id], onDelete: Restrict)
+  vehiculo      Vehiculo?      @relation(fields: [vehiculoId], references: [id], onDelete: SetNull)
+  transportista Transportista? @relation(fields: [transportistaId], references: [id], onDelete: SetNull)
+  conductor     Conductor?     @relation(fields: [conductorId], references: [id], onDelete: SetNull)
+  createdBy     User           @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  carga         Carga?
+
+  @@unique([organizationId, codigo])
+  @@index([despachoId, estado])
+  @@map("viajes")
+}
+
+/// Contenido físico que va en un viaje (pallets, cajas, etc.).
+model Carga {
+  id             String      @id @default(uuid()) @db.Uuid
+  viajeId        String      @unique @map("viaje_id") @db.Uuid
+  despachoId     String      @map("despacho_id") @db.Uuid
+  estado         CargaEstado @default(ABIERTA)
+  palletsEsperados Int       @map("pallets_esperados")
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  viaje    Viaje       @relation(fields: [viajeId], references: [id], onDelete: Restrict)
+  despacho Despacho    @relation(fields: [despachoId], references: [id], onDelete: Restrict)
+  items    CargaItem[]
+
+  @@index([despachoId])
+  @@map("cargas")
+}
+
+model CargaItem {
+  id               String        @id @default(uuid()) @db.Uuid
+  cargaId          String        @map("carga_id") @db.Uuid
+  tipo             CargaItemTipo @default(PALLET)
+  palletDespachoId String?       @unique @map("pallet_despacho_id") @db.Uuid
+  escaneadoAt      DateTime?     @map("escaneado_at")
+  escaneadoPorId   String?       @map("escaneado_por_id") @db.Uuid
+  isActive         Boolean       @default(true) @map("is_active")
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  carga          Carga          @relation(fields: [cargaId], references: [id], onDelete: Restrict)
+  palletDespacho PalletDespacho? @relation(fields: [palletDespachoId], references: [id], onDelete: Restrict)
+  escaneadoPor   User?          @relation("CargaItemEscaneadoPor", fields: [escaneadoPorId], references: [id], onDelete: SetNull)
+
+  @@index([cargaId, isActive])
+  @@map("carga_items")
+}
+
+model DespachoManifiesto {
+  id                  String   @id @default(uuid()) @db.Uuid
+  despachoId          String   @unique @map("despacho_id") @db.Uuid
+  origenNombre        String   @map("origen_nombre")
+  destinoNombre       String   @map("destino_nombre")
+  vehiculoPlaca       String?  @map("vehiculo_placa")
+  conductorNombre     String?  @map("conductor_nombre")
+  transportistaNombre String?  @map("transportista_nombre")
+  palletsCount        Int      @map("pallets_count")
+  kitsCount           Int      @map("kits_count")
+  pesoKg              Decimal  @map("peso_kg") @db.Decimal(14, 3)
+  volumenM3           Decimal? @map("volumen_m3") @db.Decimal(14, 3)
+  generadoAt          DateTime @default(now()) @map("generado_at")
+
+  despacho Despacho @relation(fields: [despachoId], references: [id], onDelete: Restrict)
+
+  @@map("despacho_manifiestos")
+}
+
+model DespachoChecklist {
+  id                    String    @id @default(uuid()) @db.Uuid
+  despachoId            String    @unique @map("despacho_id") @db.Uuid
+  cargaCompleta         Boolean   @default(false) @map("carga_completa")
+  palletsIdentificados  Boolean   @default(false) @map("pallets_identificados")
+  pesoVerificado        Boolean   @default(false) @map("peso_verificado")
+  destinoConfirmado     Boolean   @default(false) @map("destino_confirmado")
+  vehiculoConfirmado    Boolean   @default(false) @map("vehiculo_confirmado")
+  conductorConfirmado   Boolean   @default(false) @map("conductor_confirmado")
+  documentacionCompleta Boolean   @default(false) @map("documentacion_completa")
+  sellosRegistrados     Boolean   @default(false) @map("sellos_registrados")
+  confirmadoAt          DateTime? @map("confirmado_at")
+  confirmadoPorId       String?   @map("confirmado_por_id") @db.Uuid
+
+  despacho Despacho @relation(fields: [despachoId], references: [id], onDelete: Restrict)
+
+  @@map("despacho_checklists")
+}
+
+model ProofOfDelivery {
+  id                 String    @id @default(uuid()) @db.Uuid
+  despachoId         String    @unique @map("despacho_id") @db.Uuid
+  receivedBy         String?   @map("received_by")
+  receiverDocument   String?   @map("receiver_document")
+  cantidadRecibida   Int?      @map("cantidad_recibida")
+  cantidadDanada     Int       @default(0) @map("cantidad_danada")
+  cantidadFaltante   Int       @default(0) @map("cantidad_faltante")
+  observaciones      String?
+  firmaUrl           String?   @map("firma_url")
+  fotoUrl            String?   @map("foto_url")
+  lat                Float?
+  lng                Float?
+  entregadoAt        DateTime? @map("entregado_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  despacho Despacho @relation(fields: [despachoId], references: [id], onDelete: Restrict)
+
+  @@map("proof_of_delivery")
+}
+
+model ConsolidacionKit {
+  id               String @id @default(uuid()) @db.Uuid
+  consolidacionId  String @map("consolidacion_id") @db.Uuid
+  kitInstanciaId   String @unique @map("kit_instancia_id") @db.Uuid
+  isActive         Boolean @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  consolidacion Consolidacion @relation(fields: [consolidacionId], references: [id], onDelete: Restrict)
+  kitInstancia  KitInstancia  @relation(fields: [kitInstanciaId], references: [id], onDelete: Restrict)
+
+  @@index([consolidacionId])
+  @@map("consolidacion_kits")
 }

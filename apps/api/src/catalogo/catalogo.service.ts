@@ -101,11 +101,27 @@ export class CatalogoService {
     nombre: string,
     marca?: string | null,
   ): Promise<
-    Array<{ id: string; nombre: string; marca: string | null; cantidad: number; score: number }>
+    Array<{
+      id: string;
+      nombre: string;
+      marca: string | null;
+      cantidad: number;
+      score: number;
+      unidadBase: string;
+      requiereLote: boolean;
+      requiereVencimiento: boolean;
+    }>
   > {
     const filas = await this.prisma.producto.findMany({
       where: { isActive: true },
-      select: { id: true, nombre: true, marca: true },
+      select: {
+        id: true,
+        nombre: true,
+        marca: true,
+        unidadBase: true,
+        requiereLote: true,
+        requiereVencimiento: true,
+      },
     });
     return filas
       .map((row) => ({
@@ -114,6 +130,9 @@ export class CatalogoService {
         marca: row.marca,
         cantidad: 0,
         score: scoreFila(nombre, marca, row.nombre, row.marca),
+        unidadBase: row.unidadBase,
+        requiereLote: row.requiereLote,
+        requiereVencimiento: row.requiereVencimiento,
       }))
       .filter((row) => row.score >= 0.55)
       .sort((a, b) => b.score - a.score)

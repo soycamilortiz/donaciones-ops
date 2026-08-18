@@ -5,6 +5,7 @@ import { distanciaAcotada, emparejar, normalizar, puntuarTermino, tokenizar } fr
 
 const producto = (id: string, nombre: string, alias: string[] = [], marca?: string): Producto => ({
   id,
+  sku: `SKU-${id}`,
   nombre,
   marca: marca ?? null,
   categoria: null,

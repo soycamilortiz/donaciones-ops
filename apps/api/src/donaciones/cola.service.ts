@@ -49,9 +49,25 @@ export class ColaService implements OnModuleDestroy {
   /**
    * `jobId` es el id de la imagen: si el cliente reintenta el registro por una
    * red inestable, BullMQ descarta el duplicado en vez de procesar dos veces.
+   *
+   * Por lo mismo hay que borrar el job anterior antes de reencolar: BullMQ
+   * conserva los terminados (24 h) y los fallidos (7 días), y con el id ya
+   * ocupado el `add` se descarta en silencio. Sin esto, reprocesar una imagen
+   * fallida la dejaba en PENDIENTE para siempre — justo el caso que el endpoint
+   * existe para resolver.
    */
   async encolarReconocimiento(imagenId: string): Promise<void> {
-    await this.obtenerCola().add(
+    const cola = this.obtenerCola();
+    // Devuelve 0 (sin borrar) si el worker lo tiene tomado ahora mismo, así que
+    // no interrumpe un procesamiento en curso.
+    await cola.remove(imagenId).catch((error: unknown) => {
+      this.logger.warn(
+        `No se pudo limpiar el job previo ${imagenId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    });
+    await cola.add(
       OCR_JOB_RECONOCER,
       { imagenId },
       {

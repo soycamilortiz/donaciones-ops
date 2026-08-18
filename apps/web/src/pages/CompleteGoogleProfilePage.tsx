@@ -1,10 +1,11 @@
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import {
-  clearGoogleProfileToken,
-  readGoogleProfileToken,
-} from '@/components/GoogleSignInButton';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
+import { clearGoogleProfileToken, readGoogleProfileToken } from '@/components/GoogleSignInButton';
+import { FormField } from '@/components/molecules/FormField';
+import { AuthLayout } from '@/components/templates/AuthLayout';
 import { useSession } from '@/lib/AuthProvider';
 import { type AuthSession, apiRequest } from '@/lib/api';
 import { ROUTES } from '@/lib/constants';
@@ -57,21 +58,17 @@ export default function CompleteGoogleProfilePage() {
   }
 
   return (
-    <div className="auth-page">
-      <Link to="/" className="brand">
-        SOS Chocó
-      </Link>
-      <form className="form auth-form" onSubmit={(event) => void onSubmit(event)}>
-        <h1>{t('auth.googleCompleteTitle')}</h1>
-        <p className="muted">{t('auth.googleCompleteSubtitle')}</p>
+    <AuthLayout title={t('auth.googleCompleteTitle')}>
+      <form className="space-y-5" onSubmit={(event) => void onSubmit(event)}>
+        <p className="text-sm text-muted-foreground">{t('auth.googleCompleteSubtitle')}</p>
         {correo ? (
-          <p className="muted">
-            {t('auth.email')}: {correo}
+          <p className="text-sm text-muted-foreground">
+            {t('auth.email')}: <span className="font-medium text-foreground">{correo}</span>
           </p>
         ) : null}
-        <label className="field">
-          {t('auth.name')}
-          <input
+        <FormField label={t('auth.name')} htmlFor="google-nombre" required>
+          <Input
+            id="google-nombre"
             name="nombre"
             required
             minLength={2}
@@ -79,10 +76,15 @@ export default function CompleteGoogleProfilePage() {
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
           />
-        </label>
-        <label className="field">
-          {t('auth.username')}
-          <input
+        </FormField>
+        <FormField
+          label={t('auth.username')}
+          htmlFor="google-usuario"
+          required
+          hint={t('auth.usernameHint')}
+        >
+          <Input
+            id="google-usuario"
             name="usuario"
             required
             minLength={3}
@@ -93,16 +95,16 @@ export default function CompleteGoogleProfilePage() {
             value={usuario}
             onChange={(e) => setUsuario(e.target.value)}
           />
-        </label>
+        </FormField>
         {error ? (
-          <p role="alert" className="error">
+          <p role="alert" className="text-sm font-medium text-error">
             {error}
           </p>
         ) : null}
-        <button className="button" type="submit" disabled={ocupado}>
+        <Button type="submit" size="lg" className="w-full" disabled={ocupado}>
           {ocupado ? t('auth.googleCompleting') : t('auth.googleCompleteSubmit')}
-        </button>
+        </Button>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

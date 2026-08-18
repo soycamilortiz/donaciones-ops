@@ -31,6 +31,23 @@ export const envSchema = z.object({
   JWT_SECRET: z.string().min(16).default('soschoco-dev-jwt-secret-cambia-esto'),
   JWT_EXPIRES_IN: z.string().min(1).default('8h'),
 
+  /**
+   * `true` salta el captcha en registro y login: el API no lo pide y el front no
+   * lo dibuja. Sin definir queda `true` fuera de producción, para que probar no
+   * cueste leer un SVG por intento.
+   *
+   * Se deja opcional a propósito: el default sale del `NODE_ENV` ya validado, no
+   * de `process.env` al importar el módulo, que se lee antes de que ConfigModule
+   * cargue el `.env` y haría arrancar producción con el default equivocado.
+   */
+  CAPTCHA_DISABLED: z.preprocess(
+    emptyToUndefined,
+    z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((valor) => (valor === undefined ? undefined : valor === 'true')),
+  ),
+
   /** Cola de reconocimiento de imágenes. La consume apps/worker. */
   REDIS_URL: z.string().min(1).default('redis://localhost:6379'),
   /**
@@ -108,9 +125,9 @@ export const envSchema = z.object({
   RESEND_API_KEY: z.preprocess(emptyToUndefined, z.string().min(8).optional()),
   MAIL_FROM: z.string().min(3).default('SOS Chocó <beth.t@example.com>'),
   /** Origen del front para armar el link del mail (`http://localhost` en Docker). */
-  PUBLIC_WEB_URL: z.preprocess(emptyToUndefined, z.string().url().optional()).transform(
-    (v) => v ?? 'http://localhost',
-  ),
+  PUBLIC_WEB_URL: z
+    .preprocess(emptyToUndefined, z.string().url().optional())
+    .transform((v) => v ?? 'http://localhost'),
 
   /** Google Sign-In (OAuth). Solo hace falta el client ID para validar el ID token. */
   GOOGLE_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().min(8).optional()),
@@ -118,10 +135,34 @@ export const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().min(8).optional()),
 });
 
-export type Env = z.infer<typeof envSchema>;
+/**
+ * El interruptor no se respeta en la función serverless, que es la que sirve el
+ * despliegue: allí no hay `.env` de nadie que justifique apagar la única defensa
+ * contra fuerza bruta, y hacerlo en silencio sería peor que no arrancar.
+ *
+ * El compose local corre con `NODE_ENV=production` dentro del contenedor, así
+ * que la condición no puede ser esa: bloquearía justo el caso que la variable
+ * viene a resolver.
+ */
+export const envSchemaValidado = envSchema
+  .superRefine((env, ctx) => {
+    if (enServerless && env.CAPTCHA_DISABLED === true) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CAPTCHA_DISABLED'],
+        message: 'no se puede apagar el captcha en el despliegue serverless',
+      });
+    }
+  })
+  .transform((env) => ({
+    ...env,
+    CAPTCHA_DISABLED: env.CAPTCHA_DISABLED ?? env.NODE_ENV !== 'production',
+  }));
+
+export type Env = z.infer<typeof envSchemaValidado>;
 
 export function validateEnv(config: Record<string, unknown>): Env {
-  const result = envSchema.safeParse(config);
+  const result = envSchemaValidado.safeParse(config);
 
   if (!result.success) {
     const formatted = result.error.issues

@@ -94,11 +94,7 @@ export class EmailVerificationService {
     return { token, codigo };
   }
 
-  private async consumeByHash(
-    field: 'tokenHash' | 'codigoHash',
-    hash: string,
-    userId?: string,
-  ) {
+  private async consumeByHash(field: 'tokenHash' | 'codigoHash', hash: string, userId?: string) {
     const row = await this.prisma.emailVerification.findFirst({
       where:
         field === 'tokenHash'

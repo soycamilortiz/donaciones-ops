@@ -89,6 +89,7 @@ No hay proveedor externo. El API emite un JWT y el front lo guarda en `localStor
 | Google | `POST /api/v1/auth/google` — ID token del botón. Emite JWT o pide completar perfil |
 | Completar Google | `POST /api/v1/auth/google/completar` — usuario (y nombre opcional) tras el primer Google |
 | Captcha | `GET /api/v1/auth/captcha` — SVG, 5 minutos, un solo uso. La respuesta se guarda como SHA-256 |
+| Captcha apagado | `CAPTCHA_DISABLED=true` (así viene el `.env.example`): el API no emite ni valida captcha y el front no dibuja el campo. En serverless la variable no se respeta: con `true` la función no arranca |
 | Contraseña | bcrypt, 12 rounds. Nunca se persiste ni se devuelve en texto plano |
 | Sesión | `Authorization: Bearer <jwt>`. Default 8h (`JWT_EXPIRES_IN`) |
 | Rutas públicas | health, metadatos, Swagger, `/api/v1/auth/*` |
@@ -101,13 +102,13 @@ Invitar personas: quien se suma **ya tiene que estar registrada** con ese correo
 
 ## Dominio (Prisma)
 
-`User` (usuario + correo únicos, `password_hash`, `correoVerificadoAt`), `EmailVerification`, `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto` (catálogo global con SKU), `DonacionImagen`, `Recepcion`, `UnidadLogistica`, `Lote`, `RecepcionItem`, `OrgCounter`.
+`User` (usuario + correo únicos, `password_hash`, `correoVerificadoAt`), `EmailVerification`, `CaptchaChallenge`, `Organization`, `Acopio`, `Role`, `Permission`, `RolePermission`, `Membership`, `Producto` (catálogo global con SKU), `DonacionImagen`, `Recepcion`, `UnidadLogistica`, `Lote`, `RecepcionItem`, `OrgCounter`, `Ubicacion`, `InventoryBalance`, `InventoryMovimiento`, `Putaway`, `PutawayLinea`, `Kit`, `KitComponente`, `Demanda`, `DemandaItem`, `Reserva`, `ReservaItem`, `ReservaAsignacion`, `KitInstancia`, `KitInstanciaItem`, `ControlLote`, `ControlInspeccion`, `Consolidacion`, `ConsolidacionKit`, `PlanPalletizacion`, `PlanPalletSlot`, `PalletDespacho`, `PalletDespachoItem`, `Despacho`.
 
 Roles semilla: administrador de acopio, auxiliar administrativo, líder de zona, finanzas, transportador, voluntario. Quien crea la org queda como administrador de acopio. El alta por defecto es voluntario. La matriz se edita en `/app/roles` (permiso `roles:write`). Los permisos nuevos de código aparecen como filas; no se pisan los tildes ya guardados.
 
 Permisos: `org:read/update`, `members:read/invite/role/remove`, `acopios:read/write`, `roles:read/write`, `inventory:read/write`, `donaciones:read/write`.
 
-Inventario: por centro de acopio. Dashboard en `/app/inventario`. El alta de stock desde campo pasa por una **recepción**: confirmar una foto identifica el producto; **validar** la recepción incrementa `inventory_items` (solo `cantidad_aprobada`). Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol, producto, recepción e ítem. Dar de baja no bloquea un alta nueva (el producto de inventario siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
+Inventario: por centro de acopio. Dashboard en `/app/inventario`. El alta de stock desde campo pasa por una **recepción**: confirmar una foto identifica el producto (unidad de medida y vencimiento en el ingreso); **validar** incrementa `inventory_items` (solo `cantidad_aprobada`) y deja esa cantidad en el **muelle**. Ubicar es otro paso (`/app/inventario/ubicar`): el sistema sugiere destinos; el operador confirma el código de la ubicación. Trasladar entre zonas ya ubicadas es **reubicación** (`/app/inventario/mover`): también confirma el código de destino. Saldos en `inventory_balances`. **Reserva** (`/app/demandas`, `/app/kits`): una demanda pide kits; el BOM calcula requerimientos; se compromete lo posible (FEFO por lote/ubicación) sin sacar stock. Pre-reserva no bloquea; reserva firme sí. Diseño: [reserva.md](reserva.md). **Control y consolidación** (`/app/demandas/:id/picking`, `/control`, `/consolidacion`): preparar picking desde la reserva (composición FEFO con ubicación origen), confirmar cada línea moviendo stock a kitting/picking, armar kit por kit, control y consolidación. **Palletización y carga** (`/app/demandas/:id/palletizacion`, `/carga`): plan `PLAN-PAL`, pallets outbound `PAL-DSP`, escaneo de kits, peso/dimensiones, despacho `DSP` con vehículo y conductor. Diseño: [control-consolidacion.md](control-consolidacion.md), [palletizacion-despacho.md](palletizacion-despacho.md). Nada de dominio se borra: `isActive` en usuario, organización, acopio, membresía, rol, producto, recepción, ubicación, ítem, kit, demanda, reserva, instancia de kit, control y consolidación. Dar de baja no bloquea un alta nueva (el producto de inventario siempre nace activo; una membresía inactiva se reactiva al volver a invitar).
 
 ## API NestJS
 
@@ -121,10 +122,14 @@ Prefijo global `api`. Versionado URI, default `v1`. Health usa `VERSION_NEUTRAL`
 | Miembros | `/api/v1/organizations/:orgId/members` |
 | Acopios | `/api/v1/organizations/:orgId/acopios` |
 | Inventario | `/api/v1/organizations/:orgId/acopios/:acopioId/inventory` |
+| Ubicaciones / putaway / movimientos | `/api/v1/organizations/:orgId/acopios/:acopioId/ubicaciones`, `.../putaway/pendientes`, `.../putaway/sugerencias/:itemId`, `POST .../putaway/:itemId`, `POST .../putaway/tareas/:id/confirmar`, `GET/POST .../movimientos` |
 | Roles | `/api/v1/roles`, `/api/v1/permissions` |
 | Editar roles | `POST/PATCH/DELETE /api/v1/organizations/:orgId/roles`, `PUT .../permissions` |
 | Donaciones | `/api/v1/organizations/:orgId/donaciones` (+ `/subidas/ruta`, `/productos`, `/ean/:codigo`, `/:id/interpretar`, `/:id/confirmar`) |
 | Recepciones | `/api/v1/organizations/:orgId/recepciones` (+ `/:id/unidades`, `/:id/items`, `/:id/items/:itemId/inspeccion`, `/:id/validar`, `/:id/anular`) |
+| Kits / demandas / reservas | `/api/v1/organizations/:orgId/kits`, `/demandas`, `/demandas/:id/reservas`, `/demandas/plan-escaso`, `/reservas/:id/confirmar`, `/reservas/:id/liberar`, `/acopios/:acopioId/reservas` |
+| Control / consolidación / picking | `/api/v1/organizations/:orgId/kits-armados`, `.../pick-lineas/:itemId`, `.../confirmar-armado`, `/demandas/:id/pipeline`, `/controles`, `/consolidaciones` |
+| Palletización / despacho | `/api/v1/organizations/:orgId/consolidaciones/:id/planes-palletizacion`, `/planes-palletizacion`, `/pallets-despacho`, `/despachos` |
 
 `GET /donaciones` está **paginado por cursor**, no por offset: las fotos se insertan sin parar desde el campo y con `OFFSET` una fila nueva desplaza la ventana, haciendo que se repitan o se salten registros entre páginas. Devuelve `{ items, siguienteCursor }`; `siguienteCursor` es `null` cuando ya no hay más. Acepta `?estado=`, `?cursor=` y `?limite=` (1–200, default 50).
 
@@ -140,6 +145,7 @@ Variables del API:
 | `CORS_ORIGIN` | Orígenes separados por coma |
 | `JWT_SECRET` | Firma del token (mínimo 16 caracteres) |
 | `JWT_EXPIRES_IN` | Default `8h` |
+| `CAPTCHA_DISABLED` | Salta el captcha en registro y login. Sin definir, `true` salvo `NODE_ENV=production`. En serverless no se puede activar: la función no arranca |
 | `REDIS_URL` | Cola de reconocimiento. Default `redis://localhost:6379` |
 | `BLOB_READ_WRITE_TOKEN` | Obsoleto. Las donaciones suben a R2 |
 | `R2_ACCOUNT_ID` | Account ID de Cloudflare |
@@ -235,7 +241,7 @@ Reglas que el front sostiene y conviene no romper al añadir pantallas:
 
 ## Shell (`apps/web`)
 
-Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio. Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar). La foto de identificación vive en `/app/recepciones/:id/foto`. No hay módulo de Donaciones en el panel.
+Landing, login/registro con captcha, verificación de correo, onboarding y panel (`/app`). React Router. El token viaja en `Authorization: Bearer`. Inventario: dashboard por acopio, putaway (`/app/inventario/ubicar`) y reubicación entre zonas (`/app/inventario/mover`). Ubicaciones del acopio: `/app/ubicaciones` (también desde cada centro en Acopios). Recepciones: `/app/recepciones` (abrir evento, pallets, líneas, validar). La foto de identificación vive en `/app/recepciones/:id/foto`. Kits (`/app/kits`) y demandas/reservas (`/app/demandas`). Picking (`/app/demandas/:id/picking`), control, consolidación, palletización y carga. No hay módulo de Donaciones en el panel.
 
 Alta/edición de acopios: departamento y municipio (DIVIPOLA Colombia), autocomplete Photon, geolocalización del navegador, pin Leaflet arrastrable y mapa para `lat`/`lng`. Componente `AddressLocationPicker`.
 
@@ -243,7 +249,7 @@ Sistema visual «html-base»: paleta verde (`#12331A`) + acento dorado (`#F2C230
 
 ## Qué falta
 
-- Recepción v1 **está**. Diseño: [recepcion.md](recepcion.md). Falta todavía: ubicaciones tipo pasillo, pallet de despacho, variantes (talla/gramaje), bloquear validación si falta lote (hoy va a cuarentena).
+- Recepción v1 **está**. Diseño: [recepcion.md](recepcion.md). Ubicaciones, putaway y reubicación entre zonas con confirmación de código **están** (v1: sin QR de cámara ni distancia/FEFO en el putaway). Reserva v1 **está**. Diseño: [reserva.md](reserva.md). Picking, control y consolidación v1 **están**. Palletización outbound (`PAL-DSP`) y control de carga v1 **están**. Diseño: [control-consolidacion.md](control-consolidacion.md), [palletizacion-despacho.md](palletizacion-despacho.md). Falta: entrega en destino, secuencia LIFO de carga, movimiento inventario al despachar, variantes (talla/gramaje).
 - Módulo de envíos (contenedor + API).
 - Cookie httpOnly en lugar de `localStorage` si se endurece XSS.
 - Rate limit explícito en login (hoy el captcha cubre brute-force básico).
@@ -280,11 +286,15 @@ El job es idempotente por `imagenId` y BullMQ reintenta con backoff exponencial;
 
 ### Puesta en marcha
 
-El catálogo `productos` no puede quedar vacío: `emparejar()` contra una tabla sin filas siempre devuelve `null` y toda foto termina en revisión manual. Hay una siembra inicial con 20 productos de la zona:
+El catálogo `productos` es **global** y arranca **vacío**: cada producto nace al confirmar una recepción (EAN, visión o alta manual). Sin filas, el emparejamiento OCR no acierta y la foto queda para revisión manual — eso es esperado hasta que entren donaciones.
+
+Para resetear un entorno de desarrollo (borra kits, demandas, reservas y todo el catálogo; desvincula inventario):
 
 ```bash
-psql "$DATABASE_URL" -f apps/api/prisma/seed-productos.sql
+pnpm --filter api db:reset-catalogo
 ```
+
+En producción hace falta `FORCE_RESET_CATALOGO=true`.
 
 Verificado contra un PostgreSQL real: las migraciones aplican, `rbac:sync` deja 12 permisos y 6 roles, y un job encolado recorre la cola hasta escribir su resultado en `donacion_imagenes`.
 

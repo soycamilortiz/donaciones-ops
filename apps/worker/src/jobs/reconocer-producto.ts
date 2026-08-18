@@ -138,7 +138,15 @@ async function resolver(
   }
 
   const productos = (await prisma.producto.findMany({
-    select: { id: true, nombre: true, marca: true, categoria: true, ean: true, alias: true },
+    select: {
+      id: true,
+      sku: true,
+      nombre: true,
+      marca: true,
+      categoria: true,
+      ean: true,
+      alias: true,
+    },
   })) as Producto[];
 
   const encontrado =

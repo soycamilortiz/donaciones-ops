@@ -333,4 +333,13 @@ export class InventoryItemDto {
 
   @ApiProperty()
   isActive: boolean;
+
+  @ApiPropertyOptional()
+  cantidadReservada?: number;
+
+  @ApiPropertyOptional()
+  cantidadPreReservada?: number;
+
+  @ApiPropertyOptional()
+  cantidadDisponible?: number;
 }

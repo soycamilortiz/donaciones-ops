@@ -1,12 +1,13 @@
 import type { Recepcion, RecepcionItem } from '@soschoco/shared';
-import { UNIDAD_LOGISTICA_TIPOS } from '@soschoco/shared';
+import { INVENTORY_UNIDADES, UNIDAD_LOGISTICA_TIPOS } from '@soschoco/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Badge, type BadgeVariant } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
-import { Spinner } from '@/components/atoms/Spinner';
+import { Select } from '@/components/atoms/Select';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { useOrg } from '@/components/OrgGate';
 import {
@@ -36,7 +37,7 @@ const ABIERTA = new Set(['BORRADOR', 'EN_RECEPCION', 'EN_INSPECCION', 'PENDIENTE
 // Tabla de 7 columnas en desktop; bajo 721px cada línea se apila como tarjeta
 // (UX-005) para no forzar scroll horizontal con el móvil en la mano.
 const ROW_GRID =
-  'min-[721px]:grid-cols-[minmax(160px,1.8fr)_minmax(84px,1fr)_64px_minmax(88px,1fr)_minmax(88px,1fr)_minmax(88px,1fr)_minmax(150px,1.5fr)]';
+  'min-[721px]:grid-cols-[minmax(160px,1.8fr)_minmax(84px,1fr)_64px_minmax(64px,0.7fr)_minmax(88px,1fr)_minmax(88px,1fr)_minmax(88px,1fr)_minmax(150px,1.5fr)]';
 const cellLabelClass =
   'text-[10px] font-bold uppercase tracking-wider text-muted-foreground min-[721px]:hidden';
 const thClass = 'text-[10px] font-bold uppercase tracking-wider text-muted-foreground';
@@ -75,6 +76,7 @@ export default function RecepcionDetailPage() {
   const [manualUl, setManualUl] = useState('');
   const [manualLote, setManualLote] = useState('');
   const [manualVence, setManualVence] = useState('');
+  const [manualUnidad, setManualUnidad] = useState('UNIDAD');
   const [guardando, setGuardando] = useState(false);
   const [confirmAnular, setConfirmAnular] = useState(false);
 
@@ -107,9 +109,9 @@ export default function RecepcionDetailPage() {
 
   if (cargando) {
     return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
+      <div className="py-8">
+        <SkeletonList filas={4} etiqueta={t('common.loading')} />
+      </div>
     );
   }
 
@@ -210,17 +212,13 @@ export default function RecepcionDetailPage() {
             </label>
             <label className="space-y-1">
               <span className="text-sm font-medium">{t('receptions.unitType')}</span>
-              <select
-                className="min-h-11 cursor-pointer rounded border border-border bg-card px-3 py-2 text-base md:text-sm"
-                value={ulTipo}
-                onChange={(e) => setUlTipo(e.target.value)}
-              >
+              <Select className="w-auto" value={ulTipo} onChange={(e) => setUlTipo(e.target.value)}>
                 {UNIDAD_LOGISTICA_TIPOS.map((item) => (
                   <option key={item.value} value={item.value}>
                     {t(`receptions.ulTipo.${item.value}`)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <Button
               variant="outline"
@@ -260,7 +258,7 @@ export default function RecepcionDetailPage() {
         ) : (
           <div className="overflow-hidden rounded-lg border border-border bg-card">
             <div className="min-[721px]:overflow-x-auto">
-              <div className="min-[721px]:min-w-[900px]">
+              <div className="min-[721px]:min-w-[960px]">
                 <div
                   className={cn(
                     'hidden gap-3 border-b border-border bg-secondary px-4 min-[721px]:grid min-[721px]:h-11 min-[721px]:items-center',
@@ -270,6 +268,7 @@ export default function RecepcionDetailPage() {
                   <span className={thClass}>{t('receptions.columns.product')}</span>
                   <span className={thClass}>{t('receptions.columns.ul')}</span>
                   <span className={thClass}>{t('receptions.columns.received')}</span>
+                  <span className={thClass}>{t('receptions.columns.measure')}</span>
                   <span className={thClass}>{t('receptions.columns.approved')}</span>
                   <span className={thClass}>{t('receptions.columns.quarantine')}</span>
                   <span className={thClass}>{t('receptions.columns.rejected')}</span>
@@ -324,19 +323,29 @@ export default function RecepcionDetailPage() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-sm font-medium">{t('receptions.columns.ul')}</span>
+              <span className="text-sm font-medium">{t('receptions.measureUnit')}</span>
               <select
                 className="min-h-11 w-full cursor-pointer rounded border border-border bg-card px-3 py-2 text-base md:text-sm"
-                value={manualUl}
-                onChange={(e) => setManualUl(e.target.value)}
+                value={manualUnidad}
+                onChange={(e) => setManualUnidad(e.target.value)}
               >
+                {INVENTORY_UNIDADES.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {t(`inventoryUnits.${item.value}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm font-medium">{t('receptions.columns.ul')}</span>
+              <Select value={manualUl} onChange={(e) => setManualUl(e.target.value)}>
                 <option value="">{t('receptions.loose')}</option>
                 {recepcion.unidades.map((ul) => (
                   <option key={ul.id} value={ul.id}>
                     {ul.codigo}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="space-y-1" htmlFor="manual-lote">
               <span className="text-sm font-medium">{t('receptions.lotOrigin')}</span>
@@ -368,12 +377,14 @@ export default function RecepcionDetailPage() {
                   unidadLogisticaId: manualUl || undefined,
                   loteCodigoOrigen: manualLote.trim() || undefined,
                   vencimiento: manualVence || undefined,
+                  unidad: manualUnidad,
                 });
                 setManualNombre('');
                 setManualMarca('');
                 setManualCantidad('1');
                 setManualLote('');
                 setManualVence('');
+                setManualUnidad('UNIDAD');
                 return next;
               })
             }
@@ -385,6 +396,11 @@ export default function RecepcionDetailPage() {
 
       {writable ? (
         <div className="space-y-3">
+          {recepcion.items.some((item) => item.alertaValidacion === 'FALTA_VENCIMIENTO') ? (
+            <p role="status" className="text-sm text-warning">
+              {t('receptions.validateWarning')}
+            </p>
+          ) : null}
           {cuarentenaCount > 0 ? (
             <p
               role="status"
@@ -412,7 +428,16 @@ export default function RecepcionDetailPage() {
       ) : null}
 
       {recepcion.estado === 'VALIDADA' ? (
-        <p className="text-sm text-muted-foreground">{t('receptions.validatedHint')}</p>
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">{t('receptions.validatedHint')}</p>
+          <p className="text-sm text-muted-foreground">{t('receptions.validatedPutawayHint')}</p>
+          {recepcion.items.some((item) => item.cantidadCuarentena > 0) ? (
+            <p className="text-sm text-warning">{t('receptions.quarantineAfter')}</p>
+          ) : null}
+          <Button variant="outline" onClick={() => navigate(ROUTES.inventarioUbicar)}>
+            {t('receptions.goPutaway')}
+          </Button>
+        </div>
       ) : null}
 
       <ConfirmDialog
@@ -495,6 +520,8 @@ function Linea({
         <span className="text-xs text-muted-foreground">
           {item.producto?.sku}
           {item.lote?.codigo ? ` · ${item.lote.codigo}` : ''}
+          {item.lote?.codigoOrigen ? ` · ${item.lote.codigoOrigen}` : ''}
+          {item.lote?.vencimiento ? ` · ${item.lote.vencimiento.slice(0, 10)}` : ''}
         </span>
         {divertira ? (
           <div className="mt-1 flex flex-col gap-1">
@@ -503,6 +530,9 @@ function Linea({
             </Badge>
             <span className="text-xs text-warning">{t('receptions.willQuarantineHint')}</span>
           </div>
+        ) : null}
+        {item.alertaValidacion === 'FALTA_VENCIMIENTO' ? (
+          <span className="mt-1 text-xs text-warning">{t('receptions.expiryMissing')}</span>
         ) : null}
       </div>
 
@@ -518,6 +548,11 @@ function Linea({
         <span className="text-sm font-bold tabular-nums text-foreground">
           {item.cantidadRecibida}
         </span>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 min-[721px]:block">
+        <span className={cellLabelClass}>{t('receptions.columns.measure')}</span>
+        <span className="text-sm text-muted-foreground">{etiquetaUnidad(item.unidad, t)}</span>
       </div>
 
       {numberField(t('receptions.columns.approved'), aprobada, setAprobada, item.cantidadAprobada)}
@@ -570,4 +605,12 @@ function Linea({
       </div>
     </div>
   );
+}
+
+function etiquetaUnidad(
+  unidad: string,
+  t: (key: `inventoryUnits.${(typeof INVENTORY_UNIDADES)[number]['value']}`) => string,
+) {
+  const medida = INVENTORY_UNIDADES.find((u) => u.value === unidad);
+  return medida ? t(`inventoryUnits.${medida.value}`) : unidad;
 }

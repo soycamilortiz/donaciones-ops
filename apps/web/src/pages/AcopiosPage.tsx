@@ -1,10 +1,12 @@
 import { AcopioFlujo } from '@soschoco/shared';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { SkeletonList } from '@/components/atoms/Skeleton';
 import {
   AddressLocationPicker,
@@ -12,16 +14,14 @@ import {
 } from '@/components/molecules/AddressLocationPicker';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { FormField } from '@/components/molecules/FormField';
+import { useToast } from '@/components/molecules/Toast';
 import { useOrg } from '@/components/OrgGate';
 import { DEFAULT_DEPARTAMENTO } from '@/features/geo/colombia';
 import { ACOPIO_FLUJOS, type Acopio } from '@/lib/api';
+import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
 import { cn } from '@/lib/utils';
 
-// Estilo compartido: no hay atomo Select/Textarea en el DS, asi que se calcan
-// las clases base de Input para que ambos campos midan y se vean igual.
-const selectClassName =
-  'flex h-11 w-full cursor-pointer appearance-none rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground ring-offset-background transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 const textareaClassName =
   'flex min-h-[4.5rem] w-full rounded-md border border-border bg-card px-3.5 py-2.5 text-base md:text-sm text-foreground ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
@@ -38,6 +38,8 @@ function addressFromAcopio(row: Acopio | null): AddressLocationValue {
 export default function AcopiosPage() {
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { avisar } = useToast();
   const request = useApi();
   const [rows, setRows] = useState<Acopio[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export default function AcopiosPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: load() se redefine en cada render; orgId es el disparador real de la recarga.
   useEffect(() => {
     void load().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'Error al cargar');
+      setError(err instanceof Error ? err.message : t('common.loadError'));
     });
   }, [orgId]);
 
@@ -114,6 +116,7 @@ export default function AcopiosPage() {
       setAddress(addressFromAcopio(null));
       form.reset();
       await load();
+      avisar(t('acopios.saved'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('acopios.saveError'));
     }
@@ -127,6 +130,7 @@ export default function AcopiosPage() {
         body: JSON.stringify({ isActive: true }),
       });
       await load();
+      avisar(t('acopios.reactivated'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('acopios.reactivateError'));
     }
@@ -140,6 +144,7 @@ export default function AcopiosPage() {
         method: 'DELETE',
       });
       await load();
+      avisar(t('acopios.deactivated'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('acopios.deleteError'));
     } finally {
@@ -167,7 +172,7 @@ export default function AcopiosPage() {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               {t('acopios.listTitle')}
             </h2>
             {!cargando && rows.length > 0 ? (
@@ -186,6 +191,20 @@ export default function AcopiosPage() {
               </span>
               <p className="text-lg font-semibold text-foreground">{t('acopios.emptyTitle')}</p>
               <p className="mx-auto max-w-md text-sm text-muted-foreground">{t('acopios.empty')}</p>
+              {can('acopios:write') ? (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    document.getElementById('a-nombre')?.focus();
+                    document
+                      .getElementById('acopio-form')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
+                  {t('acopios.newTitle')}
+                  <Icon name="plus" size={16} />
+                </Button>
+              ) : null}
             </div>
           ) : null}
 
@@ -222,35 +241,49 @@ export default function AcopiosPage() {
                         {meta || t('acopios.noLocation')}
                       </p>
                     </div>
-                    {can('acopios:write') ? (
+                    {can('inventory:read') || can('acopios:write') ? (
                       <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditing(row)}
-                        >
-                          {t('common.edit')}
-                        </Button>
-                        {inactive ? (
+                        {can('inventory:read') ? (
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => void onReactivate(row.id)}
+                            onClick={() => navigate(ROUTES.ubicacionesDe(row.id))}
                           >
-                            {t('acopios.reactivate')}
+                            {t('acopios.configureLocations')}
                           </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPorConfirmar(row.id)}
-                          >
-                            {t('acopios.deactivate')}
-                          </Button>
-                        )}
+                        ) : null}
+                        {can('acopios:write') ? (
+                          <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditing(row)}
+                            >
+                              {t('common.edit')}
+                            </Button>
+                            {inactive ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void onReactivate(row.id)}
+                              >
+                                {t('acopios.reactivate')}
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPorConfirmar(row.id)}
+                              >
+                                {t('acopios.deactivate')}
+                              </Button>
+                            )}
+                          </>
+                        ) : null}
                       </div>
                     ) : null}
                   </li>
@@ -262,6 +295,7 @@ export default function AcopiosPage() {
 
         {can('acopios:write') ? (
           <form
+            id="acopio-form"
             className="space-y-4 rounded-lg border border-border bg-card p-5"
             key={editing?.id ?? 'new'}
             onSubmit={(event) => void onSave(event)}
@@ -282,10 +316,9 @@ export default function AcopiosPage() {
             </FormField>
 
             <FormField label={t('acopios.fields.flow')} htmlFor="a-flujo">
-              <select
+              <Select
                 id="a-flujo"
                 name="flujo"
-                className={selectClassName}
                 defaultValue={editing?.flujo ?? AcopioFlujo.Recibir}
               >
                 {ACOPIO_FLUJOS.map((item) => (
@@ -293,7 +326,7 @@ export default function AcopiosPage() {
                     {item.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FormField>
 
             <AddressLocationPicker value={address} onChange={setAddress} mapPosition="above" />

@@ -210,5 +210,8 @@ export type InterpretacionDonacion = {
     marca: string | null;
     cantidad: number;
     score: number;
+    unidadBase?: string;
+    requiereLote?: boolean;
+    requiereVencimiento?: boolean;
   }>;
 };

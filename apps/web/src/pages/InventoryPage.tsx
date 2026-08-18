@@ -1,3 +1,4 @@
+import { origenAdmiteReubicacion } from '@soschoco/shared';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -5,9 +6,12 @@ import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { Skeleton, SkeletonList } from '@/components/atoms/Skeleton';
 import { FormField } from '@/components/molecules/FormField';
 import { StatCard } from '@/components/molecules/StatCard';
+import { useToast } from '@/components/molecules/Toast';
+import { ROUTES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useOrg } from '../components/OrgGate';
 import {
@@ -28,7 +32,6 @@ const ACOPIO_KEY = 'soschoco.inventoryAcopio';
 // expone átomos propios para esos dos; el <input> sí usa el átomo Input.
 const fieldControlClass =
   'flex h-11 w-full rounded-md border border-border bg-card px-3.5 py-2 text-base md:text-sm text-foreground transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-const fieldSelectClass = `${fieldControlClass} cursor-pointer`;
 const fieldTextareaClass = `${fieldControlClass} h-auto min-h-[72px] resize-y py-2.5 leading-relaxed`;
 
 // Tabla de 6 columnas en desktop; bajo 721px cada fila se apila como tarjeta
@@ -36,13 +39,32 @@ const fieldTextareaClass = `${fieldControlClass} h-auto min-h-[72px] resize-y py
 const ROW_GRID =
   'min-[721px]:grid-cols-[minmax(200px,2fr)_minmax(120px,1.2fr)_96px_92px_116px_220px]';
 const cellLabelClass =
-  'text-[10px] font-bold uppercase tracking-wider text-muted-foreground min-[721px]:hidden';
-const thClass = 'text-[10px] font-bold uppercase tracking-wider text-muted-foreground';
+  'text-xs font-bold uppercase tracking-wider text-muted-foreground min-[721px]:hidden';
+const thClass = 'text-xs font-bold uppercase tracking-wider text-muted-foreground';
 
 function labelOf(options: readonly { value: string; label: string }[], value: string) {
   return options.find((item) => item.value === value)?.label ?? value;
 }
 
+/** Fecha para mostrar: `15/06/2027` en español, `6/15/2027` en inglés. */
+function dateLabel(value: string | null | undefined, idioma: string) {
+  const iso = dateInput(value);
+  if (!iso) {
+    return '';
+  }
+  // Se parte a mano: `new Date('2027-06-15')` es UTC y en América se corre un día.
+  const [anio, mes, dia] = iso.split('-').map(Number);
+  if (!anio || !mes || !dia) {
+    return iso;
+  }
+  return new Date(anio, mes - 1, dia).toLocaleDateString(idioma, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+/** Valor para un `<input type="date">`, que exige ISO. */
 function dateInput(value?: string | null) {
   if (!value) {
     return '';
@@ -61,7 +83,8 @@ function soon(value?: string | null) {
 }
 
 export default function InventoryPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { avisar } = useToast();
   const navigate = useNavigate();
   const { orgId, can } = useOrg();
   const request = useApi();
@@ -136,12 +159,14 @@ export default function InventoryPage() {
       (item) =>
         item.estado === 'VENCIDO' || item.estado === 'PROXIMO_A_VENCER' || soon(item.vencimiento),
     ).length;
+    const pendientes = activeItems.filter((item) => item.pendienteUbicar).length;
     return {
       activos: activeItems.length,
       cantidad: qty,
       categorias: categories.size,
       alertas,
       bajas: items.length - activeItems.length,
+      pendientes,
     };
   }, [activeItems, items.length]);
 
@@ -164,6 +189,21 @@ export default function InventoryPage() {
         .includes(needle);
     });
   }, [items, query, categoria, showInactive]);
+
+  // Una bodega real tiene cientos de SKU y hasta ahora se montaban todos de
+  // una: con 300 productos la página llega a ~5.900 nodos y cada tecla del
+  // buscador repinta la lista entera. En un Android barato eso es el tirón que
+  // describe el audit. Se muestran de a PASO y el resto entra a pedido.
+  const PASO = 50;
+  const [visibles, setVisibles] = useState(PASO);
+  const mostradas = visible.slice(0, visibles);
+  const quedan = visible.length - mostradas.length;
+
+  // Al filtrar, cambiar de acopio o pedir las bajas, la ventana vuelve a empezar.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: los filtros son el disparador; `visibles` es lo que se reinicia.
+  useEffect(() => {
+    setVisibles(PASO);
+  }, [query, categoria, showInactive, acopioId]);
 
   const hasFilters = query.trim() !== '' || categoria !== '' || showInactive;
 
@@ -243,14 +283,33 @@ export default function InventoryPage() {
     const previoOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
+    // Quien tenia el foco antes de abrir, para devolverselo al cerrar (UX-033):
+    // sin esto el foco cae a <body> y hay que tabular la pagina entera.
+    const origen = document.activeElement as HTMLElement | null;
+
     // Al abrir, el foco debe entrar al modal; si no, sigue en el boton que lo
     // abrio y tabular lleva al contenido de detras.
     const dialogo = document.querySelector<HTMLElement>('[role="dialog"]');
     dialogo?.querySelector<HTMLElement>('input, select, textarea, button')?.focus();
 
+    // El resto de la pagina queda inerte (UX-042): la trampa de foco solo
+    // retiene el tabulador, pero el gesto de barrido de un lector de pantalla
+    // seguia llegando al contenido de detras.
+    const raiz = document.getElementById('root');
+    const fueraDelModal = raiz
+      ? [...raiz.children].filter((hijo) => !hijo.contains(dialogo ?? null))
+      : [];
+    for (const hijo of fueraDelModal) {
+      hijo.setAttribute('inert', '');
+    }
+
     return () => {
       document.removeEventListener('keydown', alPulsar);
       document.body.style.overflow = previoOverflow;
+      for (const hijo of fueraDelModal) {
+        hijo.removeAttribute('inert');
+      }
+      origen?.focus();
     };
   }, [formOpen]);
 
@@ -297,6 +356,7 @@ export default function InventoryPage() {
       }
       closeForm();
       await loadItems(acopioId);
+      avisar(t('inventory.saved'));
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : t('inventory.saveError'));
     } finally {
@@ -309,14 +369,29 @@ export default function InventoryPage() {
       return;
     }
     setError(null);
+    const previos = items;
+    // La fila cambia de estado ya: en una lista larga, esperar el ida y vuelta
+    // para ver si pasó algo termina en un segundo toque sobre otra fila.
+    setItems((actuales) =>
+      actuales.map((row) => (row.id === item.id ? { ...row, isActive } : row)),
+    );
     try {
       await request(`/api/v1/organizations/${orgId}/acopios/${acopioId}/inventory/${item.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ isActive }),
       });
       await loadItems(acopioId);
+      avisar(
+        isActive ? t('inventory.reactivated') : t('inventory.deactivated'),
+        isActive
+          ? undefined
+          : { accion: { etiqueta: t('common.undo'), alPulsar: () => void setActive(item, true) } },
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('inventory.statusUpdateError'));
+      setItems(previos);
+      const mensaje = err instanceof Error ? err.message : t('inventory.statusUpdateError');
+      setError(mensaje);
+      avisar(mensaje, { tono: 'error' });
     }
   }
 
@@ -332,12 +407,55 @@ export default function InventoryPage() {
         <p className="max-w-xl text-sm text-muted-foreground">{t('inventory.subtitle')}</p>
       </div>
       {showAction && writable ? (
-        <Button type="button" onClick={openCreate}>
-          {t('inventory.newProduct')}
-          <span className="grid h-[34px] w-[34px] place-items-center rounded-pill bg-primary-deep">
-            <Icon name="plus" size={15} className="text-accent" />
-          </span>
-        </Button>
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(acopioId ? ROUTES.ubicacionesDe(acopioId) : ROUTES.ubicaciones)}
+          >
+            {t('inventory.locations')}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate(ROUTES.inventarioUbicar)}>
+            {t('inventory.putaway')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              navigate(acopioId ? ROUTES.inventarioMoverDe(acopioId) : ROUTES.inventarioMover)
+            }
+          >
+            {t('inventory.move')}
+          </Button>
+          <Button type="button" onClick={openCreate} className="w-full sm:w-auto">
+            {t('inventory.newProduct')}
+            <span className="grid h-[34px] w-[34px] place-items-center rounded-pill bg-primary-deep">
+              <Icon name="plus" size={15} className="text-accent" />
+            </span>
+          </Button>
+        </div>
+      ) : showAction ? (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(acopioId ? ROUTES.ubicacionesDe(acopioId) : ROUTES.ubicaciones)}
+          >
+            {t('inventory.locations')}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate(ROUTES.inventarioUbicar)}>
+            {t('inventory.putaway')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              navigate(acopioId ? ROUTES.inventarioMoverDe(acopioId) : ROUTES.inventarioMover)
+            }
+          >
+            {t('inventory.move')}
+          </Button>
+        </div>
       ) : null}
     </header>
   );
@@ -458,6 +576,22 @@ export default function InventoryPage() {
         <StatCard label={t('inventory.inactive')} value={String(stats.bajas)} />
       </div>
 
+      {stats.pendientes > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
+          <p className="text-sm text-foreground">
+            {t('inventory.pendingPutawayHint', { count: stats.pendientes })}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(ROUTES.inventarioUbicar)}
+          >
+            {t('inventory.putaway')}
+          </Button>
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-3.5 min-[721px]:flex-row min-[721px]:flex-wrap min-[721px]:items-end">
         <FormField label={t('common.search')} htmlFor="inv-q" className="min-[721px]:w-80">
           <div className="relative">
@@ -468,6 +602,9 @@ export default function InventoryPage() {
             />
             <Input
               id="inv-q"
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t('inventory.searchPlaceholder')}
@@ -476,11 +613,10 @@ export default function InventoryPage() {
           </div>
         </FormField>
         <FormField label={t('inventory.category')} htmlFor="inv-cat" className="min-[721px]:w-64">
-          <select
+          <Select
             id="inv-cat"
             value={categoria}
             onChange={(event) => setCategoria(event.target.value)}
-            className={fieldSelectClass}
           >
             <option value="">{t('inventory.allCategories')}</option>
             {INVENTORY_CATEGORIAS.map((item) => (
@@ -488,7 +624,7 @@ export default function InventoryPage() {
                 {item.label}
               </option>
             ))}
-          </select>
+          </Select>
         </FormField>
         <label className="inline-flex min-h-11 cursor-pointer select-none items-center gap-2.5">
           <span className="relative inline-flex h-[22px] w-[38px] shrink-0 items-center rounded-pill bg-muted-foreground/40 p-[3px] transition-colors has-[:checked]:bg-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background">
@@ -554,7 +690,7 @@ export default function InventoryPage() {
                 ) : null}
               </div>
             ) : (
-              visible.map((item) => {
+              mostradas.map((item) => {
                 const inactive = item.isActive === false;
                 const sub = [item.marca, item.presentacion, item.talla, item.sku]
                   .filter(Boolean)
@@ -586,6 +722,18 @@ export default function InventoryPage() {
                           {t('inventory.inactiveBadge')}
                         </Badge>
                       ) : null}
+                      {item.pendienteUbicar ? (
+                        <Badge variant="warning" className="mt-1 w-fit">
+                          {t('inventory.pendingBadge')}
+                        </Badge>
+                      ) : item.balances && item.balances.length > 0 ? (
+                        <span className="text-xs text-muted-foreground">
+                          {item.balances
+                            .filter((b) => b.funcion !== 'RECEPCION')
+                            .map((b) => b.codigo)
+                            .join(' · ')}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className="flex items-center justify-between gap-3 min-[721px]:block">
@@ -600,12 +748,20 @@ export default function InventoryPage() {
                       <span className="text-sm font-bold tabular-nums text-foreground">
                         {item.cantidad} {labelOf(INVENTORY_UNIDADES, item.unidad).toLowerCase()}
                       </span>
+                      {item.cantidadDisponible !== undefined ? (
+                        <span className="block text-xs tabular-nums text-muted-foreground">
+                          {t('inventory.availableQty', { qty: item.cantidadDisponible })}
+                          {(item.cantidadReservada ?? 0) > 0
+                            ? ` · ${t('inventory.reservedQty', { qty: item.cantidadReservada })}`
+                            : ''}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className="flex items-center justify-between gap-3 min-[721px]:block">
                       <span className={cellLabelClass}>{t('inventory.expires')}</span>
                       <span className="text-sm tabular-nums text-muted-foreground">
-                        {dateInput(item.vencimiento) || '—'}
+                        {dateLabel(item.vencimiento, i18n.language) || '—'}
                       </span>
                     </div>
 
@@ -616,6 +772,20 @@ export default function InventoryPage() {
 
                     {writable ? (
                       <div className="flex flex-col gap-2 pt-1 min-[721px]:flex-row min-[721px]:items-center min-[721px]:justify-end min-[721px]:gap-1.5 min-[721px]:pt-0">
+                        {!inactive &&
+                        (item.balances ?? []).some(
+                          (b) => origenAdmiteReubicacion(b.funcion) && b.cantidad > 0,
+                        ) ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full min-[721px]:w-auto"
+                            onClick={() => navigate(ROUTES.inventarioMoverDe(acopioId, item.id))}
+                          >
+                            {t('inventory.move')}
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           variant="outline"
@@ -652,6 +822,23 @@ export default function InventoryPage() {
                 );
               })
             )}
+
+            {visible.length > 0 ? (
+              <div className="flex flex-col items-center gap-3 border-t border-border px-4 py-4 text-sm text-muted-foreground">
+                <p aria-live="polite">
+                  {t('inventory.showing', { shown: mostradas.length, total: visible.length })}
+                </p>
+                {quedan > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setVisibles((actuales) => actuales + PASO)}
+                  >
+                    {t('inventory.showMore', { count: Math.min(quedan, PASO) })}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -708,7 +895,7 @@ export default function InventoryPage() {
 
               <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupIdentification')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
@@ -730,18 +917,17 @@ export default function InventoryPage() {
                       <Input id="f-marca" name="marca" defaultValue={editing?.marca ?? ''} />
                     </FormField>
                     <FormField label={t('inventory.category')} htmlFor="f-categoria">
-                      <select
+                      <Select
                         id="f-categoria"
                         name="categoria"
                         defaultValue={editing?.categoria ?? 'ALIMENTOS_NO_PERECEDEROS'}
-                        className={fieldSelectClass}
                       >
                         {INVENTORY_CATEGORIAS.map((item) => (
                           <option key={item.value} value={item.value}>
                             {item.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </FormField>
                     <FormField label={t('inventory.categoryDetail')} htmlFor="f-catdet">
                       <Input
@@ -758,7 +944,7 @@ export default function InventoryPage() {
                 </fieldset>
 
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupPresentation')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
@@ -774,24 +960,23 @@ export default function InventoryPage() {
                       <Input id="f-talla" name="talla" defaultValue={editing?.talla ?? ''} />
                     </FormField>
                     <FormField label={t('inventory.recipient')} htmlFor="f-dest">
-                      <select
+                      <Select
                         id="f-dest"
                         name="destinatario"
                         defaultValue={editing?.destinatario ?? 'NO_APLICA'}
-                        className={fieldSelectClass}
                       >
                         {INVENTORY_DESTINATARIOS.map((item) => (
                           <option key={item.value} value={item.value}>
                             {item.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </FormField>
                   </div>
                 </fieldset>
 
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupQuantity')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">
@@ -808,18 +993,17 @@ export default function InventoryPage() {
                       />
                     </FormField>
                     <FormField label={t('inventory.unit')} htmlFor="f-unidad">
-                      <select
+                      <Select
                         id="f-unidad"
                         name="unidad"
                         defaultValue={editing?.unidad ?? 'UNIDAD'}
-                        className={fieldSelectClass}
                       >
                         {INVENTORY_UNIDADES.map((item) => (
                           <option key={item.value} value={item.value}>
                             {item.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </FormField>
                     <FormField label={t('inventory.unitDetail')} htmlFor="f-unidet">
                       <Input
@@ -838,18 +1022,17 @@ export default function InventoryPage() {
                       />
                     </FormField>
                     <FormField label={t('inventory.status')} htmlFor="f-estado">
-                      <select
+                      <Select
                         id="f-estado"
                         name="estado"
                         defaultValue={editing?.estado ?? 'BUEN_ESTADO'}
-                        className={fieldSelectClass}
                       >
                         {INVENTORY_ESTADOS.map((item) => (
                           <option key={item.value} value={item.value}>
                             {item.label}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </FormField>
                     <FormField label={t('inventory.batch')} htmlFor="f-lote">
                       <Input
@@ -862,7 +1045,7 @@ export default function InventoryPage() {
                 </fieldset>
 
                 <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-                  <legend className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  <legend className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
                     {t('inventory.groupLocation')}
                   </legend>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[721px]:grid-cols-3">

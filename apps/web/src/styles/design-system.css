@@ -30,7 +30,11 @@
   --color-secondary: #E6E9DE;
   --color-secondary-foreground: #1B241C;
   --color-accent: #F2C230;              /* gold */
-  --color-accent-foreground: #9C7208;   /* gold-deep */
+  /* gold-deep. Medido: 4,66:1 sobre el dorado, 7,68 sobre card y 6,57 sobre el
+     fondo salvia — pasa AA en las tres. El #9C7208 anterior daba 2,60 sobre su
+     propio fondo y 4,28 sobre card, o sea que el token llamado
+     `accent-foreground` no era legible sobre `accent`. */
+  --color-accent-foreground: #6B4D05;
 
   --color-success: #1D7A46;             /* ok */
   --color-success-foreground: #FFFDF8;
@@ -101,6 +105,25 @@
  * Va acá (no en un archivo Tailwind) porque necesita el pseudo-elemento y el
  * archivo está excluido de biome.
  */
+/*
+ * `viewport-fit=cover` deja la app llegar hasta el borde físico, así que lo que
+ * queda pegado a un lado tiene que apartarse del notch y del indicador de
+ * inicio por su cuenta. Sin esto la barra de avisos, que es lo único fijo
+ * abajo, queda debajo de la raya del iPhone.
+ */
+.ds-safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.ds-safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.ds-safe-x {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
 @media (max-width: 900px) {
   .ds-datatable table,
   .ds-datatable tbody,
@@ -109,8 +132,19 @@
     display: block;
   }
 
+  /*
+   * `display: none` habría sacado los <th scope="col"> del árbol de
+   * accesibilidad junto con la vista. Se ocultan visualmente y siguen ahí.
+   */
   .ds-datatable thead {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .ds-datatable tbody tr {
@@ -126,14 +160,38 @@
     text-align: right;
   }
 
-  .ds-datatable td[data-label]::before {
-    content: attr(data-label);
+  /*
+   * La etiqueta de columna es un <span> real dentro de la celda, no un
+   * `::before` con `attr(data-label)`: VoiceOver y TalkBack no anuncian el
+   * contenido generado de forma fiable, así que al apilar la tabla el valor
+   * quedaba sin su columna («Camisetas», «40», «Pendiente» y nada más).
+   * El span es `aria-hidden` porque el <th> sigue en el árbol.
+   */
+  .ds-datatable td[data-label] .ds-cell-label {
+    display: block;
     flex: 0 0 auto;
     text-align: left;
-    font-size: 10px;
+    /* 12px: a 10px la etiqueta de columna no se lee con reflejo ni en marcha. */
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-muted-foreground);
   }
+}
+
+/*
+ * Los controles de zoom de Leaflet vienen a 30px y la app se usa con guantes:
+ * las reglas del proyecto piden 44px para todo lo pulsable.
+ *
+ * Va aquí y con esta especificidad a propósito. `styles.css` entra por
+ * `@import ... layer(app-base)` y el CSS de Leaflet llega sin capa, así que
+ * cualquier regla de la capa pierde por mucha especificidad que tenga.
+ */
+.address-map .leaflet-bar a.leaflet-control-zoom-in,
+.address-map .leaflet-bar a.leaflet-control-zoom-out {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  font-size: 20px;
 }

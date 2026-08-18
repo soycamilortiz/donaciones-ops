@@ -88,6 +88,7 @@ export function confirmarDonacion(
     presentacion?: string;
     loteCodigoOrigen?: string;
     vencimiento?: string;
+    unidad?: string;
   },
 ): Promise<DonacionImagen> {
   return request<DonacionImagen>(`${base(orgId)}/${id}/confirmar`, {
