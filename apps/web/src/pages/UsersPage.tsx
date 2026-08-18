@@ -14,6 +14,9 @@ import { useOrg } from '@/components/OrgGate';
 import type { Member, Role } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 
+/** Respuesta de POST members/nuevo: el miembro creado + su clave en claro (una vez). */
+type VoluntarioCreado = { member: Member; claveTemporal: string };
+
 /** First letter of up to two words, for the round avatar fallback. */
 function initials(nombre: string): string {
   return nombre
@@ -37,6 +40,10 @@ export default function UsersPage() {
   // Id de la fila pendiente de confirmar; null = dialogo cerrado.
   const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState(false);
+  const [creando, setCreando] = useState(false);
+  // Credenciales del último voluntario creado; se muestran una sola vez.
+  const [credenciales, setCredenciales] = useState<{ usuario: string; clave: string } | null>(null);
+  const [copiado, setCopiado] = useState(false);
 
   async function load() {
     const [memberRows, roleRows] = await Promise.all([
@@ -73,6 +80,53 @@ export default function UsersPage() {
       avisar(t('users.invited'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('users.addError'));
+    }
+  }
+
+  async function onCreateVolunteer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (creando) {
+      return;
+    }
+    setError(null);
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setCreando(true);
+    try {
+      const creado = await request<VoluntarioCreado>(
+        `/api/v1/organizations/${orgId}/members/nuevo`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            nombre: String(data.get('nombre') ?? '').trim(),
+            usuario: String(data.get('usuario') ?? '').trim(),
+            correo: String(data.get('correo') ?? '').trim(),
+            roleSlug: String(data.get('roleSlug') || 'voluntario'),
+          }),
+        },
+      );
+      form.reset();
+      setCredenciales({ usuario: creado.member.usuario, clave: creado.claveTemporal });
+      setCopiado(false);
+      await load();
+      avisar(t('users.created'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('users.createError'));
+    } finally {
+      setCreando(false);
+    }
+  }
+
+  async function onCopyCredenciales() {
+    if (!credenciales) {
+      return;
+    }
+    const texto = `${t('users.credUser')}: ${credenciales.usuario}\n${t('users.credPassword')}: ${credenciales.clave}`;
+    try {
+      await navigator.clipboard.writeText(texto);
+      setCopiado(true);
+    } catch {
+      setCopiado(false);
     }
   }
 
@@ -193,6 +247,95 @@ export default function UsersPage() {
         <h1 className="text-2xl font-semibold text-foreground">{t('users.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('users.subtitle')}</p>
       </div>
+
+      {credenciales ? (
+        <div role="status" className="space-y-3 rounded-lg border-2 border-accent bg-accent/10 p-5">
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-foreground">{t('users.credentialsTitle')}</h2>
+            <p className="text-sm text-muted-foreground">{t('users.credentialsHint')}</p>
+          </div>
+          <dl className="grid gap-2 sm:grid-cols-2">
+            <div className="rounded-md bg-card p-3">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                {t('users.credUser')}
+              </dt>
+              <dd className="font-mono text-lg font-bold text-foreground">
+                {credenciales.usuario}
+              </dd>
+            </div>
+            <div className="rounded-md bg-card p-3">
+              <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                {t('users.credPassword')}
+              </dt>
+              <dd className="font-mono text-lg font-bold text-foreground">{credenciales.clave}</dd>
+            </div>
+          </dl>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => void onCopyCredenciales()}>
+              {copiado ? t('users.copied') : t('users.copy')}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setCredenciales(null)}>
+              {t('users.credentialsDone')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {can('members:invite') ? (
+        <form
+          className="space-y-3 rounded-lg border border-border bg-card p-5"
+          onSubmit={(event) => void onCreateVolunteer(event)}
+        >
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-foreground">{t('users.createTitle')}</h2>
+            <p className="text-sm text-muted-foreground">{t('users.createSubtitle')}</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField label={t('users.createName')} htmlFor="crear-nombre" required>
+              <Input id="crear-nombre" name="nombre" required minLength={2} autoComplete="off" />
+            </FormField>
+            <FormField
+              label={t('users.createUsername')}
+              htmlFor="crear-usuario"
+              required
+              hint={t('users.createUsernameHint')}
+            >
+              <Input
+                id="crear-usuario"
+                name="usuario"
+                required
+                minLength={3}
+                maxLength={32}
+                pattern="[a-zA-Z0-9._]+"
+                autoComplete="off"
+              />
+            </FormField>
+            <FormField label={t('users.createEmail')} htmlFor="crear-correo" required>
+              <Input
+                id="crear-correo"
+                name="correo"
+                type="email"
+                inputMode="email"
+                autoComplete="off"
+                required
+              />
+            </FormField>
+            <FormField label={t('users.inviteRole')} htmlFor="crear-rol">
+              <Select id="crear-rol" name="roleSlug" defaultValue="voluntario">
+                {activeRoles.map((role) => (
+                  <option key={role.slug} value={role.slug}>
+                    {role.nombre}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+          </div>
+          <Button type="submit" disabled={creando}>
+            {creando ? t('users.creating') : t('users.createSubmit')}
+            {creando ? null : <Icon name="plus" size={18} />}
+          </Button>
+        </form>
+      ) : null}
 
       {can('members:invite') ? (
         <form
