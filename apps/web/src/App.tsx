@@ -7,18 +7,31 @@ import RequireAuth from './components/RequireAuth';
 import { ROUTES } from './lib/constants';
 import AcopiosPage from './pages/AcopiosPage';
 import CompleteGoogleProfilePage from './pages/CompleteGoogleProfilePage';
+import CargaPage from './pages/CargaPage';
+import DespachosPage from './pages/DespachosPage';
+import ConsolidacionPage from './pages/ConsolidacionPage';
+import ControlKitsPage from './pages/ControlKitsPage';
 import Dashboard from './pages/Dashboard';
+import DemandaDetailPage from './pages/DemandaDetailPage';
+import DemandasPage from './pages/DemandasPage';
 import InventoryPage from './pages/InventoryPage';
+import KitsPage from './pages/KitsPage';
 import Landing from './pages/Landing';
+import MovimientosPage from './pages/MovimientosPage';
 import NuevaDonacionPage from './pages/NuevaDonacionPage';
 import NuevaRecepcionPage from './pages/NuevaRecepcionPage';
 import Onboarding from './pages/Onboarding';
+import PalletArmadoPage from './pages/PalletArmadoPage';
+import PalletizacionPage from './pages/PalletizacionPage';
+import PickingKitsPage from './pages/PickingKitsPage';
+import PutawayPage from './pages/PutawayPage';
 import RecepcionDetailPage from './pages/RecepcionDetailPage';
 import RecepcionesPage from './pages/RecepcionesPage';
 import RolesPage from './pages/RolesPage';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
 import StartChoice from './pages/StartChoice';
+import UbicacionesPage from './pages/UbicacionesPage';
 import UsersPage from './pages/UsersPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import WaitingRoom from './pages/WaitingRoom';
@@ -45,7 +58,24 @@ export default function App() {
             <Route path="/app/usuarios" element={<UsersPage />} />
             <Route path="/app/roles" element={<RolesPage />} />
             <Route path="/app/acopios" element={<AcopiosPage />} />
+            <Route path="/app/ubicaciones" element={<UbicacionesPage />} />
             <Route path="/app/inventario" element={<InventoryPage />} />
+            <Route
+              path="/app/inventario/ubicaciones"
+              element={<Navigate to={ROUTES.ubicaciones} replace />}
+            />
+            <Route path="/app/inventario/ubicar" element={<PutawayPage />} />
+            <Route path="/app/inventario/mover" element={<MovimientosPage />} />
+            <Route path="/app/kits" element={<KitsPage />} />
+            <Route path="/app/demandas" element={<DemandasPage />} />
+            <Route path="/app/demandas/:id/picking" element={<PickingKitsPage />} />
+            <Route path="/app/demandas/:id/control" element={<ControlKitsPage />} />
+            <Route path="/app/demandas/:id/consolidacion" element={<ConsolidacionPage />} />
+            <Route path="/app/demandas/:id/palletizacion/:palletId" element={<PalletArmadoPage />} />
+            <Route path="/app/demandas/:id/palletizacion" element={<PalletizacionPage />} />
+            <Route path="/app/despachos" element={<DespachosPage />} />
+            <Route path="/app/demandas/:id/carga" element={<CargaPage />} />
+            <Route path="/app/demandas/:id" element={<DemandaDetailPage />} />
             <Route path="/app/recepciones" element={<RecepcionesPage />} />
             <Route path="/app/recepciones/nueva" element={<NuevaRecepcionPage />} />
             <Route path="/app/recepciones/:id/foto" element={<NuevaDonacionPage />} />

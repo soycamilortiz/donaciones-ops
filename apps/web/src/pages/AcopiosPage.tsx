@@ -1,6 +1,7 @@
 import { AcopioFlujo } from '@soschoco/shared';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
@@ -17,6 +18,7 @@ import { useToast } from '@/components/molecules/Toast';
 import { useOrg } from '@/components/OrgGate';
 import { DEFAULT_DEPARTAMENTO } from '@/features/geo/colombia';
 import { ACOPIO_FLUJOS, type Acopio } from '@/lib/api';
+import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +38,7 @@ function addressFromAcopio(row: Acopio | null): AddressLocationValue {
 export default function AcopiosPage() {
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { avisar } = useToast();
   const request = useApi();
   const [rows, setRows] = useState<Acopio[]>([]);
@@ -238,35 +241,49 @@ export default function AcopiosPage() {
                         {meta || t('acopios.noLocation')}
                       </p>
                     </div>
-                    {can('acopios:write') ? (
+                    {can('inventory:read') || can('acopios:write') ? (
                       <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditing(row)}
-                        >
-                          {t('common.edit')}
-                        </Button>
-                        {inactive ? (
+                        {can('inventory:read') ? (
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => void onReactivate(row.id)}
+                            onClick={() => navigate(ROUTES.ubicacionesDe(row.id))}
                           >
-                            {t('acopios.reactivate')}
+                            {t('acopios.configureLocations')}
                           </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPorConfirmar(row.id)}
-                          >
-                            {t('acopios.deactivate')}
-                          </Button>
-                        )}
+                        ) : null}
+                        {can('acopios:write') ? (
+                          <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditing(row)}
+                            >
+                              {t('common.edit')}
+                            </Button>
+                            {inactive ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => void onReactivate(row.id)}
+                              >
+                                {t('acopios.reactivate')}
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPorConfirmar(row.id)}
+                              >
+                                {t('acopios.deactivate')}
+                              </Button>
+                            )}
+                          </>
+                        ) : null}
                       </div>
                     ) : null}
                   </li>

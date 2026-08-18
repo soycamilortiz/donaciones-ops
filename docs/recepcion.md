@@ -118,7 +118,7 @@ Existencia de un producto con (opcional) código de origen y vencimiento.
 | `vencimiento` | nullable |
 | `organization_id` | el lote es de quien recibió |
 
-No se bloquea la línea si falta origen o vencimiento. Al **validar**, si `producto.requiere_*` y falta dato: no pasa a disponible (cuarentena o pendiente).
+No se bloquea la línea si falta origen o vencimiento. Al **validar**, si `producto.requiere_vencimiento` y no hay fecha: esa cantidad **no** pasa a disponible (cuarentena). El lote del donante (`codigo_origen`) es opcional: el sistema ya genera `LOT-…`.
 
 ### 5. `recepcion_items`
 
@@ -158,7 +158,7 @@ Hoy no se migra ni se borra. **Después de VALIDAR** una recepción, el sistema 
 
 Campos de donante, presentación y talla en inventario dejan de ser la fuente: quedan denormalizados un tiempo o se ignoran en altas nuevas.
 
-`ubicacion_interna` sigue texto en v1. Tabla de ubicaciones = fase posterior (reserva/picking).
+`ubicacion_interna` deja de ser la fuente de verdad. Tras validar, el stock nace en el **muelle** (`ubicaciones` con función RECEPCION). Ubicar es un paso aparte: putaway + confirmación del código de destino. Un traslado posterior entre zonas es **reubicación** (también confirma el código). Saldos en `inventory_balances`; historial en `inventory_movimientos`.
 
 ## Códigos automáticos
 
@@ -169,6 +169,8 @@ Tabla `org_counters`: `(organization_id, kind, periodo)` → `siguiente`.
 | `RECEPCION` | `REC-{YYYY}-{n:6}` | org + año |
 | `UNIDAD_LOGISTICA` | `{PAL\|CAJ\|BUL\|…}-{n:6}` | org (único en el tiempo) |
 | `LOTE` | `LOT-{YYYY}-{n:6}` | org + año |
+| `PUTAWAY` | `PUT-{YYYY}-{n:6}` | org + año |
+| `MOVIMIENTO` | `MOV-{YYYY}-{n:6}` | org + año |
 | `PRODUCTO_SKU` | `{prefijo catálogo}-{n:4}` | global (catálogo único) |
 
 `nro_en_recepcion` es 1, 2, 3… **dentro de esa recepción** (el operador ve PAL-001 en pantalla; en BD también está `PAL-000018`).
@@ -243,10 +245,11 @@ Si no hay ni cabecera, no hay trazabilidad. El mínimo viable profesional es **a
 ## Qué no hacemos en esta oleada
 
 - `producto_variante` (tallas / 500 g vs 1 kg como SKU hijo).
-- Ubicación tipo `BOD01-P02-R04` como entidad.
 - Pallet de **despacho** / kits.
+- QR de cámara en el putaway (v1 confirma el código a mano; el mismo campo sirve para un lector).
+- Motor FEFO / distancia al sugerir rack.
 - Borrar `inventory_items` ni migrar histórico a la fuerza (las filas viejas siguen siendo stock).
-- Obligar lote en alimentos en el primer commit: regla en catálogo + alerta; bloqueo al validar se puede prender por categoría después.
+- Obligar lote del donante: el sistema genera `LOT-…`; sin vencimiento en alimentos/medicamentos la cantidad va a cuarentena al validar.
 
 ## Orden de implementación (cuando pases a código)
 
@@ -260,4 +263,4 @@ Si no hay ni cabecera, no hay trazabilidad. El mínimo viable profesional es **a
 
 ## English
 
-Reception becomes its own event (`recepciones`) with optional logistic units (`PAL-…` auto), lines, lots (`LOT-…` auto), and photos as ID/evidence. A photo must be assigned to a unit (or marked loose) before confirm. `productos` stays the catalog: if vision/EAN finds nothing, the operator confirms a new row (no silent dupes). `inventory_items` is kept and only increases after validation (approved qty). One model covers a single box, an 18-pallet truck, and “log the truck now, count later”.
+Reception becomes its own event (`recepciones`) with optional logistic units (`PAL-…` auto), lines, lots (`LOT-…` auto), and photos as ID/evidence. Intake captures unit of measure and expiry. `productos` stays the catalog. `inventory_items` only increases after validation (approved qty) and lands on the dock; putaway with a confirmed location code is a separate step (`ubicaciones`, `inventory_balances`, `inventory_movimientos`).

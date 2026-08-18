@@ -1,3 +1,4 @@
+import { origenAdmiteReubicacion } from '@soschoco/shared';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +11,7 @@ import { Skeleton, SkeletonList } from '@/components/atoms/Skeleton';
 import { FormField } from '@/components/molecules/FormField';
 import { StatCard } from '@/components/molecules/StatCard';
 import { useToast } from '@/components/molecules/Toast';
+import { ROUTES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useOrg } from '../components/OrgGate';
 import {
@@ -157,12 +159,14 @@ export default function InventoryPage() {
       (item) =>
         item.estado === 'VENCIDO' || item.estado === 'PROXIMO_A_VENCER' || soon(item.vencimiento),
     ).length;
+    const pendientes = activeItems.filter((item) => item.pendienteUbicar).length;
     return {
       activos: activeItems.length,
       cantidad: qty,
       categorias: categories.size,
       alertas,
       bajas: items.length - activeItems.length,
+      pendientes,
     };
   }, [activeItems, items.length]);
 
@@ -403,15 +407,55 @@ export default function InventoryPage() {
         <p className="max-w-xl text-sm text-muted-foreground">{t('inventory.subtitle')}</p>
       </div>
       {showAction && writable ? (
-        // Ancho completo en móvil: el botón medía 193 de 375 px y hay que
-        // apuntarle con el pulgar en movimiento. En escritorio vuelve a su
-        // tamaño natural, arriba a la derecha.
-        <Button type="button" onClick={openCreate} className="w-full sm:w-auto">
-          {t('inventory.newProduct')}
-          <span className="grid h-[34px] w-[34px] place-items-center rounded-pill bg-primary-deep">
-            <Icon name="plus" size={15} className="text-accent" />
-          </span>
-        </Button>
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(acopioId ? ROUTES.ubicacionesDe(acopioId) : ROUTES.ubicaciones)}
+          >
+            {t('inventory.locations')}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate(ROUTES.inventarioUbicar)}>
+            {t('inventory.putaway')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              navigate(acopioId ? ROUTES.inventarioMoverDe(acopioId) : ROUTES.inventarioMover)
+            }
+          >
+            {t('inventory.move')}
+          </Button>
+          <Button type="button" onClick={openCreate} className="w-full sm:w-auto">
+            {t('inventory.newProduct')}
+            <span className="grid h-[34px] w-[34px] place-items-center rounded-pill bg-primary-deep">
+              <Icon name="plus" size={15} className="text-accent" />
+            </span>
+          </Button>
+        </div>
+      ) : showAction ? (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(acopioId ? ROUTES.ubicacionesDe(acopioId) : ROUTES.ubicaciones)}
+          >
+            {t('inventory.locations')}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate(ROUTES.inventarioUbicar)}>
+            {t('inventory.putaway')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              navigate(acopioId ? ROUTES.inventarioMoverDe(acopioId) : ROUTES.inventarioMover)
+            }
+          >
+            {t('inventory.move')}
+          </Button>
+        </div>
       ) : null}
     </header>
   );
@@ -531,6 +575,22 @@ export default function InventoryPage() {
         />
         <StatCard label={t('inventory.inactive')} value={String(stats.bajas)} />
       </div>
+
+      {stats.pendientes > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
+          <p className="text-sm text-foreground">
+            {t('inventory.pendingPutawayHint', { count: stats.pendientes })}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(ROUTES.inventarioUbicar)}
+          >
+            {t('inventory.putaway')}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-3.5 min-[721px]:flex-row min-[721px]:flex-wrap min-[721px]:items-end">
         <FormField label={t('common.search')} htmlFor="inv-q" className="min-[721px]:w-80">
@@ -662,6 +722,18 @@ export default function InventoryPage() {
                           {t('inventory.inactiveBadge')}
                         </Badge>
                       ) : null}
+                      {item.pendienteUbicar ? (
+                        <Badge variant="warning" className="mt-1 w-fit">
+                          {t('inventory.pendingBadge')}
+                        </Badge>
+                      ) : item.balances && item.balances.length > 0 ? (
+                        <span className="text-xs text-muted-foreground">
+                          {item.balances
+                            .filter((b) => b.funcion !== 'RECEPCION')
+                            .map((b) => b.codigo)
+                            .join(' · ')}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className="flex items-center justify-between gap-3 min-[721px]:block">
@@ -676,6 +748,14 @@ export default function InventoryPage() {
                       <span className="text-sm font-bold tabular-nums text-foreground">
                         {item.cantidad} {labelOf(INVENTORY_UNIDADES, item.unidad).toLowerCase()}
                       </span>
+                      {item.cantidadDisponible !== undefined ? (
+                        <span className="block text-xs tabular-nums text-muted-foreground">
+                          {t('inventory.availableQty', { qty: item.cantidadDisponible })}
+                          {(item.cantidadReservada ?? 0) > 0
+                            ? ` · ${t('inventory.reservedQty', { qty: item.cantidadReservada })}`
+                            : ''}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className="flex items-center justify-between gap-3 min-[721px]:block">
@@ -692,6 +772,20 @@ export default function InventoryPage() {
 
                     {writable ? (
                       <div className="flex flex-col gap-2 pt-1 min-[721px]:flex-row min-[721px]:items-center min-[721px]:justify-end min-[721px]:gap-1.5 min-[721px]:pt-0">
+                        {!inactive &&
+                        (item.balances ?? []).some(
+                          (b) => origenAdmiteReubicacion(b.funcion) && b.cantidad > 0,
+                        ) ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full min-[721px]:w-auto"
+                            onClick={() => navigate(ROUTES.inventarioMoverDe(acopioId, item.id))}
+                          >
+                            {t('inventory.move')}
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           variant="outline"

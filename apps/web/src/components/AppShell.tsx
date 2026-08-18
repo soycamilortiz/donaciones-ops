@@ -37,7 +37,11 @@ export default function AppShell() {
     { href: '/app/usuarios', label: t('nav.users'), icon: 'users' },
     { href: '/app/roles', label: t('nav.roles'), icon: 'shield' },
     { href: '/app/acopios', label: t('nav.acopios'), icon: 'home' },
+    { href: '/app/ubicaciones', label: t('nav.locations'), icon: 'book' },
     { href: '/app/inventario', label: t('nav.inventory'), icon: 'package' },
+    { href: '/app/kits', label: t('nav.kits'), icon: 'heart' },
+    { href: '/app/demandas', label: t('nav.demands'), icon: 'alert-circle' },
+    { href: '/app/despachos', label: t('nav.despachos'), icon: 'swap' },
     { href: '/app/recepciones', label: t('nav.receptions'), icon: 'swap' },
   ];
 

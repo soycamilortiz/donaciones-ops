@@ -16,10 +16,28 @@ export default function Dashboard() {
     { to: '/app/roles', title: t('nav.roles'), hint: t('dashboard.rolesHint'), icon: 'settings' },
     { to: '/app/acopios', title: t('nav.acopios'), hint: t('dashboard.acopiosHint'), icon: 'home' },
     {
+      to: '/app/ubicaciones',
+      title: t('nav.locations'),
+      hint: t('dashboard.locationsHint'),
+      icon: 'book',
+    },
+    {
       to: '/app/inventario',
       title: t('nav.inventory'),
       hint: t('dashboard.inventoryHint'),
-      icon: 'menu',
+      icon: 'package',
+    },
+    {
+      to: '/app/kits',
+      title: t('nav.kits'),
+      hint: t('dashboard.kitsHint'),
+      icon: 'heart',
+    },
+    {
+      to: '/app/demandas',
+      title: t('nav.demands'),
+      hint: t('dashboard.demandsHint'),
+      icon: 'alert-circle',
     },
     {
       to: '/app/recepciones',

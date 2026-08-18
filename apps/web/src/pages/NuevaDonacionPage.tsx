@@ -1,4 +1,5 @@
 import type { InterpretacionDonacion, UnidadLogistica } from '@soschoco/shared';
+import { INVENTORY_UNIDADES } from '@soschoco/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -412,9 +413,15 @@ function Resultado({
   const [marca, setMarca] = useState(lectura?.marca ?? '');
   const [cantidad, setCantidad] = useState(String(lectura?.cantidad ?? 1));
   const [productoId, setProductoId] = useState(mejor && mejor.score >= 0.82 ? mejor.id : '');
+  const [unidad, setUnidad] = useState(mejor?.unidadBase ?? 'UNIDAD');
+  const [loteOrigen, setLoteOrigen] = useState('');
+  const [vencimiento, setVencimiento] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmada, setConfirmada] = useState(false);
+
+  const seleccionado = lectura?.coincidencias.find((c) => c.id === productoId);
+  const exigeVence = seleccionado?.requiereVencimiento === true;
 
   const score = mejor?.score ?? null;
   const alto = score !== null && score >= 0.82;
@@ -443,6 +450,10 @@ function Resultado({
       setError(t('newDonation.needUnit'));
       return;
     }
+    if (exigeVence && !vencimiento) {
+      setError(t('newDonation.needExpiry'));
+      return;
+    }
     setGuardando(true);
     setError(null);
     try {
@@ -457,6 +468,9 @@ function Resultado({
         productoId: productoId || undefined,
         crearProducto: !productoId,
         ean: lectura?.ean ?? undefined,
+        unidad,
+        loteCodigoOrigen: loteOrigen.trim() || undefined,
+        vencimiento: vencimiento || undefined,
       });
       setConfirmada(true);
       if (recepcionId) {
@@ -536,6 +550,9 @@ function Resultado({
                   setProductoId(c.id);
                   setNombre(c.nombre);
                   setMarca(c.marca ?? '');
+                  if (c.unidadBase) {
+                    setUnidad(c.unidadBase);
+                  }
                 }}
               />
               {t('newDonation.mergeExisting', { name: c.nombre })}
@@ -562,6 +579,39 @@ function Resultado({
           value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
         />
+      </label>
+      <label className="flex flex-col gap-1.5" htmlFor="donacion-unidad">
+        <span className={fieldLabel}>{t('newDonation.measureUnit')}</span>
+        <Select
+          id="donacion-unidad"
+          value={unidad}
+          onChange={(e) => setUnidad(e.target.value)}
+        >
+          {INVENTORY_UNIDADES.map((item) => (
+            <option key={item.value} value={item.value}>
+              {t(`inventoryUnits.${item.value}`)}
+            </option>
+          ))}
+        </Select>
+      </label>
+      <label className="flex flex-col gap-1.5" htmlFor="donacion-lote">
+        <span className={fieldLabel}>{t('newDonation.lotOrigin')}</span>
+        <Input
+          id="donacion-lote"
+          value={loteOrigen}
+          onChange={(e) => setLoteOrigen(e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1.5" htmlFor="donacion-vence">
+        <span className={fieldLabel}>{t('newDonation.expiry')}</span>
+        <Input
+          id="donacion-vence"
+          type="date"
+          value={vencimiento}
+          onChange={(e) => setVencimiento(e.target.value)}
+          required={exigeVence}
+        />
+        <span className="text-xs text-muted-foreground">{t('newDonation.expiryHint')}</span>
       </label>
 
       {error ? (

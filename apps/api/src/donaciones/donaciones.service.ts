@@ -271,6 +271,7 @@ export class DonacionesService {
       presentacion: dto.presentacion,
       loteCodigoOrigen: dto.loteCodigoOrigen,
       vencimiento: dto.vencimiento,
+      unidad: dto.unidad,
     });
 
     return this.obtener(organizationId, id);

@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InventoryCategoria, InventoryUnidad, Prisma } from '@prisma/client';
 import { blankToNull } from '../common/soft-delete';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReservasService } from '../reservas/reservas.service';
+import { UbicacionesService } from '../ubicaciones/ubicaciones.service';
 import type {
   CreateInventoryItemDto,
   InventoryItemDto,
@@ -11,7 +13,11 @@ import { similitudNombres, UMBRAL_MISMO_PRODUCTO } from './nombre-producto';
 
 @Injectable()
 export class InventoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ubicaciones: UbicacionesService,
+    private readonly reservas: ReservasService,
+  ) {}
 
   /**
    * Tras confirmar una donación: suma cantidad si ya hay un ítem activo con el
@@ -83,6 +89,7 @@ export class InventoryService {
       loteCodigo?: string | null;
       donanteNombre?: string | null;
       donanteContacto?: string | null;
+      usuarioId: string;
     },
   ): Promise<InventoryItemDto> {
     const acopio = await this.requireAcopio(orgId, acopioId);
@@ -95,35 +102,41 @@ export class InventoryService {
         acopioId,
         isActive: true,
         productoId: entrada.productoId,
-        loteId: entrada.loteId ?? null,
+        loteId: entrada.loteId ? entrada.loteId : { equals: null },
       },
     });
-    if (existente) {
-      const row = await this.prisma.inventoryItem.update({
-        where: { id: existente.id },
-        data: { cantidad: { increment: entrada.cantidad } },
-      });
-      return this.toDto(row);
-    }
+    const row = existente
+      ? await this.prisma.inventoryItem.update({
+          where: { id: existente.id },
+          data: { cantidad: { increment: entrada.cantidad } },
+        })
+      : await this.prisma.inventoryItem.create({
+          data: {
+            acopioId,
+            productoId: entrada.productoId,
+            loteId: entrada.loteId ?? null,
+            nombre: entrada.nombre.trim(),
+            categoria: entrada.categoria,
+            sku: entrada.sku ?? null,
+            marca: entrada.marca ?? null,
+            cantidad: new Prisma.Decimal(entrada.cantidad),
+            unidad: entrada.unidad,
+            vencimiento: entrada.vencimiento ?? undefined,
+            loteCodigo: entrada.loteCodigo ?? null,
+            donanteNombre: entrada.donanteNombre ?? null,
+            donanteContacto: entrada.donanteContacto ?? null,
+            isActive: true,
+          },
+        });
 
-    const row = await this.prisma.inventoryItem.create({
-      data: {
-        acopioId,
-        productoId: entrada.productoId,
-        loteId: entrada.loteId ?? null,
-        nombre: entrada.nombre.trim(),
-        categoria: entrada.categoria,
-        sku: entrada.sku ?? null,
-        marca: entrada.marca ?? null,
-        cantidad: new Prisma.Decimal(entrada.cantidad),
-        unidad: entrada.unidad,
-        vencimiento: entrada.vencimiento ?? undefined,
-        loteCodigo: entrada.loteCodigo ?? null,
-        donanteNombre: entrada.donanteNombre ?? null,
-        donanteContacto: entrada.donanteContacto ?? null,
-        isActive: true,
-      },
+    await this.ubicaciones.depositarEnMuelle({
+      organizationId: orgId,
+      acopioId,
+      inventoryItemId: row.id,
+      cantidad: entrada.cantidad,
+      usuarioId: entrada.usuarioId,
     });
+
     return this.toDto(row);
   }
 
@@ -168,13 +181,37 @@ export class InventoryService {
     return best;
   }
 
-  async list(orgId: string, acopioId: string): Promise<InventoryItemDto[]> {
+  async list(orgId: string, acopioId: string) {
     await this.requireAcopio(orgId, acopioId);
     const rows = await this.prisma.inventoryItem.findMany({
       where: { acopioId },
+      include: {
+        balances: { where: { isActive: true }, include: { ubicacion: true } },
+      },
       orderBy: [{ isActive: 'desc' }, { categoria: 'asc' }, { nombre: 'asc' }],
     });
-    return rows.map((row) => this.toDto(row));
+    const compromisos = await this.reservas.compromisosPorSaldo(acopioId);
+    return rows.map((row) => {
+      const dto = this.ubicaciones.toInventoryDto(row);
+      const reservada = compromisos.firmeItem.get(row.id) ?? 0;
+      const pre = compromisos.preItem.get(row.id) ?? 0;
+      const ubicada = dto.cantidadUbicada ?? 0;
+      return {
+        ...dto,
+        cantidadReservada: reservada,
+        cantidadPreReservada: pre,
+        cantidadDisponible: Math.max(0, ubicada - reservada),
+        balances: dto.balances?.map((balance) => {
+          const key = `${row.id}:${balance.ubicacionId}`;
+          const res = compromisos.firme.get(key) ?? 0;
+          return {
+            ...balance,
+            reservada: res,
+            disponible: Math.max(0, balance.cantidad - res),
+          };
+        }),
+      };
+    });
   }
 
   async create(
