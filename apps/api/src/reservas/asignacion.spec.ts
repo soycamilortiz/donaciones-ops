@@ -1,4 +1,11 @@
-import { asignarCantidad, maxKits, ordenarFefo, repartirKitsEscasos } from './asignacion';
+import {
+  asignarCantidad,
+  candidatosDeGrupo,
+  disponibleDeGrupo,
+  maxKits,
+  ordenarFefo,
+  repartirKitsEscasos,
+} from './asignacion';
 
 describe('asignacion', () => {
   it('FEFO pone primero el lote que vence antes y deja los sin fecha al final', () => {
@@ -61,6 +68,46 @@ describe('asignacion', () => {
     expect(plan.cubierto).toBe(1000);
     expect(plan.deficit).toBe(0);
     expect(plan.lineas.map((l) => l.cantidad)).toEqual([300, 500, 200]);
+  });
+
+  it('suma sustitutos de la misma categoría para cubrir la demanda', () => {
+    const sustitutos = new Map([
+      ['brisa', ['brisa', 'pura', 'cristal']],
+      ['pura', ['brisa', 'pura', 'cristal']],
+    ]);
+    const pool = new Map([
+      [
+        'brisa',
+        [
+          {
+            inventoryItemId: 'i1',
+            ubicacionId: 'u1',
+            codigoUbicacion: 'A-01',
+            loteCodigo: 'B',
+            vencimiento: '2027-06-01',
+            disponible: 2,
+          },
+        ],
+      ],
+      [
+        'pura',
+        [
+          {
+            inventoryItemId: 'i2',
+            ubicacionId: 'u2',
+            codigoUbicacion: 'A-02',
+            loteCodigo: 'P',
+            vencimiento: '2027-03-01',
+            disponible: 4,
+          },
+        ],
+      ],
+      ['cristal', []],
+    ]);
+    expect(disponibleDeGrupo('brisa', sustitutos, pool)).toBe(6);
+    const plan = asignarCantidad(6, candidatosDeGrupo('brisa', sustitutos, pool));
+    expect(plan.cubierto).toBe(6);
+    expect(plan.lineas.map((l) => l.cantidad)).toEqual([4, 2]);
   });
 
   it('el cuello de botella del BOM limita los kits', () => {

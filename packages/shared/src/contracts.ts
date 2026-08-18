@@ -8,11 +8,19 @@
 import type { Producto } from './donaciones.js';
 import type {
   AcopioFlujo,
+  ConsolidacionEstado,
+  ControlLoteEstado,
+  ControlModo,
+  ControlResultado,
   DemandaEstado,
   DemandaItemTipo,
   DemandaPrioridad,
+  DespachoEstado,
   InventoryMovimientoTipo,
+  KitInstanciaEstado,
   OrganizationTipo,
+  PalletDespachoEstado,
+  PlanPalletizacionEstado,
   PutawayEstado,
   RecepcionEstado,
   RecepcionItemEstado,
@@ -20,6 +28,7 @@ import type {
   RecepcionTipo,
   ReservaEstado,
   UbicacionEstado,
+  ViajeEstado,
   UbicacionFuncion,
   UbicacionTipo,
   UnidadLogisticaEstado,
@@ -311,6 +320,9 @@ export type Kit = {
   codigo: string;
   nombre: string;
   descripcion?: string | null;
+  pesoKgEstimado?: number | null;
+  altoMEstimado?: number | null;
+  esCritico?: boolean;
   isActive: boolean;
   componentes: KitComponente[];
 };
@@ -348,6 +360,15 @@ export type Demanda = {
   isActive: boolean;
   items: DemandaItem[];
   cobertura?: number;
+  pipeline?: {
+    solicitado: number;
+    reservado: number;
+    armado: number;
+    aprobado: number;
+    observado: number;
+    rechazado: number;
+    consolidado: number;
+  };
 };
 
 export type ReservaAsignacion = {
@@ -402,6 +423,7 @@ export type SimulacionReserva = {
     disponible: number;
     cubierto: number;
     deficit: number;
+    productosSustitutos?: Array<{ id: string; nombre: string }>;
     plan: ReservaAsignacion[];
   }>;
 };
@@ -417,6 +439,216 @@ export type PlanEscaso = {
     propuesto: number;
     deficit: number;
   }>;
+};
+
+export type KitInstanciaItem = {
+  id: string;
+  productoId: string;
+  productoNombre?: string;
+  inventoryItemId?: string | null;
+  origenUbicacionId?: string | null;
+  origenUbicacionCodigo?: string | null;
+  loteCodigo?: string | null;
+  vencimiento?: string | null;
+  cantidad: number;
+  pickConfirmadoAt?: string | null;
+};
+
+export type KitInstancia = {
+  id: string;
+  codigo: string;
+  reservaId: string;
+  demandaId: string;
+  kitId: string;
+  kitNombre?: string;
+  estado: KitInstanciaEstado;
+  zonaKittingCodigo?: string | null;
+  items: KitInstanciaItem[];
+};
+
+export type ControlInspeccion = {
+  id: string;
+  kitInstanciaId: string;
+  kitCodigo?: string;
+  resultado: ControlResultado;
+  observaciones?: string | null;
+  items?: KitInstanciaItem[];
+};
+
+export type ControlLote = {
+  id: string;
+  codigo: string;
+  reservaId: string;
+  demandaId: string;
+  modo: ControlModo;
+  muestraObjetivo: number;
+  umbralDefecto: number;
+  estado: ControlLoteEstado;
+  inspeccionados: number;
+  defectuosos: number;
+  tasaDefecto: number;
+  requiereTotal: boolean;
+  inspecciones: ControlInspeccion[];
+};
+
+export type PropuestaPallet = {
+  kitsPorPallet: number;
+  pallets: number;
+  ultimoPalletKits: number;
+  pesoPalletKg: number;
+  altoPalletM?: number | null;
+};
+
+export type Consolidacion = {
+  id: string;
+  codigo: string;
+  demandaId: string;
+  demandaCodigo?: string;
+  destinoNombre: string;
+  estado: ConsolidacionEstado;
+  kitPesoKg: number;
+  palletPesoMaxKg: number;
+  kitAltoM?: number | null;
+  palletAltoMaxM?: number | null;
+  kits: number;
+  propuesta: PropuestaPallet;
+};
+
+export type PipelineDemanda = {
+  solicitado: number;
+  reservado: number;
+  pendientePick: number;
+  armado: number;
+  aprobado: number;
+  observado: number;
+  rechazado: number;
+  consolidado: number;
+  palletizado: number;
+};
+
+export type PlanPalletSlot = {
+  id: string;
+  sequence: number;
+  kitsObjetivo: number;
+  pesoTeoricoKg: number;
+  palletId?: string | null;
+  palletCodigo?: string | null;
+  palletEstado?: PalletDespachoEstado | null;
+  kitsActual: number;
+};
+
+export type PalletDespachoItemResumen = {
+  id: string;
+  kitInstanciaId?: string | null;
+  kitCodigo?: string | null;
+  escaneadoAt?: string | null;
+  retiradoAt?: string | null;
+  retiradoMotivo?: string | null;
+};
+
+export type PalletDespacho = {
+  id: string;
+  codigo: string;
+  planId: string;
+  demandaId: string;
+  destinoNombre: string;
+  sequence: number;
+  estado: PalletDespachoEstado;
+  kitsObjetivo: number;
+  kitsActual: number;
+  pesoPalletKg: number;
+  pesoNetoKg?: number | null;
+  pesoBrutoKg?: number | null;
+  altoM?: number | null;
+  anchoM?: number | null;
+  largoM?: number | null;
+  despachoId?: string | null;
+  items: PalletDespachoItemResumen[];
+};
+
+export type PlanPalletizacion = {
+  id: string;
+  codigo: string;
+  consolidacionId: string;
+  consolidacionCodigo?: string;
+  demandaId: string;
+  destinoNombre: string;
+  estado: PlanPalletizacionEstado;
+  palletCount: number;
+  kitsPorPallet: number;
+  kitPesoKg: number;
+  palletPesoMaxKg: number;
+  kitsTotal: number;
+  palletsListos: number;
+  slots: PlanPalletSlot[];
+};
+
+export type ViajeResumen = {
+  id: string;
+  codigo: string;
+  estado: ViajeEstado;
+  vehiculoPlaca?: string | null;
+  transportistaNombre?: string | null;
+  conductorNombre?: string | null;
+  palletsEsperados: number;
+  palletsCargados: number;
+  pesoCargadoKg: number;
+};
+
+export type DespachoChecklist = {
+  cargaCompleta: boolean;
+  palletsIdentificados: boolean;
+  pesoVerificado: boolean;
+  destinoConfirmado: boolean;
+  vehiculoConfirmado: boolean;
+  conductorConfirmado: boolean;
+  documentacionCompleta: boolean;
+  sellosRegistrados: boolean;
+};
+
+export type DespachoManifiesto = {
+  origenNombre: string;
+  destinoNombre: string;
+  vehiculoPlaca?: string | null;
+  conductorNombre?: string | null;
+  transportistaNombre?: string | null;
+  palletsCount: number;
+  kitsCount: number;
+  pesoKg: number;
+  generadoAt: string;
+};
+
+export type Despacho = {
+  id: string;
+  codigo: string;
+  acopioId: string;
+  acopioNombre?: string;
+  planId: string;
+  planCodigo?: string;
+  demandaId: string;
+  demandaCodigo?: string;
+  destinoNombre: string;
+  estado: DespachoEstado;
+  palletsEsperados: number;
+  palletsCargados: number;
+  palletsDespachados: number;
+  kitsEsperados: number;
+  kitsCargados: number;
+  kitsDespachados: number;
+  pesoTotalKg: number;
+  esParcial: boolean;
+  observaciones?: string | null;
+  vehiculoPlaca?: string | null;
+  transportista?: string | null;
+  conductorNombre?: string | null;
+  conductorDocumento?: string | null;
+  documentoTransporte?: string | null;
+  salidaProgramada?: string | null;
+  salidaReal?: string | null;
+  viajes: ViajeResumen[];
+  checklist?: DespachoChecklist | null;
+  manifiesto?: DespachoManifiesto | null;
+  pallets: Array<Pick<PalletDespacho, 'id' | 'codigo' | 'sequence' | 'estado'>>;
 };
 
 /** Un permiso conocido del catálogo, o cualquier slug que llegue del servidor. */

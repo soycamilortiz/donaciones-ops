@@ -11,7 +11,14 @@ import {
 import { blankToNull } from '../common/soft-delete';
 import { OrgCountersService } from '../org-counters/org-counters.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { asignarCantidad, type CandidatoSaldo, maxKits, repartirKitsEscasos } from './asignacion';
+import {
+  asignarCantidad,
+  candidatosDeGrupo,
+  type CandidatoSaldo,
+  disponibleDeGrupo,
+  maxKits,
+  repartirKitsEscasos,
+} from './asignacion';
 import type {
   CrearDemandaDto,
   CrearKitDto,
@@ -65,6 +72,9 @@ export class ReservasService {
           codigo,
           nombre: dto.nombre.trim(),
           descripcion: blankToNull(dto.descripcion ?? ''),
+          pesoKgEstimado: dto.pesoKgEstimado != null ? new Prisma.Decimal(dto.pesoKgEstimado) : null,
+          altoMEstimado: dto.altoMEstimado != null ? new Prisma.Decimal(dto.altoMEstimado) : null,
+          esCritico: dto.esCritico === true,
           isActive: true,
           componentes: dto.componentes?.length
             ? {
@@ -620,16 +630,15 @@ export class ReservasService {
     if (bom.length === 0) {
       throw new BadRequestException('El kit no tiene componentes activos');
     }
-    const pool = await this.poolDisponible(
-      acopioId,
-      bom.map((row) => row.productoId),
-      ignorarReservaId,
-    );
+    const sustitutos = await this.mapaSustitutos(bom.map((row) => row.productoId));
+    const todosIds = [...new Set([...sustitutos.values()].flat())];
+    const pool = await this.poolDisponible(acopioId, todosIds, ignorarReservaId);
+    const nombresSustitutos = await this.nombresProductos(todosIds);
     const disponiblePorProducto = new Map<string, number>();
-    for (const [productoId, candidatos] of pool) {
+    for (const comp of bom) {
       disponiblePorProducto.set(
-        productoId,
-        candidatos.reduce((sum, row) => sum + row.disponible, 0),
+        comp.productoId,
+        disponibleDeGrupo(comp.productoId, sustitutos, pool),
       );
     }
     const posible = maxKits(
@@ -639,8 +648,9 @@ export class ReservasService {
     const usar = Math.min(cantidad, posible);
     const requerimientos = bom.map((comp) => {
       const requerido = usar * comp.porUnidad;
-      const candidatos = pool.get(comp.productoId) ?? [];
+      const candidatos = candidatosDeGrupo(comp.productoId, sustitutos, pool);
       const plan = asignarCantidad(requerido, candidatos);
+      const idsGrupo = sustitutos.get(comp.productoId) ?? [comp.productoId];
       return {
         productoId: comp.productoId,
         productoNombre: comp.nombre,
@@ -649,6 +659,9 @@ export class ReservasService {
         disponible: disponiblePorProducto.get(comp.productoId) ?? 0,
         cubierto: plan.cubierto,
         deficit: Math.max(0, cantidad * comp.porUnidad - plan.cubierto),
+        productosSustitutos: idsGrupo
+          .filter((id) => id !== comp.productoId)
+          .map((id) => ({ id, nombre: nombresSustitutos.get(id) ?? id })),
         plan: plan.lineas.map((linea) => ({
           inventoryItemId: linea.inventoryItemId,
           inventoryNombre: undefined,
@@ -762,6 +775,59 @@ export class ReservasService {
     return porProducto;
   }
 
+  /**
+   * Productos intercambiables: misma categoría de inventario y misma unidad base.
+   * Ej.: Agua Brisa, Agua Pura y Agua Cristal (todos AGUA + BOTELLA) cubren la misma demanda.
+   */
+  private async mapaSustitutos(productoIds: string[]): Promise<Map<string, string[]>> {
+    const unicos = [...new Set(productoIds)];
+    if (unicos.length === 0) {
+      return new Map();
+    }
+    const semillas = await this.prisma.producto.findMany({
+      where: { id: { in: unicos }, isActive: true },
+      select: { id: true, categoriaInventario: true, unidadBase: true },
+    });
+    if (semillas.length === 0) {
+      return new Map(unicos.map((id) => [id, [id]]));
+    }
+    const hermanos = await this.prisma.producto.findMany({
+      where: {
+        isActive: true,
+        OR: semillas.map((row) => ({
+          categoriaInventario: row.categoriaInventario,
+          unidadBase: row.unidadBase,
+        })),
+      },
+      select: { id: true, categoriaInventario: true, unidadBase: true },
+    });
+    const porGrupo = new Map<string, string[]>();
+    for (const row of hermanos) {
+      const key = `${row.categoriaInventario}:${row.unidadBase}`;
+      const lista = porGrupo.get(key) ?? [];
+      lista.push(row.id);
+      porGrupo.set(key, lista);
+    }
+    const mapa = new Map<string, string[]>();
+    for (const row of semillas) {
+      mapa.set(row.id, porGrupo.get(`${row.categoriaInventario}:${row.unidadBase}`) ?? [row.id]);
+    }
+    for (const id of unicos) {
+      if (!mapa.has(id)) {
+        mapa.set(id, [id]);
+      }
+    }
+    return mapa;
+  }
+
+  private async nombresProductos(ids: string[]): Promise<Map<string, string>> {
+    const rows = await this.prisma.producto.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, nombre: true },
+    });
+    return new Map(rows.map((row) => [row.id, row.nombre]));
+  }
+
   private cantidadCubierta(item: {
     reservas: Array<{ estado: ReservaEstado; cantidad: Prisma.Decimal; isActive: boolean }>;
   }): number {
@@ -851,6 +917,9 @@ export class ReservasService {
     codigo: string;
     nombre: string;
     descripcion: string | null;
+    pesoKgEstimado: Prisma.Decimal | null;
+    altoMEstimado: Prisma.Decimal | null;
+    esCritico: boolean;
     isActive: boolean;
     componentes: Array<{
       id: string;
@@ -867,6 +936,9 @@ export class ReservasService {
       codigo: row.codigo,
       nombre: row.nombre,
       descripcion: row.descripcion,
+      pesoKgEstimado: row.pesoKgEstimado ? Number(row.pesoKgEstimado) : null,
+      altoMEstimado: row.altoMEstimado ? Number(row.altoMEstimado) : null,
+      esCritico: row.esCritico,
       isActive: row.isActive,
       componentes: row.componentes
         .filter((comp) => comp.isActive)

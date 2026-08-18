@@ -1,4 +1,4 @@
-import type { Demanda, PlanEscaso, Reserva, SimulacionReserva } from '@soschoco/shared';
+import type { Demanda, KitInstancia, PipelineDemanda, PlanEscaso, Reserva, SimulacionReserva } from '@soschoco/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { Button } from '@/components/atoms/Button';
 import { Spinner } from '@/components/atoms/Spinner';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { useOrg } from '@/components/OrgGate';
+import { armarKits, getPipeline, listarKitsArmados } from '@/features/consolidacion/consolidacion-service';
 import {
   cancelarDemanda,
   confirmarReserva,
@@ -43,6 +44,18 @@ const RESERVA_VARIANTE: Record<string, BadgeVariant> = {
   CONSUMIDA: 'info',
 };
 
+const KIT_INSTANCIA_VARIANTE: Record<string, BadgeVariant> = {
+  PENDIENTE_PICK: 'warning',
+  ARMADO: 'info',
+  EN_CONTROL: 'warning',
+  APROBADO: 'success',
+  OBSERVADO: 'warning',
+  RECHAZADO: 'error',
+  CONSOLIDADO: 'secondary',
+};
+
+const KITS_ARMADOS_VISIBLES = 100;
+
 function pct(value: number) {
   return `${Math.round(value * 100)}%`;
 }
@@ -55,7 +68,9 @@ export default function DemandaDetailPage() {
   const { t } = useTranslation();
   const writable = can('inventory:write');
   const [demanda, setDemanda] = useState<Demanda | null>(null);
+  const [pipeline, setPipeline] = useState<PipelineDemanda | null>(null);
   const [reservas, setReservas] = useState<Reserva[]>([]);
+  const [kitsArmados, setKitsArmados] = useState<KitInstancia[]>([]);
   const [plan, setPlan] = useState<PlanEscaso | null>(null);
   const [sims, setSims] = useState<Record<string, SimulacionReserva>>({});
   const [cargando, setCargando] = useState(true);
@@ -70,13 +85,17 @@ export default function DemandaDetailPage() {
     }
     try {
       const row = await getDemanda(request, orgId, id);
-      const [todas, escaso] = await Promise.all([
+      const [todas, escaso, pipe, instancias] = await Promise.all([
         listarReservas(request, orgId, row.acopioId),
         planEscaso(request, orgId, row.acopioId).catch(() => null),
+        getPipeline(request, orgId, id).catch(() => null),
+        listarKitsArmados(request, orgId, id).catch(() => [] as KitInstancia[]),
       ]);
       setDemanda(row);
       setReservas(todas.filter((reserva) => reserva.demandaId === row.id));
+      setKitsArmados(instancias);
       setPlan(escaso);
+      setPipeline(pipe);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('demands.loadError'));
@@ -137,6 +156,8 @@ export default function DemandaDetailPage() {
   }
 
   const abierta = demanda.estado === 'ABIERTA' || demanda.estado === 'PARCIAL';
+  const reservasConKits = new Set(kitsArmados.map((kit) => kit.reservaId));
+  const kitsVisibles = kitsArmados.slice(0, KITS_ARMADOS_VISIBLES);
 
   return (
     <div className="space-y-6 py-2">
@@ -176,6 +197,49 @@ export default function DemandaDetailPage() {
       <p className="text-sm text-foreground">
         {t('demands.coverageLine', { pct: pct(demanda.cobertura ?? 0) })}
       </p>
+
+      {pipeline ? (
+        <p className="text-sm text-muted-foreground">
+          {t('demands.pipelineLine', {
+            reserved: pipeline.reservado,
+            pendingPick: pipeline.pendientePick,
+            armed: pipeline.armado,
+            approved: pipeline.aprobado,
+            pending: Math.max(0, pipeline.armado - pipeline.aprobado - pipeline.rechazado),
+          })}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap gap-2">
+        {(pipeline?.pendientePick ?? 0) > 0 ? (
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => navigate(ROUTES.demandaPicking(demanda.id))}
+          >
+            {t('demands.openPicking', { count: pipeline?.pendientePick ?? 0 })}
+          </Button>
+        ) : null}
+        <Button type="button" variant="outline" onClick={() => navigate(ROUTES.demandaControl(demanda.id))}>
+          {t('demands.openControl')}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate(ROUTES.demandaConsolidacion(demanda.id))}
+        >
+          {t('demands.openConsolidation')}
+        </Button>
+        {(pipeline?.consolidado ?? 0) > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(ROUTES.demandaPalletizacion(demanda.id))}
+          >
+            {t('demands.openPalletization')}
+          </Button>
+        ) : null}
+      </div>
 
       {demanda.items.map((item) => {
         const sim = sims[item.id];
@@ -233,6 +297,13 @@ export default function DemandaDetailPage() {
                       available: req.disponible,
                       covered: req.cubierto,
                     })}
+                    {req.productosSustitutos && req.productosSustitutos.length > 0 ? (
+                      <span className="block text-xs text-muted-foreground">
+                        {t('demands.substitutes', {
+                          names: req.productosSustitutos.map((row) => row.nombre).join(', '),
+                        })}
+                      </span>
+                    ) : null}
                     {req.plan.length > 0 ? (
                       <ul className="mt-1 ml-4 list-disc text-muted-foreground">
                         {req.plan.map((linea) => (
@@ -294,6 +365,26 @@ export default function DemandaDetailPage() {
                           {t('demands.confirm')}
                         </Button>
                       ) : null}
+                      {reserva.estado === 'RESERVADA' && !reservasConKits.has(reserva.id) ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={ocupado}
+                          onClick={() => {
+                            setOcupado(true);
+                            void armarKits(request, orgId, reserva.id)
+                              .then(cargar)
+                              .catch((err) =>
+                                setError(
+                                  err instanceof Error ? err.message : t('demands.saveError'),
+                                ),
+                              )
+                              .finally(() => setOcupado(false));
+                          }}
+                        >
+                          {t('demands.assemble')}
+                        </Button>
+                      ) : null}
                       {reserva.estado === 'PRE_RESERVA' || reserva.estado === 'RESERVADA' ? (
                         <Button
                           type="button"
@@ -325,6 +416,69 @@ export default function DemandaDetailPage() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-foreground">{t('demands.assembledKitsTitle')}</h2>
+        {kitsArmados.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('demands.assembledKitsEmpty')}</p>
+        ) : (
+          <>
+            {kitsArmados.length > KITS_ARMADOS_VISIBLES ? (
+              <p className="text-sm text-muted-foreground">
+                {t('demands.assembledKitsTruncated', {
+                  shown: KITS_ARMADOS_VISIBLES,
+                  total: kitsArmados.length,
+                })}
+              </p>
+            ) : null}
+            <ul className="space-y-2">
+              {kitsVisibles.map((kit) => (
+                <li key={kit.id} className="rounded-lg border border-border bg-card p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium text-foreground">
+                      {kit.codigo}
+                      {kit.kitNombre ? ` · ${kit.kitNombre}` : ''}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={KIT_INSTANCIA_VARIANTE[kit.estado] ?? 'secondary'}>
+                        {t(`demands.kitEstado.${kit.estado}`)}
+                      </Badge>
+                      {kit.estado === 'PENDIENTE_PICK' ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => navigate(ROUTES.demandaPicking(demanda.id, kit.id))}
+                        >
+                          {t('demands.pickKit')}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                  {kit.items.length > 0 ? (
+                    <details className="mt-2 text-sm">
+                      <summary className="cursor-pointer text-muted-foreground">
+                        {t('demands.assembledKitsComposition', { count: kit.items.length })}
+                      </summary>
+                      <ul className="mt-2 space-y-0.5 pl-4 text-muted-foreground">
+                        {kit.items.map((item) => (
+                          <li key={item.id}>
+                            {t('picking.itemDetail', {
+                              product: item.productoNombre ?? item.productoId,
+                              qty: item.cantidad,
+                              origen: item.origenUbicacionCodigo ?? '—',
+                              lot: item.loteCodigo ? ` · ${item.loteCodigo}` : '',
+                            })}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
 

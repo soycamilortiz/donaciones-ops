@@ -198,8 +198,9 @@ Las migraciones y la siembra no corren solas. Una vez, con la URL **directa**
 ```bash
 DATABASE_URL="<url-directa>" pnpm --filter api prisma:deploy
 DATABASE_URL="<url-directa>" pnpm --filter api rbac:sync
-psql "<url-directa>" -f apps/api/prisma/seed-productos.sql
 ```
+
+El catálogo `productos` arranca vacío y crece con las recepciones. Para vaciar un entorno de prueba: `pnpm --filter api db:reset-catalogo` (ver `docs/estado-actual.md`).
 
 `rbac:sync` hay que repetirlo tras cada despliegue que cambie el catálogo de
 roles o permisos, porque `RBAC_SYNC_ON_BOOT` está en `false`.

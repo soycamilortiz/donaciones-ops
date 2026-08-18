@@ -128,6 +128,76 @@ export class OrgCountersService {
     });
     return `RES-${year}-${pad(n, 6)}`;
   }
+
+  async codigoKitInstancia(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'KIT_INSTANCIA',
+      periodo: year,
+    });
+    return `KIN-${year}-${pad(n, 6)}`;
+  }
+
+  async codigoControl(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'CONTROL',
+      periodo: year,
+    });
+    return `CTL-${year}-${pad(n, 6)}`;
+  }
+
+  async codigoConsolidacion(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'CONSOLIDACION',
+      periodo: year,
+    });
+    return `CNS-${year}-${pad(n, 6)}`;
+  }
+
+  async codigoPlanPalletizacion(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'PLAN_PALLETIZACION',
+      periodo: year,
+    });
+    return `PLAN-PAL-${year}-${pad(n, 6)}`;
+  }
+
+  async codigoPalletDespacho(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'PAL_DESP',
+      periodo: year,
+    });
+    return `PAL-DSP-${year}-${pad(n, 6)}`;
+  }
+
+  async codigoDespacho(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'DESPACHO',
+      periodo: year,
+    });
+    return `DSP-${year}-${pad(n, 6)}`;
+  }
+
+  async codigoViaje(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'VIAJE',
+      periodo: year,
+    });
+    return `VIA-${year}-${pad(n, 6)}`;
+  }
 }
 
 function pad(n: number, width: number): string {

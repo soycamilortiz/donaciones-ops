@@ -22,6 +22,9 @@ export function crearKit(
     nombre: string;
     codigo?: string;
     descripcion?: string;
+    pesoKgEstimado?: number;
+    altoMEstimado?: number;
+    esCritico?: boolean;
     componentes?: Array<{ productoId: string; cantidad: number }>;
   },
 ): Promise<Kit> {

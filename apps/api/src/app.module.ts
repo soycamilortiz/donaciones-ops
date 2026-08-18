@@ -12,6 +12,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RbacModule } from './rbac/rbac.module';
 import { RecepcionesModule } from './recepciones/recepciones.module';
 import { ReservasModule } from './reservas/reservas.module';
+import { ConsolidacionModule } from './consolidacion/consolidacion.module';
+import { DespachoModule } from './despacho/despacho.module';
 import { StorageModule } from './storage/storage.module';
 import { UbicacionesModule } from './ubicaciones/ubicaciones.module';
 
@@ -34,6 +36,8 @@ import { UbicacionesModule } from './ubicaciones/ubicaciones.module';
     DonacionesModule,
     RecepcionesModule,
     ReservasModule,
+    ConsolidacionModule,
+    DespachoModule,
   ],
   controllers: [AppController],
 })

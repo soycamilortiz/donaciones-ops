@@ -38,6 +38,7 @@ export default function AppShell() {
     { href: '/app/inventario', label: t('nav.inventory'), icon: 'package' },
     { href: '/app/kits', label: t('nav.kits'), icon: 'heart' },
     { href: '/app/demandas', label: t('nav.demands'), icon: 'alert-circle' },
+    { href: '/app/despachos', label: t('nav.despachos'), icon: 'swap' },
     { href: '/app/recepciones', label: t('nav.receptions'), icon: 'swap' },
   ];
 

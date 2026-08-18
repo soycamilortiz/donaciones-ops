@@ -402,6 +402,128 @@ export class UbicacionesService {
     return this.getPutaway(orgId, acopioId, id);
   }
 
+  async resolveZonaKitting(acopioId: string) {
+    const kitting = await this.prisma.ubicacion.findFirst({
+      where: {
+        acopioId,
+        isActive: true,
+        estado: UbicacionEstado.ACTIVA,
+        funcion: UbicacionFuncion.KITTING,
+      },
+      orderBy: { codigo: 'asc' },
+    });
+    if (kitting) {
+      return kitting;
+    }
+    const picking = await this.prisma.ubicacion.findFirst({
+      where: {
+        acopioId,
+        isActive: true,
+        estado: UbicacionEstado.ACTIVA,
+        funcion: UbicacionFuncion.PICKING,
+      },
+      orderBy: { codigo: 'asc' },
+    });
+    if (picking) {
+      return picking;
+    }
+    throw new BadRequestException(
+      'No hay zona de kitting o picking activa en este acopio. Creala en Ubicaciones.',
+    );
+  }
+
+  /** Mueve stock reservado de almacén a kitting/picking al confirmar una línea de pick. */
+  async moverParaPick(opts: {
+    orgId: string;
+    acopioId: string;
+    usuarioId: string;
+    reservaId: string;
+    inventoryItemId: string;
+    origenUbicacionId: string;
+    destinoUbicacionId: string;
+    cantidad: number;
+    kitInstanciaItemId: string;
+    categoriaInventario: string;
+    codigoOrigen: string;
+    codigoDestino: string;
+  }): Promise<void> {
+    await this.requireAcopio(opts.orgId, opts.acopioId);
+    const origen = await this.requireUbicacion(opts.acopioId, opts.origenUbicacionId);
+    const destino = await this.requireUbicacion(opts.acopioId, opts.destinoUbicacionId);
+    const leidoOrigen = opts.codigoOrigen.trim().toUpperCase();
+    const leidoDestino = opts.codigoDestino.trim().toUpperCase();
+    if (origen.codigo.trim().toUpperCase() !== leidoOrigen) {
+      throw new BadRequestException(
+        `El código no coincide con ${origen.codigo}. Confirmá la ubicación de origen.`,
+      );
+    }
+    if (destino.codigo.trim().toUpperCase() !== leidoDestino) {
+      throw new BadRequestException(
+        `El código no coincide con ${destino.codigo}. Confirmá la zona de kitting.`,
+      );
+    }
+    if (
+      destino.funcion !== UbicacionFuncion.KITTING &&
+      destino.funcion !== UbicacionFuncion.PICKING
+    ) {
+      throw new BadRequestException('El destino debe ser una zona de kitting o picking');
+    }
+    this.assertDestinoReubicacion(destino, opts.categoriaInventario, opts.cantidad);
+
+    await this.prisma.$transaction(async (tx) => {
+      const reservado = await tx.reservaAsignacion.aggregate({
+        where: {
+          inventoryItemId: opts.inventoryItemId,
+          ubicacionId: opts.origenUbicacionId,
+          isActive: true,
+          reservaItem: {
+            isActive: true,
+            reservaId: opts.reservaId,
+            reserva: { estado: 'RESERVADA', isActive: true },
+          },
+        },
+        _sum: { cantidad: true },
+      });
+      const cupo = Number(reservado._sum.cantidad ?? 0);
+      if (opts.cantidad - cupo > 0.001) {
+        throw new BadRequestException(
+          'La cantidad supera lo reservado en esa ubicación para esta reserva',
+        );
+      }
+
+      await this.moverSaldoReservado(
+        tx,
+        opts.inventoryItemId,
+        opts.origenUbicacionId,
+        opts.destinoUbicacionId,
+        opts.cantidad,
+      );
+      await this.consumirAsignacionReserva(tx, {
+        reservaId: opts.reservaId,
+        inventoryItemId: opts.inventoryItemId,
+        ubicacionId: opts.origenUbicacionId,
+        cantidad: opts.cantidad,
+      });
+
+      const codigo = await this.counters.codigoMovimiento(opts.orgId);
+      await tx.inventoryMovimiento.create({
+        data: {
+          codigo,
+          organizationId: opts.orgId,
+          acopioId: opts.acopioId,
+          inventoryItemId: opts.inventoryItemId,
+          tipo: InventoryMovimientoTipo.PICKING,
+          cantidad: new Prisma.Decimal(opts.cantidad),
+          origenUbicacionId: opts.origenUbicacionId,
+          destinoUbicacionId: opts.destinoUbicacionId,
+          kitInstanciaItemId: opts.kitInstanciaItemId,
+          usuarioId: opts.usuarioId,
+          isActive: true,
+        },
+      });
+    });
+  }
+
   async listMovimientos(
     orgId: string,
     acopioId: string,
@@ -687,6 +809,77 @@ export class UbicacionesService {
         isActive: true,
       },
     });
+  }
+
+  private async moverSaldoReservado(
+    db: Db,
+    inventoryItemId: string,
+    origenId: string,
+    destinoId: string,
+    cantidad: number,
+  ) {
+    const origen = await db.inventoryBalance.findUnique({
+      where: { inventoryItemId_ubicacionId: { inventoryItemId, ubicacionId: origenId } },
+    });
+    if (!origen || Number(origen.cantidad) + 0.001 < cantidad) {
+      throw new BadRequestException('No hay esa cantidad en la ubicación de origen');
+    }
+    const queda = Number(origen.cantidad) - cantidad;
+    await db.inventoryBalance.update({
+      where: { id: origen.id },
+      data: { cantidad: new Prisma.Decimal(queda), isActive: queda > 0.001 },
+    });
+    await db.inventoryBalance.upsert({
+      where: { inventoryItemId_ubicacionId: { inventoryItemId, ubicacionId: destinoId } },
+      create: {
+        inventoryItemId,
+        ubicacionId: destinoId,
+        cantidad: new Prisma.Decimal(cantidad),
+        isActive: true,
+      },
+      update: {
+        cantidad: { increment: cantidad },
+        isActive: true,
+      },
+    });
+  }
+
+  private async consumirAsignacionReserva(
+    tx: Db,
+    opts: {
+      reservaId: string;
+      inventoryItemId: string;
+      ubicacionId: string;
+      cantidad: number;
+    },
+  ) {
+    let falta = opts.cantidad;
+    const rows = await tx.reservaAsignacion.findMany({
+      where: {
+        inventoryItemId: opts.inventoryItemId,
+        ubicacionId: opts.ubicacionId,
+        isActive: true,
+        reservaItem: { isActive: true, reservaId: opts.reservaId },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    for (const row of rows) {
+      if (falta <= 0.001) {
+        break;
+      }
+      const qty = Number(row.cantidad);
+      const cupo = Math.min(falta, qty);
+      const resto = qty - cupo;
+      if (resto <= 0.001) {
+        await tx.reservaAsignacion.update({ where: { id: row.id }, data: { isActive: false } });
+      } else {
+        await tx.reservaAsignacion.update({
+          where: { id: row.id },
+          data: { cantidad: new Prisma.Decimal(resto) },
+        });
+      }
+      falta -= cupo;
+    }
   }
 
   private async requireAcopio(orgId: string, acopioId: string) {

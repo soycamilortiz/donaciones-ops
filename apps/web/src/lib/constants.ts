@@ -20,6 +20,16 @@ export const ROUTES = {
   kits: '/app/kits',
   demandas: '/app/demandas',
   demandaDetalle: (id: string) => `/app/demandas/${id}`,
+  demandaControl: (id: string) => `/app/demandas/${id}/control`,
+  demandaPicking: (id: string, kitId?: string) =>
+    kitId ? `/app/demandas/${id}/picking?kit=${kitId}` : `/app/demandas/${id}/picking`,
+  demandaConsolidacion: (id: string) => `/app/demandas/${id}/consolidacion`,
+  demandaPalletizacion: (id: string) => `/app/demandas/${id}/palletizacion`,
+  demandaPalletArmado: (demandaId: string, palletId: string) =>
+    `/app/demandas/${demandaId}/palletizacion/${palletId}`,
+  demandaCarga: (demandaId: string, planId?: string) =>
+    planId ? `/app/demandas/${demandaId}/carga?plan=${planId}` : `/app/demandas/${demandaId}/carga`,
+  despachos: '/app/despachos',
   signIn: '/sign-in',
   signUp: '/sign-up',
   verificarCorreo: '/verificar-correo',

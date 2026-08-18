@@ -60,6 +60,25 @@ export class CrearKitDto {
   @MaxLength(500)
   descripcion?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  pesoKgEstimado?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  altoMEstimado?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  esCritico?: boolean;
+
   @ApiPropertyOptional({ type: [KitComponenteInputDto] })
   @IsOptional()
   @IsArray()
@@ -228,6 +247,15 @@ export class KitDto implements KitContract {
 
   @ApiPropertyOptional({ nullable: true })
   descripcion?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  pesoKgEstimado?: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  altoMEstimado?: number | null;
+
+  @ApiPropertyOptional()
+  esCritico?: boolean;
 
   @ApiProperty()
   isActive: boolean;

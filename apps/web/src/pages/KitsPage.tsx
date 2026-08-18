@@ -33,6 +33,9 @@ export default function KitsPage() {
   const [error, setError] = useState<string | null>(null);
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [pesoKg, setPesoKg] = useState('');
+  const [altoM, setAltoM] = useState('');
+  const [esCritico, setEsCritico] = useState(false);
   const [productoId, setProductoId] = useState('');
   const [cantidad, setCantidad] = useState('1');
   const [borrador, setBorrador] = useState<Array<{ productoId: string; cantidad: number }>>([]);
@@ -90,10 +93,16 @@ export default function KitsPage() {
       await crearKit(request, orgId, {
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || undefined,
+        pesoKgEstimado: pesoKg ? Number(pesoKg) : undefined,
+        altoMEstimado: altoM ? Number(altoM) : undefined,
+        esCritico,
         componentes: borrador,
       });
       setNombre('');
       setDescripcion('');
+      setPesoKg('');
+      setAltoM('');
+      setEsCritico(false);
       setBorrador([]);
       await cargar();
     } catch (err) {
@@ -154,6 +163,36 @@ export default function KitsPage() {
               onChange={(event) => setDescripcion(event.target.value)}
             />
           </FormField>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField label={t('kits.fields.weight')} htmlFor="kit-peso">
+              <Input
+                id="kit-peso"
+                type="number"
+                min="0"
+                step="any"
+                value={pesoKg}
+                onChange={(event) => setPesoKg(event.target.value)}
+              />
+            </FormField>
+            <FormField label={t('kits.fields.height')} htmlFor="kit-alto">
+              <Input
+                id="kit-alto"
+                type="number"
+                min="0"
+                step="any"
+                value={altoM}
+                onChange={(event) => setAltoM(event.target.value)}
+              />
+            </FormField>
+          </div>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={esCritico}
+              onChange={(event) => setEsCritico(event.target.checked)}
+            />
+            {t('kits.fields.critical')}
+          </label>
           <div className="grid gap-3 sm:grid-cols-[1fr_8rem_auto]">
             <FormField label={t('kits.fields.product')} htmlFor="kit-prod">
               <select

@@ -203,7 +203,9 @@ export const InventoryMovimientoTipo = {
   Recepcion: 'RECEPCION',
   Putaway: 'PUTAWAY',
   Reubicacion: 'REUBICACION',
+  Picking: 'PICKING',
   Ajuste: 'AJUSTE',
+  Despacho: 'DESPACHO',
 } as const;
 
 export type InventoryMovimientoTipo =
@@ -216,7 +218,9 @@ export const INVENTORY_MOVIMIENTO_TIPOS: ReadonlyArray<{
   { value: InventoryMovimientoTipo.Recepcion, label: 'Recepción' },
   { value: InventoryMovimientoTipo.Putaway, label: 'Putaway' },
   { value: InventoryMovimientoTipo.Reubicacion, label: 'Reubicación' },
+  { value: InventoryMovimientoTipo.Picking, label: 'Picking' },
   { value: InventoryMovimientoTipo.Ajuste, label: 'Ajuste' },
+  { value: InventoryMovimientoTipo.Despacho, label: 'Despacho' },
 ];
 
 export const PutawayEstado = {
@@ -373,6 +377,135 @@ export const ReservaEstado = {
 } as const;
 
 export type ReservaEstado = (typeof ReservaEstado)[keyof typeof ReservaEstado];
+
+export const KitInstanciaEstado = {
+  PendientePick: 'PENDIENTE_PICK',
+  Armado: 'ARMADO',
+  EnControl: 'EN_CONTROL',
+  Aprobado: 'APROBADO',
+  Observado: 'OBSERVADO',
+  Rechazado: 'RECHAZADO',
+  Consolidado: 'CONSOLIDADO',
+  Palletizado: 'PALLETIZADO',
+  Despachado: 'DESPACHADO',
+} as const;
+
+export type KitInstanciaEstado = (typeof KitInstanciaEstado)[keyof typeof KitInstanciaEstado];
+
+export const ControlModo = {
+  Total: 'TOTAL',
+  Muestreo: 'MUESTREO',
+} as const;
+
+export type ControlModo = (typeof ControlModo)[keyof typeof ControlModo];
+
+export const ControlLoteEstado = {
+  Abierto: 'ABIERTO',
+  RequiereTotal: 'REQUIERE_TOTAL',
+  Cerrado: 'CERRADO',
+} as const;
+
+export type ControlLoteEstado = (typeof ControlLoteEstado)[keyof typeof ControlLoteEstado];
+
+export const ControlResultado = {
+  Pendiente: 'PENDIENTE',
+  Aprobado: 'APROBADO',
+  Observado: 'OBSERVADO',
+  Rechazado: 'RECHAZADO',
+} as const;
+
+export type ControlResultado = (typeof ControlResultado)[keyof typeof ControlResultado];
+
+export const ConsolidacionEstado = {
+  Abierta: 'ABIERTA',
+  Lista: 'LISTA',
+  Cerrada: 'CERRADA',
+} as const;
+
+export type ConsolidacionEstado = (typeof ConsolidacionEstado)[keyof typeof ConsolidacionEstado];
+
+export const PlanPalletizacionEstado = {
+  Borrador: 'BORRADOR',
+  Activo: 'ACTIVO',
+  Cerrado: 'CERRADO',
+  Cancelado: 'CANCELADO',
+} as const;
+
+export type PlanPalletizacionEstado =
+  (typeof PlanPalletizacionEstado)[keyof typeof PlanPalletizacionEstado];
+
+export const PalletDespachoEstado = {
+  Creado: 'CREADO',
+  EnConstruccion: 'EN_CONSTRUCCION',
+  Completo: 'COMPLETO',
+  ListoParaDespacho: 'LISTO_PARA_DESPACHO',
+  Cargado: 'CARGADO',
+  Despachado: 'DESPACHADO',
+  Bloqueado: 'BLOQUEADO',
+  Cancelado: 'CANCELADO',
+} as const;
+
+export type PalletDespachoEstado =
+  (typeof PalletDespachoEstado)[keyof typeof PalletDespachoEstado];
+
+export const DespachoEstado = {
+  Borrador: 'BORRADOR',
+  Planificado: 'PLANIFICADO',
+  ListoParaCarga: 'LISTO_PARA_CARGA',
+  Cargando: 'CARGANDO',
+  Cargado: 'CARGADO',
+  Despachado: 'DESPACHADO',
+  EnTransito: 'EN_TRANSITO',
+  Entregado: 'ENTREGADO',
+  Parcial: 'PARCIAL',
+  Cancelado: 'CANCELADO',
+  Retenido: 'RETENIDO',
+  Devuelto: 'DEVUELTO',
+  EnCarga: 'EN_CARGA',
+  Listo: 'LISTO',
+  EnRuta: 'EN_RUTA',
+  Anulado: 'ANULADO',
+} as const;
+
+export type DespachoEstado = (typeof DespachoEstado)[keyof typeof DespachoEstado];
+
+export const ViajeEstado = {
+  Planificado: 'PLANIFICADO',
+  Cargando: 'CARGANDO',
+  Cargado: 'CARGADO',
+  Despachado: 'DESPACHADO',
+  EnTransito: 'EN_TRANSITO',
+  Entregado: 'ENTREGADO',
+  Cancelado: 'CANCELADO',
+} as const;
+
+export type ViajeEstado = (typeof ViajeEstado)[keyof typeof ViajeEstado];
+
+export const CargaEstado = {
+  Abierta: 'ABIERTA',
+  Cargando: 'CARGANDO',
+  Completa: 'COMPLETA',
+  Cerrada: 'CERRADA',
+} as const;
+
+export type CargaEstado = (typeof CargaEstado)[keyof typeof CargaEstado];
+
+export const CargaItemTipo = {
+  Pallet: 'PALLET',
+  Caja: 'CAJA',
+  Contenedor: 'CONTENEDOR',
+  Producto: 'PRODUCTO',
+} as const;
+
+export type CargaItemTipo = (typeof CargaItemTipo)[keyof typeof CargaItemTipo];
+
+export const PalletDespachoItemTipo = {
+  Kit: 'KIT',
+  Producto: 'PRODUCTO',
+} as const;
+
+export type PalletDespachoItemTipo =
+  (typeof PalletDespachoItemTipo)[keyof typeof PalletDespachoItemTipo];
 
 export const DEMANDA_PRIORIDADES: ReadonlyArray<{ value: DemandaPrioridad; label: string }> = [
   { value: DemandaPrioridad.Critica, label: 'Crítica' },

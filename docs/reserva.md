@@ -65,9 +65,20 @@ Códigos: `KIT-n`, `DEM-YYYY-n`, `RES-YYYY-n`.
 
 Permisos: `inventory:read` / `inventory:write`. Baja lógica: `isActive`.
 
+## Sustitutos (misma categoría)
+
+Si la demanda pide **Agua Brisa** y en bodega hay **Agua Pura** o **Agua Cristal**, el sistema los considera **intercambiables** cuando comparten:
+
+- `categoria_inventario` (ej. `AGUA`)
+- `unidad_base` (ej. `BOTELLA`)
+
+La reserva sigue registrando el producto **solicitado**; las asignaciones apuntan al inventario real (otro SKU). La simulación lista los sustitutos posibles.
+
+Medicamentos u otros sensibles no se mezclan entre categorías distintas. Misma categoría + misma unidad es la regla v1.
+
 ## Qué queda fuera
 
-Picking, kitting, palletización y despacho. QR de cámara. Reparto proporcional. Motor de distancia al elegir rack.
+Picking físico, kitting en piso, palletización `PAL-DESP` y despacho. Control y consolidación: [control-consolidacion.md](control-consolidacion.md). QR de cámara. Reparto proporcional. Motor de distancia al elegir rack.
 
 ---
 

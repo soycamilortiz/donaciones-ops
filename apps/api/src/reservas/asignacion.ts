@@ -86,6 +86,24 @@ export function asignarCantidad(
   return { lineas, cubierto, deficit: Math.max(0, resto) };
 }
 
+/** Une candidatos de productos sustitutos (misma categoría + unidad) para FEFO global. */
+export function candidatosDeGrupo(
+  productoId: string,
+  sustitutos: Map<string, string[]>,
+  pool: Map<string, CandidatoSaldo[]>,
+): CandidatoSaldo[] {
+  const ids = sustitutos.get(productoId) ?? [productoId];
+  return ids.flatMap((id) => pool.get(id) ?? []);
+}
+
+export function disponibleDeGrupo(
+  productoId: string,
+  sustitutos: Map<string, string[]>,
+  pool: Map<string, CandidatoSaldo[]>,
+): number {
+  return candidatosDeGrupo(productoId, sustitutos, pool).reduce((sum, row) => sum + row.disponible, 0);
+}
+
 /** Máximo de kits que el stock disponible puede armar. */
 export function maxKits(
   requerimientos: RequerimientoKit[],

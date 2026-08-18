@@ -20,6 +20,18 @@ import type {
   RecepcionPresentacion as PrismaRecepcionPresentacion,
   RecepcionTipo as PrismaRecepcionTipo,
   ReservaEstado as PrismaReservaEstado,
+  KitInstanciaEstado as PrismaKitInstanciaEstado,
+  ControlModo as PrismaControlModo,
+  ControlLoteEstado as PrismaControlLoteEstado,
+  ControlResultado as PrismaControlResultado,
+  ConsolidacionEstado as PrismaConsolidacionEstado,
+  PlanPalletizacionEstado as PrismaPlanPalletizacionEstado,
+  PalletDespachoEstado as PrismaPalletDespachoEstado,
+  DespachoEstado as PrismaDespachoEstado,
+  ViajeEstado as PrismaViajeEstado,
+  CargaEstado as PrismaCargaEstado,
+  CargaItemTipo as PrismaCargaItemTipo,
+  PalletDespachoItemTipo as PrismaPalletDespachoItemTipo,
   UbicacionEstado as PrismaUbicacionEstado,
   UbicacionFuncion as PrismaUbicacionFuncion,
   UbicacionTipo as PrismaUbicacionTipo,
@@ -36,6 +48,18 @@ import type {
   RecepcionPresentacion,
   RecepcionTipo,
   ReservaEstado,
+  KitInstanciaEstado,
+  ControlModo,
+  ControlLoteEstado,
+  ControlResultado,
+  ConsolidacionEstado,
+  PlanPalletizacionEstado,
+  PalletDespachoEstado,
+  DespachoEstado,
+  ViajeEstado,
+  CargaEstado,
+  CargaItemTipo,
+  PalletDespachoItemTipo,
   UbicacionEstado,
   UbicacionFuncion,
   UbicacionTipo,
@@ -76,3 +100,39 @@ export const DEMANDA_ESTADO_EN_SYNC: Exact<DemandaEstado, PrismaDemandaEstado> =
 export const DEMANDA_ITEM_TIPO_EN_SYNC: Exact<DemandaItemTipo, PrismaDemandaItemTipo> = true;
 
 export const RESERVA_ESTADO_EN_SYNC: Exact<ReservaEstado, PrismaReservaEstado> = true;
+
+export const KIT_INSTANCIA_ESTADO_EN_SYNC: Exact<KitInstanciaEstado, PrismaKitInstanciaEstado> = true;
+
+export const CONTROL_MODO_EN_SYNC: Exact<ControlModo, PrismaControlModo> = true;
+
+export const CONTROL_LOTE_ESTADO_EN_SYNC: Exact<ControlLoteEstado, PrismaControlLoteEstado> = true;
+
+export const CONTROL_RESULTADO_EN_SYNC: Exact<ControlResultado, PrismaControlResultado> = true;
+
+export const CONSOLIDACION_ESTADO_EN_SYNC: Exact<
+  ConsolidacionEstado,
+  PrismaConsolidacionEstado
+> = true;
+
+export const PLAN_PALLETIZACION_ESTADO_EN_SYNC: Exact<
+  PlanPalletizacionEstado,
+  PrismaPlanPalletizacionEstado
+> = true;
+
+export const PALLET_DESPACHO_ESTADO_EN_SYNC: Exact<
+  PalletDespachoEstado,
+  PrismaPalletDespachoEstado
+> = true;
+
+export const DESPACHO_ESTADO_EN_SYNC: Exact<DespachoEstado, PrismaDespachoEstado> = true;
+
+export const VIAJE_ESTADO_EN_SYNC: Exact<ViajeEstado, PrismaViajeEstado> = true;
+
+export const CARGA_ESTADO_EN_SYNC: Exact<CargaEstado, PrismaCargaEstado> = true;
+
+export const CARGA_ITEM_TIPO_EN_SYNC: Exact<CargaItemTipo, PrismaCargaItemTipo> = true;
+
+export const PALLET_DESPACHO_ITEM_TIPO_EN_SYNC: Exact<
+  PalletDespachoItemTipo,
+  PrismaPalletDespachoItemTipo
+> = true;

@@ -11,7 +11,12 @@ import { FormField } from '@/components/molecules/FormField';
 import { useOrg } from '@/components/OrgGate';
 import { DataTable, type DataTableColumn } from '@/components/organisms/DataTable';
 import { leerAcopioRecordado, recordarAcopio } from '@/features/donaciones/acopio-recordado';
-import { crearDemanda, listarDemandas, listarKits } from '@/features/reservas/reservas-service';
+import {
+  crearDemanda,
+  listarCatalogoProductos,
+  listarDemandas,
+  listarKits,
+} from '@/features/reservas/reservas-service';
 import { ROUTES } from '@/lib/constants';
 import { useApi } from '@/lib/useApi';
 
@@ -43,6 +48,9 @@ export default function DemandasPage() {
   const writable = can('inventory:write');
   const [filas, setFilas] = useState<Fila[]>([]);
   const [kits, setKits] = useState<Kit[]>([]);
+  const [productos, setProductos] = useState<Array<{ id: string; nombre: string; sku: string }>>(
+    [],
+  );
   const [acopios, setAcopios] = useState<Acopio[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,18 +62,22 @@ export default function DemandasPage() {
   const [prioridad, setPrioridad] = useState<string>(DemandaPrioridad.Media);
   const [fechaRequerida, setFechaRequerida] = useState('');
   const [poblacionAfectada, setPoblacionAfectada] = useState('');
+  const [tipoLinea, setTipoLinea] = useState<'KIT' | 'PRODUCTO'>(DemandaItemTipo.Kit);
   const [kitId, setKitId] = useState('');
+  const [productoId, setProductoId] = useState('');
   const [cantidad, setCantidad] = useState('1');
 
   const cargar = useCallback(async () => {
     try {
-      const [rows, kitRows, acopioRows] = await Promise.all([
+      const [rows, kitRows, catalogo, acopioRows] = await Promise.all([
         listarDemandas(request, orgId),
         listarKits(request, orgId),
+        listarCatalogoProductos(request, orgId),
         request<Acopio[]>(`/api/v1/organizations/${orgId}/acopios`),
       ]);
       setFilas(rows as Fila[]);
       setKits(kitRows);
+      setProductos(catalogo);
       setAcopios(acopioRows.filter((row) => row.isActive !== false));
       setError(null);
     } catch (err) {
@@ -82,7 +94,9 @@ export default function DemandasPage() {
   const crear = async (event: FormEvent) => {
     event.preventDefault();
     const qty = Number(cantidad);
-    if (!writable || !acopioId || !destinoNombre.trim() || !kitId || !(qty > 0)) {
+    const lineaOk =
+      tipoLinea === DemandaItemTipo.Kit ? Boolean(kitId) : Boolean(productoId);
+    if (!writable || !acopioId || !destinoNombre.trim() || !lineaOk || !(qty > 0)) {
       return;
     }
     setGuardando(true);
@@ -95,7 +109,11 @@ export default function DemandasPage() {
         prioridad,
         fechaRequerida: fechaRequerida || undefined,
         poblacionAfectada: poblacionAfectada ? Number(poblacionAfectada) : undefined,
-        items: [{ tipo: DemandaItemTipo.Kit, kitId, cantidad: qty }],
+        items: [
+          tipoLinea === DemandaItemTipo.Kit
+            ? { tipo: DemandaItemTipo.Kit, kitId, cantidad: qty }
+            : { tipo: DemandaItemTipo.Producto, productoId, cantidad: qty },
+        ],
       });
       navigate(ROUTES.demandaDetalle(creada.id));
     } catch (err) {
@@ -239,23 +257,66 @@ export default function DemandasPage() {
               onChange={(event) => setPoblacionAfectada(event.target.value)}
             />
           </FormField>
-          <FormField label={t('demands.fields.kit')} htmlFor="dem-kit" required>
+          <FormField label={t('demands.fields.lineType')} htmlFor="dem-tipo">
             <select
-              id="dem-kit"
+              id="dem-tipo"
               className={selectClass}
-              value={kitId}
-              onChange={(event) => setKitId(event.target.value)}
-              required
+              value={tipoLinea}
+              onChange={(event) =>
+                setTipoLinea(event.target.value as 'KIT' | 'PRODUCTO')
+              }
             >
-              <option value="">{t('demands.fields.kitPlaceholder')}</option>
-              {kits.map((row) => (
-                <option key={row.id} value={row.id}>
-                  {row.codigo} · {row.nombre}
-                </option>
-              ))}
+              <option value={DemandaItemTipo.Kit}>{t('demands.fields.lineTypeKit')}</option>
+              <option value={DemandaItemTipo.Producto}>
+                {t('demands.fields.lineTypeProduct')}
+              </option>
             </select>
           </FormField>
-          <FormField label={t('demands.fields.qty')} htmlFor="dem-qty" required>
+          {tipoLinea === DemandaItemTipo.Kit ? (
+            <FormField label={t('demands.fields.kit')} htmlFor="dem-kit" required>
+              <select
+                id="dem-kit"
+                className={selectClass}
+                value={kitId}
+                onChange={(event) => setKitId(event.target.value)}
+                required
+              >
+                <option value="">{t('demands.fields.kitPlaceholder')}</option>
+                {kits.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.codigo} · {row.nombre}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          ) : (
+            <FormField label={t('demands.fields.product')} htmlFor="dem-prod" required>
+              <select
+                id="dem-prod"
+                className={selectClass}
+                value={productoId}
+                onChange={(event) => setProductoId(event.target.value)}
+                required
+              >
+                <option value="">{t('demands.fields.productPlaceholder')}</option>
+                {productos.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.nombre}
+                    {row.sku ? ` · ${row.sku}` : ''}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          )}
+          <FormField
+            label={
+              tipoLinea === DemandaItemTipo.Kit
+                ? t('demands.fields.qty')
+                : t('demands.fields.qtyProduct')
+            }
+            htmlFor="dem-qty"
+            required
+          >
             <Input
               id="dem-qty"
               type="number"
