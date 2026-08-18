@@ -52,7 +52,7 @@ export function ToastProvider({ children }: { children: ReactNode }): ReactEleme
         // los lectores que no lo mapean.
         role="status"
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 p-4 sm:items-end"
+        className="ds-safe-bottom ds-safe-x pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 pt-4 sm:items-end"
       >
         {avisos.map((aviso) => (
           <output

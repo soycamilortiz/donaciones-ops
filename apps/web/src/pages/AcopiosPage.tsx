@@ -188,6 +188,20 @@ export default function AcopiosPage() {
               </span>
               <p className="text-lg font-semibold text-foreground">{t('acopios.emptyTitle')}</p>
               <p className="mx-auto max-w-md text-sm text-muted-foreground">{t('acopios.empty')}</p>
+              {can('acopios:write') ? (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    document.getElementById('a-nombre')?.focus();
+                    document
+                      .getElementById('acopio-form')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
+                  {t('acopios.newTitle')}
+                  <Icon name="plus" size={16} />
+                </Button>
+              ) : null}
             </div>
           ) : null}
 
@@ -264,6 +278,7 @@ export default function AcopiosPage() {
 
         {can('acopios:write') ? (
           <form
+            id="acopio-form"
             className="space-y-4 rounded-lg border border-border bg-card p-5"
             key={editing?.id ?? 'new'}
             onSubmit={(event) => void onSave(event)}

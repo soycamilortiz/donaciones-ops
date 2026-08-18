@@ -7,6 +7,7 @@ import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { Spinner } from '@/components/atoms/Spinner';
 import { useOrg } from '@/components/OrgGate';
 import {
@@ -31,11 +32,24 @@ const fieldLabel = 'text-xs font-bold uppercase tracking-wider text-muted-foregr
  * the real state machine `fase`.
  */
 function Stepper({ activo }: { activo: number }) {
+  const { t } = useTranslation();
+  const total = 3;
   return (
-    <div aria-hidden className="flex gap-2">
+    // Las barras son decoración; el progreso lo lleva el `progressbar`, que sí
+    // se anuncia. Antes todo el bloque era `aria-hidden`: quien no ve la
+    // pantalla no tenía forma de saber en qué paso iba la captura.
+    <div
+      role="progressbar"
+      aria-valuemin={1}
+      aria-valuemax={total}
+      aria-valuenow={Math.max(activo + 1, 1)}
+      aria-valuetext={t('newDonation.stepOf', { step: Math.max(activo + 1, 1), total })}
+      className="flex gap-2"
+    >
       {[0, 1, 2].map((paso) => (
         <span
           key={paso}
+          aria-hidden
           className={cn(
             'h-1 flex-1 rounded-pill',
             paso < activo ? 'bg-success' : paso === activo ? 'bg-accent' : 'bg-muted',
@@ -211,9 +225,9 @@ export default function NuevaDonacionPage() {
 
   if (carga === 'pendiente') {
     return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
+      <div className="py-8">
+        <SkeletonList filas={3} etiqueta={t('common.loading')} />
+      </div>
     );
   }
 
@@ -556,7 +570,13 @@ function Resultado({
         </p>
       ) : null}
 
-      <Button onClick={() => void onConfirmar()} disabled={guardando}>
+      <Button
+        onClick={() => void onConfirmar()}
+        disabled={guardando}
+        // Pegado al borde inferior en móvil: el teclado numérico de la cantidad
+        // tapaba el botón y había que cerrarlo a mano para poder confirmar.
+        className="ds-safe-bottom sticky bottom-0 z-10 w-full shadow-lg md:static md:w-auto md:shadow-none"
+      >
         {guardando ? t('common.saving') : t('newDonation.confirm')}
       </Button>
     </div>

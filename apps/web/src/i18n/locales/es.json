@@ -84,7 +84,8 @@
     "unitHint": "El código (PAL-…, CAJ-…) lo genera el sistema. Si no está en un contenedor, elegí suelta.",
     "unitAssigned": "Va a {{unit}}",
     "needUnit": "Elegí el pallet, la caja o suelta antes de confirmar.",
-    "confirmError": "No se pudo confirmar la identificación"
+    "confirmError": "No se pudo confirmar la identificación",
+    "stepOf": "Paso {{step}} de {{total}}"
   },
   "receptions": {
     "title": "Recepciones",

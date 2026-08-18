@@ -403,7 +403,10 @@ export default function InventoryPage() {
         <p className="max-w-xl text-sm text-muted-foreground">{t('inventory.subtitle')}</p>
       </div>
       {showAction && writable ? (
-        <Button type="button" onClick={openCreate}>
+        // Ancho completo en móvil: el botón medía 193 de 375 px y hay que
+        // apuntarle con el pulgar en movimiento. En escritorio vuelve a su
+        // tamaño natural, arriba a la derecha.
+        <Button type="button" onClick={openCreate} className="w-full sm:w-auto">
           {t('inventory.newProduct')}
           <span className="grid h-[34px] w-[34px] place-items-center rounded-pill bg-primary-deep">
             <Icon name="plus" size={15} className="text-accent" />
