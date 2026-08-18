@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
-import { Spinner } from '@/components/atoms/Spinner';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { useOrg } from '@/components/OrgGate';
 import { listarDespachosOrg } from '@/features/despacho/despacho-service';
 import { ROUTES } from '@/lib/constants';
@@ -37,14 +37,6 @@ export default function DespachosPage() {
     return <p className="py-8 text-sm text-muted-foreground">{t('despachos.noPermission')}</p>;
   }
 
-  if (cargando) {
-    return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
-    );
-  }
-
   return (
     <div className="space-y-6 py-2">
       <div className="space-y-1">
@@ -56,29 +48,40 @@ export default function DespachosPage() {
           {error}
         </p>
       ) : null}
-      {rows.length === 0 ? (
+      {cargando ? (
+        <SkeletonList filas={4} etiqueta={t('common.loading')} />
+      ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('despachos.empty')}</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="min-w-full text-sm">
             <thead className="bg-muted/40 text-left">
               <tr>
-                <th className="px-3 py-2 font-medium">{t('despachos.colCodigo')}</th>
-                <th className="px-3 py-2 font-medium">{t('despachos.colDestino')}</th>
-                <th className="px-3 py-2 font-medium">{t('despachos.colKits')}</th>
-                <th className="px-3 py-2 font-medium">{t('despachos.colPallets')}</th>
-                <th className="px-3 py-2 font-medium">{t('despachos.colEstado')}</th>
-                <th className="px-3 py-2 font-medium">{t('despachos.colDemanda')}</th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  {t('despachos.colCodigo')}
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  {t('despachos.colDestino')}
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  {t('despachos.colKits')}
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  {t('despachos.colPallets')}
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  {t('despachos.colEstado')}
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  {t('despachos.colDemanda')}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {rows.map((row) => (
                 <tr key={row.id}>
                   <td className="px-3 py-2 font-mono">
-                    <Link
-                      className="linkish"
-                      to={ROUTES.demandaCarga(row.demandaId, row.planId)}
-                    >
+                    <Link className="linkish" to={ROUTES.demandaCarga(row.demandaId, row.planId)}>
                       {row.codigo}
                     </Link>
                   </td>

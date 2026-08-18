@@ -12,21 +12,32 @@ import {
   ViajeEstado,
 } from '@prisma/client';
 import { blankToNull } from '../common/soft-delete';
+import { proponerPallets } from '../consolidacion/packing';
 import { OrgCountersService } from '../org-counters/org-counters.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { proponerPallets } from '../consolidacion/packing';
 import type {
-  CrearDespachoDto,
+  ActualizarChecklistDto,
   CargarPalletDto,
+  CrearDespachoDto,
+  CrearViajeDto,
   DespachoDto,
   EscanearKitDto,
   FinalizarPalletDto,
   PalletDespachoDto,
   PlanPalletizacionDto,
   RetirarKitDto,
-  ActualizarChecklistDto,
-  CrearViajeDto,
 } from './dto/despacho.dto';
+
+/**
+ * Las transacciones de palletización y salida escriben una fila por pallet y
+ * varias por línea de kit, así que su duración crece con el tamaño del
+ * despacho. Los 5 s por defecto de Prisma alcanzan para un despacho de prueba
+ * y no para uno real: al pasarse, la transacción revierte entera y la salida
+ * se cae en el momento en que el camión ya está cargado. `maxWait` sube junto
+ * con el timeout porque si no, con varias salidas a la vez, la espera por una
+ * conexión libre agota su propio límite antes de empezar.
+ */
+const TX_LARGA = { timeout: 120_000, maxWait: 15_000 } as const;
 
 const DESPACHO_INCLUDE = {
   plan: { select: { codigo: true } },
@@ -126,11 +137,22 @@ export class DespachoService {
       kitPesoKg: Number(consolidacion.kitPesoKg),
       palletPesoMaxKg: Number(consolidacion.palletPesoMaxKg),
       kitAltoM: consolidacion.kitAltoM ? Number(consolidacion.kitAltoM) : null,
-      palletAltoMaxM: consolidacion.palletAltoMaxM
-        ? Number(consolidacion.palletAltoMaxM)
-        : null,
+      palletAltoMaxM: consolidacion.palletAltoMaxM ? Number(consolidacion.palletAltoMaxM) : null,
     });
+    // Los slots son cálculo puro sobre la propuesta y los códigos son un viaje
+    // a la base: los dos van antes de abrir la transacción, no dentro.
+    const slots: Array<{ sequence: number; kitsObjetivo: number; pesoTeoricoKg: number }> = [];
+    for (let i = 0; i < propuesta.pallets; i++) {
+      const kitsObjetivo =
+        i === propuesta.pallets - 1 ? propuesta.ultimoPalletKits : propuesta.kitsPorPallet;
+      slots.push({
+        sequence: i + 1,
+        kitsObjetivo,
+        pesoTeoricoKg: kitsObjetivo * Number(consolidacion.kitPesoKg),
+      });
+    }
     const codigoPlan = await this.counters.codigoPlanPalletizacion(orgId);
+    const codigosPallet = await this.counters.codigosPalletDespacho(orgId, slots.length);
     const planId = await this.prisma.$transaction(async (tx) => {
       const plan = await tx.planPalletizacion.create({
         data: {
@@ -151,17 +173,7 @@ export class DespachoService {
           isActive: true,
         },
       });
-      const slots: Array<{ sequence: number; kitsObjetivo: number; pesoTeoricoKg: number }> = [];
-      for (let i = 0; i < propuesta.pallets; i++) {
-        const kitsObjetivo =
-          i === propuesta.pallets - 1 ? propuesta.ultimoPalletKits : propuesta.kitsPorPallet;
-        slots.push({
-          sequence: i + 1,
-          kitsObjetivo,
-          pesoTeoricoKg: kitsObjetivo * Number(consolidacion.kitPesoKg),
-        });
-      }
-      for (const slot of slots) {
+      for (const [i, slot] of slots.entries()) {
         const slotRow = await tx.planPalletSlot.create({
           data: {
             planId: plan.id,
@@ -171,10 +183,9 @@ export class DespachoService {
             isActive: true,
           },
         });
-        const codigoPallet = await this.counters.codigoPalletDespacho(orgId);
         await tx.palletDespacho.create({
           data: {
-            codigo: codigoPallet,
+            codigo: codigosPallet[i],
             organizationId: orgId,
             acopioId: consolidacion.acopioId,
             demandaId: consolidacion.demandaId,
@@ -195,7 +206,7 @@ export class DespachoService {
         data: { estado: ConsolidacionEstado.LISTA },
       });
       return plan.id;
-    });
+    }, TX_LARGA);
     return this.getPlan(orgId, planId);
   }
 
@@ -292,7 +303,10 @@ export class DespachoService {
     if (!kit) {
       throw new BadRequestException('Kit no encontrado');
     }
-    if (kit.estado !== KitInstanciaEstado.CONSOLIDADO && kit.estado !== KitInstanciaEstado.PALLETIZADO) {
+    if (
+      kit.estado !== KitInstanciaEstado.CONSOLIDADO &&
+      kit.estado !== KitInstanciaEstado.PALLETIZADO
+    ) {
       throw new BadRequestException('Este kit no está aprobado para despacho');
     }
     if (kit.demandaId !== pallet.demandaId) {
@@ -627,9 +641,15 @@ export class DespachoService {
     await this.prisma.$transaction(async (tx) => {
       await tx.viaje.update({ where: { id: viaje.id }, data: { estado: ViajeEstado.CARGANDO } });
       if (viaje.carga) {
-        await tx.carga.update({ where: { id: viaje.carga.id }, data: { estado: CargaEstado.CARGANDO } });
+        await tx.carga.update({
+          where: { id: viaje.carga.id },
+          data: { estado: CargaEstado.CARGANDO },
+        });
       }
-      await tx.despacho.update({ where: { id: despachoId }, data: { estado: DespachoEstado.CARGANDO } });
+      await tx.despacho.update({
+        where: { id: despachoId },
+        data: { estado: DespachoEstado.CARGANDO },
+      });
     });
     return this.getDespacho(orgId, despachoId);
   }
@@ -689,7 +709,10 @@ export class DespachoService {
       if (viaje.estado === ViajeEstado.PLANIFICADO) {
         await tx.viaje.update({ where: { id: viaje.id }, data: { estado: ViajeEstado.CARGANDO } });
         await tx.carga.update({ where: { id: carga.id }, data: { estado: CargaEstado.CARGANDO } });
-        await tx.despacho.update({ where: { id: despachoId }, data: { estado: DespachoEstado.CARGANDO } });
+        await tx.despacho.update({
+          where: { id: despachoId },
+          data: { estado: DespachoEstado.CARGANDO },
+        });
       }
       await tx.cargaItem.create({
         data: {
@@ -741,7 +764,10 @@ export class DespachoService {
       select: { nombre: true },
     });
     await this.prisma.$transaction(async (tx) => {
-      await tx.viaje.update({ where: { id: viajeActivo.id }, data: { estado: ViajeEstado.CARGADO } });
+      await tx.viaje.update({
+        where: { id: viajeActivo.id },
+        data: { estado: ViajeEstado.CARGADO },
+      });
       const cargaRow = await tx.carga.findUnique({ where: { viajeId: viajeActivo.id } });
       if (cargaRow) {
         await tx.carga.update({
@@ -810,21 +836,24 @@ export class DespachoService {
     opts?: { permitirParcial?: boolean },
   ): Promise<DespachoDto> {
     const despacho = await this.getDespacho(orgId, despachoId);
-    if (
-      despacho.estado !== DespachoEstado.CARGADO &&
-      despacho.estado !== DespachoEstado.PARCIAL
-    ) {
+    if (despacho.estado !== DespachoEstado.CARGADO && despacho.estado !== DespachoEstado.PARCIAL) {
       throw new BadRequestException('Verificá la carga antes de confirmar salida');
     }
     const checklist = despacho.checklist;
-    if (!checklist?.cargaCompleta || !checklist.destinoConfirmado || !checklist.vehiculoConfirmado) {
+    if (
+      !checklist?.cargaCompleta ||
+      !checklist.destinoConfirmado ||
+      !checklist.vehiculoConfirmado
+    ) {
       throw new BadRequestException('Completá el checklist de salida antes de confirmar');
     }
     if (despacho.palletsCargados === 0) {
       throw new BadRequestException('No hay pallets cargados');
     }
     if (despacho.palletsCargados < despacho.palletsEsperados && !opts?.permitirParcial) {
-      throw new BadRequestException('Despacho incompleto. Usá permitirParcial para salida parcial.');
+      throw new BadRequestException(
+        'Despacho incompleto. Usá permitirParcial para salida parcial.',
+      );
     }
     const pallets = await this.prisma.palletDespacho.findMany({
       where: { despachoId, isActive: true, estado: PalletDespachoEstado.CARGADO },
@@ -842,55 +871,69 @@ export class DespachoService {
       },
     });
     const kitsDespachados = pallets.reduce((sum, p) => sum + p.items.length, 0);
-    await this.prisma.$transaction(async (tx) => {
-      for (const pallet of pallets) {
-        for (const item of pallet.items) {
-          if (!item.kitInstancia) {
-            continue;
-          }
-          for (const linea of item.kitInstancia.items) {
-            if (!linea.inventoryItemId || !linea.pickConfirmadoAt) {
-              continue;
-            }
-            const ubicacionId =
-              item.kitInstancia.zonaKittingUbicacionId ?? linea.origenUbicacionId;
-            if (!ubicacionId) {
-              continue;
-            }
-            await this.reducirSaldo(tx, linea.inventoryItemId, ubicacionId, Number(linea.cantidad));
-            const codigoMov = await this.counters.codigoMovimiento(orgId);
-            await tx.inventoryMovimiento.create({
-              data: {
-                codigo: codigoMov,
-                organizationId: orgId,
-                acopioId: despacho.acopioId!,
-                inventoryItemId: linea.inventoryItemId,
-                tipo: InventoryMovimientoTipo.DESPACHO,
-                cantidad: linea.cantidad,
-                origenUbicacionId: ubicacionId,
-                destinoUbicacionId: null,
-                kitInstanciaItemId: linea.id,
-                despachoId,
-                usuarioId,
-                observaciones: `Salida ${despacho.codigo}`,
-                isActive: true,
-              },
-            });
-            await tx.inventoryItem.update({
-              where: { id: linea.inventoryItemId },
-              data: { cantidad: { decrement: linea.cantidad } },
-            });
-          }
-          await tx.kitInstancia.update({
-            where: { id: item.kitInstancia.id },
-            data: { estado: KitInstanciaEstado.DESPACHADO },
-          });
+    // Se aplana antes de abrir la transacción: decidir qué líneas mueven stock
+    // es filtrado puro sobre lo que ya se leyó, y saber cuántas son es lo que
+    // permite reservar los códigos de movimiento de una sola vez.
+    const movimientos = pallets.flatMap((pallet) =>
+      pallet.items.flatMap((item) => {
+        const kit = item.kitInstancia;
+        if (!kit) {
+          return [];
         }
-        await tx.palletDespacho.update({
-          where: { id: pallet.id },
-          data: { estado: PalletDespachoEstado.DESPACHADO },
+        return kit.items.flatMap((linea) => {
+          if (!linea.inventoryItemId || !linea.pickConfirmadoAt) {
+            return [];
+          }
+          const ubicacionId = kit.zonaKittingUbicacionId ?? linea.origenUbicacionId;
+          if (!ubicacionId) {
+            return [];
+          }
+          return [{ linea, inventoryItemId: linea.inventoryItemId, ubicacionId }];
+        });
+      }),
+    );
+    const kitInstanciaIds = [
+      ...new Set(
+        pallets.flatMap((p) => p.items.flatMap((i) => (i.kitInstancia ? [i.kitInstancia.id] : []))),
+      ),
+    ];
+    const codigosMov = await this.counters.codigosMovimiento(orgId, movimientos.length);
+    await this.prisma.$transaction(async (tx) => {
+      for (const [i, mov] of movimientos.entries()) {
+        const { linea, inventoryItemId, ubicacionId } = mov;
+        await this.reducirSaldo(tx, inventoryItemId, ubicacionId, Number(linea.cantidad));
+        await tx.inventoryMovimiento.create({
+          data: {
+            codigo: codigosMov[i],
+            organizationId: orgId,
+            acopioId: despacho.acopioId,
+            inventoryItemId,
+            tipo: InventoryMovimientoTipo.DESPACHO,
+            cantidad: linea.cantidad,
+            origenUbicacionId: ubicacionId,
+            destinoUbicacionId: null,
+            kitInstanciaItemId: linea.id,
+            despachoId,
+            usuarioId,
+            observaciones: `Salida ${despacho.codigo}`,
+            isActive: true,
+          },
+        });
+        await tx.inventoryItem.update({
+          where: { id: inventoryItemId },
+          data: { cantidad: { decrement: linea.cantidad } },
         });
       }
+      // Los estados no dependen de cada línea, así que van en dos updates
+      // masivos en vez de uno por fila dentro del bucle.
+      await tx.kitInstancia.updateMany({
+        where: { id: { in: kitInstanciaIds } },
+        data: { estado: KitInstanciaEstado.DESPACHADO },
+      });
+      await tx.palletDespacho.updateMany({
+        where: { id: { in: pallets.map((p) => p.id) } },
+        data: { estado: PalletDespachoEstado.DESPACHADO },
+      });
       const esParcial = despacho.palletsCargados < despacho.palletsEsperados;
       await tx.despacho.update({
         where: { id: despachoId },
@@ -910,7 +953,7 @@ export class DespachoService {
         where: { despachoId },
         data: { confirmadoAt: new Date(), confirmadoPorId: usuarioId },
       });
-    });
+    }, TX_LARGA);
     return this.getDespacho(orgId, despachoId);
   }
 
@@ -1046,16 +1089,6 @@ export class DespachoService {
     });
   }
 
-  private async requirePalletLite(orgId: string, id: string) {
-    const row = await this.prisma.palletDespacho.findFirst({
-      where: { id, organizationId: orgId, isActive: true },
-    });
-    if (!row) {
-      throw new NotFoundException('Pallet no encontrado');
-    }
-    return row;
-  }
-
   private async requireDespacho(orgId: string, id: string) {
     const row = await this.prisma.despacho.findFirst({
       where: { id, organizationId: orgId, isActive: true },
@@ -1185,8 +1218,7 @@ export class DespachoService {
   ): DespachoDto {
     const cargados = row.pallets.filter(
       (p) =>
-        p.estado === PalletDespachoEstado.CARGADO ||
-        p.estado === PalletDespachoEstado.DESPACHADO,
+        p.estado === PalletDespachoEstado.CARGADO || p.estado === PalletDespachoEstado.DESPACHADO,
     );
     const kitsCargados = cargados.reduce((sum, p) => sum + p.items.length, 0);
     const pesoCalculado = cargados.reduce((sum, p) => sum + Number(p.pesoBrutoKg ?? 0), 0);

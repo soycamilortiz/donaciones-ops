@@ -166,7 +166,9 @@ export class UbicacionesService {
     const db = tx ?? this.prisma;
     const muelle = await this.ensureMuelle(opts.acopioId, db);
     await this.moverSaldo(db, opts.inventoryItemId, null, muelle.id, opts.cantidad);
-    const codigo = await this.counters.codigoMovimiento(opts.organizationId);
+    // `db` va también al contador: si el llamador abrió una transacción, el
+    // código se numera dentro de ella en vez de tomar otra conexión del pool.
+    const codigo = await this.counters.codigoMovimiento(opts.organizationId, new Date(), tx);
     await db.inventoryMovimiento.create({
       data: {
         codigo,
@@ -353,8 +355,12 @@ export class UbicacionesService {
       }
     }
 
+    // Reservados antes de abrir la transacción: pedirlos de a uno adentro toma
+    // una segunda conexión del pool mientras la transacción ya retiene la suya.
+    const codigosMov = await this.counters.codigosMovimiento(orgId, dto.lineas.length);
+
     await this.prisma.$transaction(async (tx) => {
-      for (const conf of dto.lineas) {
+      for (const [i, conf] of dto.lineas.entries()) {
         const linea = porId.get(conf.lineaId);
         if (!linea) {
           continue;
@@ -368,10 +374,9 @@ export class UbicacionesService {
           linea.destinoUbicacionId,
           Number(linea.cantidad),
         );
-        const codigo = await this.counters.codigoMovimiento(orgId);
         await tx.inventoryMovimiento.create({
           data: {
-            codigo,
+            codigo: codigosMov[i],
             organizationId: orgId,
             acopioId,
             inventoryItemId: putaway.inventoryItemId,
@@ -470,6 +475,7 @@ export class UbicacionesService {
     }
     this.assertDestinoReubicacion(destino, opts.categoriaInventario, opts.cantidad);
 
+    const codigoMov = await this.counters.codigoMovimiento(opts.orgId);
     await this.prisma.$transaction(async (tx) => {
       const reservado = await tx.reservaAsignacion.aggregate({
         where: {
@@ -505,10 +511,9 @@ export class UbicacionesService {
         cantidad: opts.cantidad,
       });
 
-      const codigo = await this.counters.codigoMovimiento(opts.orgId);
       await tx.inventoryMovimiento.create({
         data: {
-          codigo,
+          codigo: codigoMov,
           organizationId: opts.orgId,
           acopioId: opts.acopioId,
           inventoryItemId: opts.inventoryItemId,
@@ -577,14 +582,14 @@ export class UbicacionesService {
     }
     this.assertDestinoReubicacion(dest, item.categoria, dto.cantidad);
 
+    const codigoMov = await this.counters.codigoMovimiento(orgId);
     const row = await this.prisma.$transaction(async (tx) => {
       const destTx = await this.requireUbicacion(acopioId, dest.id, tx);
       this.assertDestinoReubicacion(destTx, item.categoria, dto.cantidad);
       await this.moverSaldo(tx, item.id, origen.id, dest.id, dto.cantidad);
-      const codigo = await this.counters.codigoMovimiento(orgId);
       return tx.inventoryMovimiento.create({
         data: {
-          codigo,
+          codigo: codigoMov,
           organizationId: orgId,
           acopioId,
           inventoryItemId: item.id,

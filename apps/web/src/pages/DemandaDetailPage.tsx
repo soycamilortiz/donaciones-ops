@@ -1,13 +1,24 @@
-import type { Demanda, KitInstancia, PipelineDemanda, PlanEscaso, Reserva, SimulacionReserva } from '@soschoco/shared';
+import type {
+  Demanda,
+  KitInstancia,
+  PipelineDemanda,
+  PlanEscaso,
+  Reserva,
+  SimulacionReserva,
+} from '@soschoco/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Badge, type BadgeVariant } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
-import { Spinner } from '@/components/atoms/Spinner';
+import { Skeleton } from '@/components/atoms/Skeleton';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { useOrg } from '@/components/OrgGate';
-import { armarKits, getPipeline, listarKitsArmados } from '@/features/consolidacion/consolidacion-service';
+import {
+  armarKits,
+  getPipeline,
+  listarKitsArmados,
+} from '@/features/consolidacion/consolidacion-service';
 import {
   cancelarDemanda,
   confirmarReserva,
@@ -141,9 +152,13 @@ export default function DemandaDetailPage() {
 
   if (cargando) {
     return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
+      <div role="status" aria-live="polite" aria-busy="true" className="space-y-6 py-2">
+        <span className="sr-only">{t('common.loading')}</span>
+        <Skeleton className="h-11 w-28" />
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
     );
   }
 
@@ -220,7 +235,11 @@ export default function DemandaDetailPage() {
             {t('demands.openPicking', { count: pipeline?.pendientePick ?? 0 })}
           </Button>
         ) : null}
-        <Button type="button" variant="outline" onClick={() => navigate(ROUTES.demandaControl(demanda.id))}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate(ROUTES.demandaControl(demanda.id))}
+        >
           {t('demands.openControl')}
         </Button>
         <Button

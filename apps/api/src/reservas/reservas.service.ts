@@ -13,8 +13,8 @@ import { OrgCountersService } from '../org-counters/org-counters.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   asignarCantidad,
-  candidatosDeGrupo,
   type CandidatoSaldo,
+  candidatosDeGrupo,
   disponibleDeGrupo,
   maxKits,
   repartirKitsEscasos,
@@ -72,7 +72,8 @@ export class ReservasService {
           codigo,
           nombre: dto.nombre.trim(),
           descripcion: blankToNull(dto.descripcion ?? ''),
-          pesoKgEstimado: dto.pesoKgEstimado != null ? new Prisma.Decimal(dto.pesoKgEstimado) : null,
+          pesoKgEstimado:
+            dto.pesoKgEstimado != null ? new Prisma.Decimal(dto.pesoKgEstimado) : null,
           altoMEstimado: dto.altoMEstimado != null ? new Prisma.Decimal(dto.altoMEstimado) : null,
           esCritico: dto.esCritico === true,
           isActive: true,

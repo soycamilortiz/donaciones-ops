@@ -4,6 +4,8 @@ import { AcopiosModule } from './acopios/acopios.module';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.schema';
+import { ConsolidacionModule } from './consolidacion/consolidacion.module';
+import { DespachoModule } from './despacho/despacho.module';
 import { DonacionesModule } from './donaciones/donaciones.module';
 import { HealthModule } from './health/health.module';
 import { InventoryModule } from './inventory/inventory.module';
@@ -12,8 +14,6 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RbacModule } from './rbac/rbac.module';
 import { RecepcionesModule } from './recepciones/recepciones.module';
 import { ReservasModule } from './reservas/reservas.module';
-import { ConsolidacionModule } from './consolidacion/consolidacion.module';
-import { DespachoModule } from './despacho/despacho.module';
 import { StorageModule } from './storage/storage.module';
 import { UbicacionesModule } from './ubicaciones/ubicaciones.module';
 

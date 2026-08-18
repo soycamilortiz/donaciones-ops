@@ -5,8 +5,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
-import { Spinner } from '@/components/atoms/Spinner';
+import { Skeleton } from '@/components/atoms/Skeleton';
 import { FormField } from '@/components/molecules/FormField';
+import { useToast } from '@/components/molecules/Toast';
 import { useOrg } from '@/components/OrgGate';
 import {
   escanearKitPallet,
@@ -25,6 +26,7 @@ export default function PalletArmadoPage() {
   const request = useApi();
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const { avisar } = useToast();
   const writable = can('inventory:write');
   const [pallet, setPallet] = useState<PalletDespacho | null>(null);
   const [codigoKit, setCodigoKit] = useState('');
@@ -36,10 +38,7 @@ export default function PalletArmadoPage() {
   const [cargando, setCargando] = useState(true);
   const [ocupado, setOcupado] = useState(false);
 
-  const activos = useMemo(
-    () => pallet?.items.filter((item) => !item.retiradoAt) ?? [],
-    [pallet],
-  );
+  const activos = useMemo(() => pallet?.items.filter((item) => !item.retiradoAt) ?? [], [pallet]);
 
   const cargar = useCallback(async () => {
     if (!palletId) {
@@ -79,12 +78,16 @@ export default function PalletArmadoPage() {
     if (!palletId || !codigoKit.trim()) {
       return;
     }
+    const codigo = codigoKit.trim();
     setOcupado(true);
     setError(null);
     try {
-      const row = await escanearKitPallet(request, orgId, palletId, codigoKit.trim());
+      const row = await escanearKitPallet(request, orgId, palletId, codigo);
       setPallet(row);
       setCodigoKit('');
+      // Un escaneo bueno solo movía un contador. En campo, con el móvil en una
+      // mano, eso no se ve: sin confirmación se vuelve a escanear el mismo kit.
+      avisar(t('palletBuild.scanOk', { code: codigo }));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('palletBuild.saveError'));
     } finally {
@@ -155,18 +158,32 @@ export default function PalletArmadoPage() {
     return <p className="py-8 text-sm text-muted-foreground">{t('palletBuild.noPermission')}</p>;
   }
 
-  if (cargando || !pallet) {
+  // Una carga fallida deja `pallet` en null con `cargando` ya en false: sin
+  // esta rama la pantalla se quedaba cargando para siempre y el error, que se
+  // guardó en el estado, no llegaba a pintarse nunca.
+  if (!cargando && !pallet) {
     return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
+      <p role="alert" className="py-8 text-sm text-error">
+        {error ?? t('palletBuild.loadError')}
       </p>
+    );
+  }
+
+  if (!pallet) {
+    return (
+      <div role="status" aria-live="polite" aria-busy="true" className="space-y-6 py-2">
+        <span className="sr-only">{t('common.loading')}</span>
+        <Skeleton className="h-11 w-28" />
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
     );
   }
 
   const puedeEscanear =
     writable &&
-    (pallet.estado === 'CREADO' ||
-      pallet.estado === 'EN_CONSTRUCCION') &&
+    (pallet.estado === 'CREADO' || pallet.estado === 'EN_CONSTRUCCION') &&
     activos.length < pallet.kitsObjetivo;
 
   const puedeFinalizar =
@@ -227,7 +244,11 @@ export default function PalletArmadoPage() {
               autoFocus
             />
           </FormField>
-          <Button type="button" disabled={ocupado || !codigoKit.trim()} onClick={() => void escanear()}>
+          <Button
+            type="button"
+            disabled={ocupado || !codigoKit.trim()}
+            onClick={() => void escanear()}
+          >
             {t('palletBuild.scanConfirm')}
           </Button>
         </section>
@@ -239,23 +260,27 @@ export default function PalletArmadoPage() {
           <p className="text-sm text-muted-foreground">{t('palletBuild.itemsEmpty')}</p>
         ) : (
           <ul className="space-y-1">
-            {activos.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
-                <span className="font-mono">{item.kitCodigo}</span>
-                {writable &&
-                (pallet.estado === 'EN_CONSTRUCCION' || pallet.estado === 'CREADO') &&
-                item.kitCodigo ? (
-                  <button
-                    type="button"
-                    className="text-xs text-error linkish"
-                    disabled={ocupado}
-                    onClick={() => void retirar(item.kitCodigo!)}
-                  >
-                    {t('palletBuild.removeKit')}
-                  </button>
-                ) : null}
-              </li>
-            ))}
+            {activos.map((item) => {
+              // Bound to a const so the narrowing survives into the onClick closure.
+              const kitCodigo = item.kitCodigo;
+              return (
+                <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="font-mono">{kitCodigo}</span>
+                  {writable &&
+                  (pallet.estado === 'EN_CONSTRUCCION' || pallet.estado === 'CREADO') &&
+                  kitCodigo ? (
+                    <button
+                      type="button"
+                      className="text-xs text-error linkish"
+                      disabled={ocupado}
+                      onClick={() => void retirar(kitCodigo)}
+                    >
+                      {t('palletBuild.removeKit')}
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -265,16 +290,39 @@ export default function PalletArmadoPage() {
           <h2 className="text-lg font-semibold">{t('palletBuild.finalizeTitle')}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <FormField label={t('palletBuild.pesoBruto')} htmlFor="pallet-bruto">
-              <Input id="pallet-bruto" value={pesoBruto} onChange={(e) => setPesoBruto(e.target.value)} type="number" />
+              <Input
+                id="pallet-bruto"
+                value={pesoBruto}
+                onChange={(e) => setPesoBruto(e.target.value)}
+                type="number"
+              />
             </FormField>
             <FormField label={t('palletBuild.alto')} htmlFor="pallet-alto">
-              <Input id="pallet-alto" value={alto} onChange={(e) => setAlto(e.target.value)} type="number" step="0.01" />
+              <Input
+                id="pallet-alto"
+                value={alto}
+                onChange={(e) => setAlto(e.target.value)}
+                type="number"
+                step="0.01"
+              />
             </FormField>
             <FormField label={t('palletBuild.ancho')} htmlFor="pallet-ancho">
-              <Input id="pallet-ancho" value={ancho} onChange={(e) => setAncho(e.target.value)} type="number" step="0.01" />
+              <Input
+                id="pallet-ancho"
+                value={ancho}
+                onChange={(e) => setAncho(e.target.value)}
+                type="number"
+                step="0.01"
+              />
             </FormField>
             <FormField label={t('palletBuild.largo')} htmlFor="pallet-largo">
-              <Input id="pallet-largo" value={largo} onChange={(e) => setLargo(e.target.value)} type="number" step="0.01" />
+              <Input
+                id="pallet-largo"
+                value={largo}
+                onChange={(e) => setLargo(e.target.value)}
+                type="number"
+                step="0.01"
+              />
             </FormField>
           </div>
           <Button type="button" disabled={ocupado} onClick={() => void finalizar()}>

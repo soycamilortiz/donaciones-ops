@@ -5,8 +5,9 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
-import { Spinner } from '@/components/atoms/Spinner';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { FormField } from '@/components/molecules/FormField';
+import { useToast } from '@/components/molecules/Toast';
 import { useOrg } from '@/components/OrgGate';
 import {
   actualizarChecklistDespacho,
@@ -41,6 +42,7 @@ export default function CargaPage() {
   const request = useApi();
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const { avisar } = useToast();
   const writable = can('inventory:write');
   const [despachos, setDespachos] = useState<Despacho[]>([]);
   const [activo, setActivo] = useState<Despacho | null>(null);
@@ -150,18 +152,16 @@ export default function CargaPage() {
     if (!activo || !codigoPallet.trim()) {
       return;
     }
+    const codigo = codigoPallet.trim();
     setOcupado(true);
     setError(null);
     try {
-      await cargarPalletDespacho(
-        request,
-        orgId,
-        activo.id,
-        codigoPallet.trim(),
-        viajeActivo?.id,
-      );
+      await cargarPalletDespacho(request, orgId, activo.id, codigo, viajeActivo?.id);
       setCodigoPallet('');
       await refrescarDespacho(activo.id);
+      // Cargar un pallet solo repintaba el resumen: sin confirmación explícita
+      // se vuelve a escanear el mismo y el operario cree que no entró.
+      avisar(t('cargo.scanOk', { code: codigo }));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('cargo.saveError'));
     } finally {
@@ -220,14 +220,6 @@ export default function CargaPage() {
     return <p className="py-8 text-sm text-muted-foreground">{t('cargo.noPermission')}</p>;
   }
 
-  if (cargando) {
-    return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
-    );
-  }
-
   const faltantes =
     activo && activo.palletsEsperados > activo.palletsCargados
       ? activo.palletsEsperados - activo.palletsCargados
@@ -241,8 +233,7 @@ export default function CargaPage() {
     activo &&
     (activo.estado === 'CARGANDO' || activo.estado === 'LISTO_PARA_CARGA') &&
     activo.palletsCargados > 0;
-  const puedeChecklist =
-    activo && (activo.estado === 'CARGADO' || activo.estado === 'PARCIAL');
+  const puedeChecklist = activo && (activo.estado === 'CARGADO' || activo.estado === 'PARCIAL');
 
   return (
     <div className="space-y-6 py-2">
@@ -263,7 +254,11 @@ export default function CargaPage() {
         </p>
       ) : null}
 
-      {!activo && planId && writable ? (
+      {cargando ? <SkeletonList filas={3} etiqueta={t('common.loading')} /> : null}
+
+      {/* El `!cargando` importa: sin él, mientras carga se ofrece crear un
+          despacho que quizá ya existe. */}
+      {!cargando && !activo && planId && writable ? (
         <section className="space-y-3 rounded-lg border border-border bg-card p-4">
           <h2 className="text-lg font-semibold">{t('cargo.createTitle')}</h2>
           <p className="text-sm text-muted-foreground">{t('cargo.createHint')}</p>
@@ -322,7 +317,9 @@ export default function CargaPage() {
             </p>
           ) : null}
           {faltantes > 0 ? (
-            <p className="text-sm text-warning">{t('cargo.missingPallets', { count: faltantes })}</p>
+            <p className="text-sm text-warning">
+              {t('cargo.missingPallets', { count: faltantes })}
+            </p>
           ) : null}
 
           {writable && activo.estado === 'BORRADOR' ? (
@@ -407,7 +404,11 @@ export default function CargaPage() {
             {activo.pallets.map((p) => (
               <li key={p.id} className="flex items-center justify-between px-3 py-2 text-sm">
                 <span className="font-mono">{p.codigo}</span>
-                <Badge variant={p.estado === 'CARGADO' || p.estado === 'DESPACHADO' ? 'success' : 'default'}>
+                <Badge
+                  variant={
+                    p.estado === 'CARGADO' || p.estado === 'DESPACHADO' ? 'success' : 'default'
+                  }
+                >
                   {t(`palletization.palletEstado.${p.estado}`)}
                 </Badge>
               </li>
@@ -421,7 +422,12 @@ export default function CargaPage() {
                   {t('cargo.verifyLoad')}
                 </Button>
               ) : (
-                <Button type="button" disabled={ocupado} variant="outline" onClick={() => void verificar(true)}>
+                <Button
+                  type="button"
+                  disabled={ocupado}
+                  variant="outline"
+                  onClick={() => void verificar(true)}
+                >
                   {t('cargo.verifyPartial')}
                 </Button>
               )}

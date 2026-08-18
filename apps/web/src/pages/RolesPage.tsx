@@ -374,12 +374,16 @@ export default function RolesPage() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="sticky left-0 top-0 z-20 min-w-[240px] border-b border-r border-border bg-card px-4 py-3 text-left font-bold text-foreground">
+                  <th
+                    scope="col"
+                    className="sticky left-0 top-0 z-20 min-w-[240px] border-b border-r border-border bg-card px-4 py-3 text-left font-bold text-foreground"
+                  >
                     {t('roles.permission')}
                   </th>
                   {roles.map((role) => (
                     <th
                       key={role.id}
+                      scope="col"
                       className="sticky top-0 z-10 border-b border-border bg-card px-4 py-3 text-center align-top font-semibold text-foreground"
                     >
                       {writable ? (

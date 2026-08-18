@@ -14,7 +14,9 @@ import { PrismaService } from '../prisma/prisma.service';
 async function main(): Promise<void> {
   const logger = new Logger('ResetCatalogo');
   if (process.env.NODE_ENV === 'production' && process.env.FORCE_RESET_CATALOGO !== 'true') {
-    logger.error('Refusing to reset catalog in production. Set FORCE_RESET_CATALOGO=true to override.');
+    logger.error(
+      'Refusing to reset catalog in production. Set FORCE_RESET_CATALOGO=true to override.',
+    );
     process.exit(1);
   }
 
