@@ -226,14 +226,30 @@ export default function RecepcionDetailPage() {
             <table className="w-full min-w-[40rem] text-left text-sm">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
-                  <th className="py-2 pr-3">{t('receptions.columns.product')}</th>
-                  <th className="py-2 pr-3">{t('receptions.columns.ul')}</th>
-                  <th className="py-2 pr-3">{t('receptions.columns.received')}</th>
-                  <th className="py-2 pr-3">{t('receptions.columns.measure')}</th>
-                  <th className="py-2 pr-3">{t('receptions.columns.approved')}</th>
-                  <th className="py-2 pr-3">{t('receptions.columns.quarantine')}</th>
-                  <th className="py-2 pr-3">{t('receptions.columns.rejected')}</th>
-                  <th className="py-2">{t('receptions.columns.status')}</th>
+                  <th scope="col" className="py-2 pr-3">
+                    {t('receptions.columns.product')}
+                  </th>
+                  <th scope="col" className="py-2 pr-3">
+                    {t('receptions.columns.ul')}
+                  </th>
+                  <th scope="col" className="py-2 pr-3">
+                    {t('receptions.columns.received')}
+                  </th>
+                  <th scope="col" className="py-2 pr-3">
+                    {t('receptions.columns.measure')}
+                  </th>
+                  <th scope="col" className="py-2 pr-3">
+                    {t('receptions.columns.approved')}
+                  </th>
+                  <th scope="col" className="py-2 pr-3">
+                    {t('receptions.columns.quarantine')}
+                  </th>
+                  <th scope="col" className="py-2 pr-3">
+                    {t('receptions.columns.rejected')}
+                  </th>
+                  <th scope="col" className="py-2">
+                    {t('receptions.columns.status')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
