@@ -6,14 +6,14 @@ import PendingShell from './components/PendingShell';
 import RequireAuth from './components/RequireAuth';
 import { ROUTES } from './lib/constants';
 import AcopiosPage from './pages/AcopiosPage';
-import CompleteGoogleProfilePage from './pages/CompleteGoogleProfilePage';
 import CargaPage from './pages/CargaPage';
-import DespachosPage from './pages/DespachosPage';
+import CompleteGoogleProfilePage from './pages/CompleteGoogleProfilePage';
 import ConsolidacionPage from './pages/ConsolidacionPage';
 import ControlKitsPage from './pages/ControlKitsPage';
 import Dashboard from './pages/Dashboard';
 import DemandaDetailPage from './pages/DemandaDetailPage';
 import DemandasPage from './pages/DemandasPage';
+import DespachosPage from './pages/DespachosPage';
 import InventoryPage from './pages/InventoryPage';
 import KitsPage from './pages/KitsPage';
 import Landing from './pages/Landing';
@@ -71,7 +71,10 @@ export default function App() {
             <Route path="/app/demandas/:id/picking" element={<PickingKitsPage />} />
             <Route path="/app/demandas/:id/control" element={<ControlKitsPage />} />
             <Route path="/app/demandas/:id/consolidacion" element={<ConsolidacionPage />} />
-            <Route path="/app/demandas/:id/palletizacion/:palletId" element={<PalletArmadoPage />} />
+            <Route
+              path="/app/demandas/:id/palletizacion/:palletId"
+              element={<PalletArmadoPage />}
+            />
             <Route path="/app/demandas/:id/palletizacion" element={<PalletizacionPage />} />
             <Route path="/app/despachos" element={<DespachosPage />} />
             <Route path="/app/demandas/:id/carga" element={<CargaPage />} />

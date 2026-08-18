@@ -28,11 +28,11 @@ import type {
   RecepcionTipo,
   ReservaEstado,
   UbicacionEstado,
-  ViajeEstado,
   UbicacionFuncion,
   UbicacionTipo,
   UnidadLogisticaEstado,
   UnidadLogisticaTipo,
+  ViajeEstado,
 } from './enums.js';
 import type { PermissionSlug, RoleSlug } from './rbac.js';
 

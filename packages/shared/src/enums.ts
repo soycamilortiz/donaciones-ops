@@ -445,8 +445,7 @@ export const PalletDespachoEstado = {
   Cancelado: 'CANCELADO',
 } as const;
 
-export type PalletDespachoEstado =
-  (typeof PalletDespachoEstado)[keyof typeof PalletDespachoEstado];
+export type PalletDespachoEstado = (typeof PalletDespachoEstado)[keyof typeof PalletDespachoEstado];
 
 export const DespachoEstado = {
   Borrador: 'BORRADOR',

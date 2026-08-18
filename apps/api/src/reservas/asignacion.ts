@@ -101,7 +101,10 @@ export function disponibleDeGrupo(
   sustitutos: Map<string, string[]>,
   pool: Map<string, CandidatoSaldo[]>,
 ): number {
-  return candidatosDeGrupo(productoId, sustitutos, pool).reduce((sum, row) => sum + row.disponible, 0);
+  return candidatosDeGrupo(productoId, sustitutos, pool).reduce(
+    (sum, row) => sum + row.disponible,
+    0,
+  );
 }
 
 /** Máximo de kits que el stock disponible puede armar. */

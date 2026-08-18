@@ -582,11 +582,7 @@ function Resultado({
       </label>
       <label className="flex flex-col gap-1.5" htmlFor="donacion-unidad">
         <span className={fieldLabel}>{t('newDonation.measureUnit')}</span>
-        <Select
-          id="donacion-unidad"
-          value={unidad}
-          onChange={(e) => setUnidad(e.target.value)}
-        >
+        <Select id="donacion-unidad" value={unidad} onChange={(e) => setUnidad(e.target.value)}>
           {INVENTORY_UNIDADES.map((item) => (
             <option key={item.value} value={item.value}>
               {t(`inventoryUnits.${item.value}`)}

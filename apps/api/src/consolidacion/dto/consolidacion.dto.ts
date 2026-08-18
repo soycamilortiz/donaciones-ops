@@ -13,7 +13,16 @@ import type {
   PipelineDemanda as PipelineContract,
 } from '@soschoco/shared';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Max, Min, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class ArmarKitsDto {
   @ApiProperty()
