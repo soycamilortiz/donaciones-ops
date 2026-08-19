@@ -436,36 +436,32 @@
     "goToPanel": "Go to panel",
     "hero": {
       "logoAlt": "SOS Chocó · #JuntxsPorElChocó",
-      "eyebrow": "Logistics operations",
-      "lede": "Coordination of donations, collection centers and shipments. Create an account — the organization is optional until you set up your own or get invited."
+      "headline": "Coordinate your organization's aid, from start to finish.",
+      "lede": "Donations, collection centers and deliveries across Chocó in one place. Create your organization and add your team.",
+      "guidesLink": "First time? See the how-to guides"
     },
-    "status": {
-      "api": "API",
-      "db": "PostgreSQL",
-      "checking": "Checking",
-      "ok": "Online",
-      "down": "No response",
-      "docsLink": "OpenAPI documentation"
-    },
-    "modules": {
-      "title": "Modules",
-      "soon": "Coming soon",
-      "acopios": {
-        "title": "Collection centers",
-        "body": "WMS warehouses: location, contact and operation for each site."
+    "start": {
+      "title": "How to start",
+      "step1": {
+        "title": "Create your account",
+        "body": "In a minute, with your email."
       },
-      "usuarios": {
-        "title": "Users and roles",
-        "body": "Collaborators per organization, with role-based permissions."
+      "step2": {
+        "title": "Create your organization",
+        "body": "You become the admin and set up your collection centers."
       },
-      "recepciones": {
-        "title": "Receptions",
-        "body": "The truck or donation that arrives: identify products and stock goes up when you validate."
-      },
-      "envios": {
-        "title": "Shipments",
-        "body": "Dispatch and tracking of deliveries to communities. Upcoming module."
+      "step3": {
+        "title": "Add your team",
+        "body": "Add each person, assign their role and share their guide."
       }
+    },
+    "invited": {
+      "title": "Already invited?",
+      "body": "Sign in with the username and password you were given. Your organization is ready.",
+      "cta": "Sign in"
+    },
+    "footer": {
+      "tagline": "#JuntxsPorElChocó"
     }
   },
   "session": {
