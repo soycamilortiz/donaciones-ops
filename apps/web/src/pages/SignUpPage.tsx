@@ -8,7 +8,9 @@ import { FormField } from '@/components/molecules/FormField';
 import { AuthLayout } from '@/components/templates/AuthLayout';
 import { ROUTES } from '@/lib/constants';
 import CaptchaFields, { readCaptcha, useCaptchaRefresh } from '../components/CaptchaFields';
-import { GoogleSignInButton } from '../components/GoogleSignInButton';
+// Google sign-in disabled for the MVP demo. Restore this import and the button
+// below (same in SignInPage) once GOOGLE_CLIENT_ID / VITE_GOOGLE_CLIENT_ID are set.
+// import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { apiRequest, type RegisterPendingVerification } from '../lib/api';
 
 export default function SignUpPage() {
@@ -62,8 +64,8 @@ export default function SignUpPage() {
     // en max-w-md (una sola columna, mobile-first).
     <AuthLayout title={t('auth.createAccount')} className="sm:max-w-2xl">
       <form className="space-y-5" onSubmit={(event) => void onSubmit(event)}>
-        <GoogleSignInButton onError={setError} />
-        <p className="text-center text-sm text-muted-foreground">{t('auth.orEmail')}</p>
+        {/* Google sign-in hidden for the MVP demo. Restore <GoogleSignInButton
+            onError={setError} /> and the "o con tu correo" divider when ready. */}
         {/* Mobile-first: una columna; a partir de sm, pares a dos columnas. */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormField label={t('auth.name')} htmlFor="nombre" required>
