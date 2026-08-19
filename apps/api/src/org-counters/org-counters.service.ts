@@ -196,7 +196,17 @@ export class OrgCountersService {
       kind: 'VIAJE',
       periodo: year,
     });
-    return `VIA-${year}-${pad(n, 6)}`;
+    return `TRP-${year}-${pad(n, 6)}`;
+  }
+
+  async codigoRuta(organizationId: string, now = new Date()): Promise<string> {
+    const year = String(now.getUTCFullYear());
+    const n = await this.siguiente({
+      organizationId,
+      kind: 'RUTA',
+      periodo: year,
+    });
+    return `RUT-${year}-${pad(n, 4)}`;
   }
 }
 

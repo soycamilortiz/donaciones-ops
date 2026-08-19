@@ -42,6 +42,9 @@ export default function AppShell() {
     { href: '/app/kits', label: t('nav.kits'), icon: 'heart' },
     { href: '/app/demandas', label: t('nav.demands'), icon: 'alert-circle' },
     { href: '/app/despachos', label: t('nav.despachos'), icon: 'swap' },
+    { href: '/app/transporte', label: t('nav.transporte'), icon: 'swap' },
+    { href: '/app/rutas', label: t('nav.rutas'), icon: 'book' },
+    { href: '/app/entregas', label: t('nav.entregas'), icon: 'package' },
     { href: '/app/recepciones', label: t('nav.receptions'), icon: 'swap' },
   ];
 

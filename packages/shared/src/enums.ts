@@ -206,6 +206,8 @@ export const InventoryMovimientoTipo = {
   Picking: 'PICKING',
   Ajuste: 'AJUSTE',
   Despacho: 'DESPACHO',
+  Entrega: 'ENTREGA',
+  Devolucion: 'DEVOLUCION',
 } as const;
 
 export type InventoryMovimientoTipo =
@@ -221,6 +223,8 @@ export const INVENTORY_MOVIMIENTO_TIPOS: ReadonlyArray<{
   { value: InventoryMovimientoTipo.Picking, label: 'Picking' },
   { value: InventoryMovimientoTipo.Ajuste, label: 'Ajuste' },
   { value: InventoryMovimientoTipo.Despacho, label: 'Despacho' },
+  { value: InventoryMovimientoTipo.Entrega, label: 'Entrega' },
+  { value: InventoryMovimientoTipo.Devolucion, label: 'Devolución' },
 ];
 
 export const PutawayEstado = {
@@ -388,6 +392,7 @@ export const KitInstanciaEstado = {
   Consolidado: 'CONSOLIDADO',
   Palletizado: 'PALLETIZADO',
   Despachado: 'DESPACHADO',
+  Entregado: 'ENTREGADO',
 } as const;
 
 export type KitInstanciaEstado = (typeof KitInstanciaEstado)[keyof typeof KitInstanciaEstado];
@@ -471,15 +476,41 @@ export type DespachoEstado = (typeof DespachoEstado)[keyof typeof DespachoEstado
 
 export const ViajeEstado = {
   Planificado: 'PLANIFICADO',
+  Asignado: 'ASIGNADO',
   Cargando: 'CARGANDO',
   Cargado: 'CARGADO',
+  Listo: 'LISTO',
   Despachado: 'DESPACHADO',
   EnTransito: 'EN_TRANSITO',
+  LlegoDestino: 'LLEGO_DESTINO',
   Entregado: 'ENTREGADO',
   Cancelado: 'CANCELADO',
+  Retornado: 'RETORNADO',
 } as const;
 
 export type ViajeEstado = (typeof ViajeEstado)[keyof typeof ViajeEstado];
+
+export const EntregaEstado = {
+  Pendiente: 'PENDIENTE',
+  Parcial: 'PARCIAL',
+  Completa: 'COMPLETA',
+  ConDiferencias: 'CON_DIFERENCIAS',
+  Rechazada: 'RECHAZADA',
+} as const;
+
+export type EntregaEstado = (typeof EntregaEstado)[keyof typeof EntregaEstado];
+
+export const TransportEventTipo = {
+  Salida: 'SALIDA',
+  LlegadaParada: 'LLEGADA_PARADA',
+  SalidaParada: 'SALIDA_PARADA',
+  LlegadaDestino: 'LLEGADA_DESTINO',
+  Incidencia: 'INCIDENCIA',
+  Retorno: 'RETORNO',
+  Otro: 'OTRO',
+} as const;
+
+export type TransportEventTipo = (typeof TransportEventTipo)[keyof typeof TransportEventTipo];
 
 export const CargaEstado = {
   Abierta: 'ABIERTA',

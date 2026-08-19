@@ -14,7 +14,9 @@ import { RecepcionesModule } from './recepciones/recepciones.module';
 import { ReservasModule } from './reservas/reservas.module';
 import { ConsolidacionModule } from './consolidacion/consolidacion.module';
 import { DespachoModule } from './despacho/despacho.module';
+import { EntregaModule } from './entrega/entrega.module';
 import { StorageModule } from './storage/storage.module';
+import { TransporteModule } from './transporte/transporte.module';
 import { UbicacionesModule } from './ubicaciones/ubicaciones.module';
 
 @Module({
@@ -38,6 +40,8 @@ import { UbicacionesModule } from './ubicaciones/ubicaciones.module';
     ReservasModule,
     ConsolidacionModule,
     DespachoModule,
+    TransporteModule,
+    EntregaModule,
   ],
   controllers: [AppController],
 })
