@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guías de uso · SOS Chocó</title>
+<style>
+:root{--bg:#f5f7f9;--card:#fff;--ink:#0f172a;--muted:#54657a;--brand:#0e7490;--line:#e2e8f0;--ok:#0f766e;--okbg:#ecfdf5;--okln:#bbf7d0;--r:16px;--maxw:900px}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:20px 16px 64px}
+a{color:var(--brand)}
+header.top{background:var(--brand);color:#fff;border-radius:var(--r);padding:26px 22px;margin-bottom:20px}
+header.top .eyebrow{opacity:.85;font-size:14px;margin:0 0 6px}
+header.top h1{margin:0;font-size:28px;line-height:1.2}
+header.top p{margin:12px 0 0;font-size:16px;opacity:.95;max-width:60ch}
+.lead{font-size:17px;color:var(--muted);margin:0 0 22px}
+section{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin:0 0 18px}
+section h2{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:10px}
+section h2 .n{background:var(--brand);color:#fff;width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto}
+section .sub{color:var(--muted);margin:2px 0 14px;font-size:15px}
+ol.steps{list-style:none;counter-reset:s;margin:0;padding:0}
+ol.steps>li{counter-increment:s;position:relative;padding:12px 12px 12px 52px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+ol.steps>li:last-child{margin-bottom:0}
+ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:11px;width:28px;height:28px;background:var(--brand);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.pick{margin:0 0 8px;font-size:15px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+a.role{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:14px;padding:16px 16px;background:#fff;transition:border-color .15s,transform .05s}
+a.role:hover{border-color:var(--brand)}
+a.role:active{transform:translateY(1px)}
+a.role .name{font-size:17px;font-weight:700;color:var(--brand);margin:0 0 4px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+a.role .name .go{font-weight:400;color:var(--muted)}
+a.role .desc{font-size:14px;color:var(--muted);margin:0}
+footer{color:var(--muted);font-size:13px;text-align:center;margin-top:24px}
+@media print{body{background:#fff}section{break-inside:avoid;border-color:#ccc}header.top{-webkit-print-color-adjust:exact;print-color-adjust:exact}a.role{border-color:#ccc}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+<p class="eyebrow">SOS Chocó · #JuntxsPorElChocó</p>
+<h1>Guías de uso</h1>
+<p>Elige tu rol y abre tu guía. Cada una es corta y va al grano: cómo entrar y qué hacer.</p>
+</header>
+
+<p class="lead">¿No sabes cuál es tu rol? Es el que te dijeron al sumarte al equipo. Si tienes dudas, pregúntale a quien te dio acceso.</p>
+
+<section>
+<h2><span class="n">1</span> Cómo entrar</h2>
+<p class="sub">Igual para todos los roles. Guárdalo en favoritos.</p>
+<ol class="steps">
+<li>Abre <b>juntosxchoco.com</b> en el celular o el computador.</li>
+<li>Toca <b>«Ir al panel»</b>.</li>
+<li>Escribe tu <b>Usuario o correo</b> y tu <b>Contraseña</b>, resuelve el <b>captcha</b> y toca <b>«Entrar»</b>.</li>
+<li>¿Te crearon la cuenta? Entra con el <b>Usuario</b> y la <b>Clave temporal</b> que te entregaron.</li>
+</ol>
+</section>
+
+<section>
+<h2><span class="n">2</span> Elige tu guía</h2>
+<p class="pick">Toca tu rol para ver los pasos.</p>
+<div class="grid">
+<a class="role" href="administrador-de-acopio.html">
+<p class="name">Administrador de acopio <span class="go">→</span></p>
+<p class="desc">El dueño de la operación: usuarios, acopios y todo el flujo.</p>
+</a>
+<a class="role" href="auxiliar-administrativo.html">
+<p class="name">Auxiliar administrativo <span class="go">→</span></p>
+<p class="desc">Gestión de personas, roles y datos de la organización.</p>
+</a>
+<a class="role" href="lider-de-zona.html">
+<p class="name">Líder de zona <span class="go">→</span></p>
+<p class="desc">Coordina los acopios de tu zona y su bodega.</p>
+</a>
+<a class="role" href="finanzas.html">
+<p class="name">Finanzas <span class="go">→</span></p>
+<p class="desc">Consulta operativa para el control económico (solo lectura).</p>
+</a>
+<a class="role" href="transportador.html">
+<p class="name">Transportador <span class="go">→</span></p>
+<p class="desc">Consulta acopios para retiro y despacho.</p>
+</a>
+<a class="role" href="voluntario.html">
+<p class="name">Voluntario <span class="go">→</span></p>
+<p class="desc">Apoyo en campo: consulta inventario y registra donaciones.</p>
+</a>
+</div>
+</section>
+
+<footer>SOS Chocó · #JuntxsPorElChocó · Entra en juntosxchoco.com</footer>
+</div>
+</body>
+</html>
