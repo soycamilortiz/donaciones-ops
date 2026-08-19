@@ -1,0 +1,13 @@
+title = "donaciones-ops gitleaks config"
+
+# Usa el set de reglas por defecto de gitleaks y agrega una allowlist para las
+# plantillas de entorno, que solo contienen placeholders (no secretos reales).
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Plantillas y ejemplos sin secretos reales"
+paths = [
+  '''\.env\.example$''',
+  '''\.example$''',
+]

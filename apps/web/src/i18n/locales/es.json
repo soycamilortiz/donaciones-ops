@@ -145,6 +145,14 @@
     "measureUnit": "Unidad de medida",
     "expiryMissing": "Falta vencimiento: al validar esta cantidad irá a cuarentena, no a inventario.",
     "validateWarning": "Hay líneas de alimentos o medicamentos sin vencimiento. Al validar, esa cantidad no suma stock: queda en cuarentena.",
+    "willQuarantineHint": "Falta lote o vencimiento → irá a cuarentena",
+    "quarantineSummary": "Líneas que irán a cuarentena por falta de lote o vencimiento: {{count}}",
+    "assignedOf": "Asignado {{sum}} / {{received}}",
+    "sumMismatch": "La suma debe igualar lo recibido",
+    "void": "Anular recepción",
+    "voidConfirmTitle": "Anular esta recepción",
+    "voidConfirmDescription": "No suma stock y no se puede deshacer. Las unidades y líneas quedan anuladas.",
+    "voidConfirmAction": "Anular",
     "columns": {
       "code": "Código",
       "acopio": "Acopio",
@@ -301,7 +309,24 @@
     "invited": "Persona agregada a la organización",
     "roleChanged": "Rol actualizado",
     "removed": "Persona dada de baja",
-    "reactivated": "Persona reactivada"
+    "reactivated": "Persona reactivada",
+    "createTitle": "Crear voluntario",
+    "createSubtitle": "Crea la cuenta al toque con una clave temporal. No hace falta que la persona se registre.",
+    "createName": "Nombre",
+    "createUsername": "Usuario",
+    "createUsernameHint": "Letras, números, punto o guion bajo",
+    "createEmail": "Correo",
+    "createSubmit": "Crear voluntario",
+    "creating": "Creando…",
+    "created": "Voluntario creado",
+    "createError": "No se pudo crear el voluntario",
+    "credentialsTitle": "Credenciales del voluntario",
+    "credentialsHint": "Entregá estos datos a la persona. La clave temporal se muestra una sola vez.",
+    "credUser": "Usuario",
+    "credPassword": "Clave temporal",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "credentialsDone": "Entendido"
   },
   "roles": {
     "title": "Roles y permisos",
@@ -414,36 +439,32 @@
     "goToPanel": "Ir al panel",
     "hero": {
       "logoAlt": "SOS Chocó · #JuntxsPorElChocó",
-      "eyebrow": "Operación logística",
-      "lede": "Coordinación de donaciones, centros de acopio y envíos. Creá una cuenta; la organización es opcional hasta que armes la tuya o te inviten."
+      "headline": "Coordina la ayuda de tu organización, de principio a fin.",
+      "lede": "Donaciones, centros de acopio y entregas del Chocó en un solo lugar. Crea tu organización y suma a tu equipo.",
+      "guidesLink": "¿Primera vez? Mira las guías de uso"
     },
-    "status": {
-      "api": "API",
-      "db": "PostgreSQL",
-      "checking": "Comprobando",
-      "ok": "En línea",
-      "down": "Sin respuesta",
-      "docsLink": "Documentación OpenAPI"
-    },
-    "modules": {
-      "title": "Módulos",
-      "soon": "Próximamente",
-      "acopios": {
-        "title": "Centros de acopio",
-        "body": "Bodegas WMS: ubicación, contacto y operación de cada sede."
+    "start": {
+      "title": "Cómo empezar",
+      "step1": {
+        "title": "Crea tu cuenta",
+        "body": "En un minuto, con tu correo."
       },
-      "usuarios": {
-        "title": "Usuarios y roles",
-        "body": "Colaboradores por organización, con permisos por rol."
+      "step2": {
+        "title": "Crea tu organización",
+        "body": "Quedas como administrador y armas tus centros de acopio."
       },
-      "recepciones": {
-        "title": "Recepciones",
-        "body": "El camión o la donación que llega: identificás productos y el stock sube al validar."
-      },
-      "envios": {
-        "title": "Envíos",
-        "body": "Despacho y seguimiento de entregas a comunidades. Próximo módulo."
+      "step3": {
+        "title": "Suma a tu equipo",
+        "body": "Agrega a cada persona, asígnale su rol y pásale su guía."
       }
+    },
+    "invited": {
+      "title": "¿Ya te invitaron?",
+      "body": "Entra con el usuario y la clave que te dieron. Tu organización ya está lista.",
+      "cta": "Entrar"
+    },
+    "footer": {
+      "tagline": "#JuntxsPorElChocó"
     }
   },
   "session": {
@@ -881,6 +902,7 @@
     "codigoOrigen": "Código ubicación origen",
     "codigoDestino": "Código zona kitting/picking",
     "confirmLine": "Confirmar pick",
+    "lineOk": "Línea confirmada.",
     "confirmKit": "Confirmar kit armado",
     "codesRequired": "Confirmá los códigos de origen y destino",
     "itemDetail": "{{product}}: {{qty}} · {{origen}}{{lot}}",
@@ -921,6 +943,7 @@
     "scanTitle": "Escanear kit",
     "codigoKit": "Código kit (KIN-…)",
     "scanConfirm": "Agregar kit",
+    "scanOk": "Kit {{code}} agregado al pallet.",
     "itemsTitle": "Kits en el pallet",
     "itemsEmpty": "Todavía no hay kits escaneados.",
     "removeKit": "Retirar (daño)",
@@ -956,6 +979,7 @@
     "conductorDocumento": "Documento conductor",
     "codigoPallet": "Código pallet (PAL-DSP-…)",
     "scanPallet": "Cargar pallet",
+    "scanOk": "Pallet {{code}} cargado.",
     "summaryLine": "{{destino}} · {{cargados}}/{{esperados}} pallets · {{peso}} kg",
     "kitsLine": "{{cargados}}/{{esperados}} kits cargados",
     "viajeLine": "{{codigo}} · {{placa}} · {{conductor}} · {{cargados}}/{{esperados}} pallets",
@@ -1004,7 +1028,7 @@
   "despachos": {
     "title": "Despachos",
     "subtitle": "Torre de control: estado de salidas y tránsito.",
-    "empty": "No hay despachos registrados.",
+    "empty": "Todavía no hay despachos. Se crean desde un plan de palletización, en el detalle de la demanda.",
     "loadError": "No se pudieron cargar los despachos",
     "noPermission": "No tenés permiso para ver despachos.",
     "colCodigo": "Despacho",

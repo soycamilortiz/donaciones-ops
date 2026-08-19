@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
-import { Spinner } from '@/components/atoms/Spinner';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { useOrg } from '@/components/OrgGate';
 import { listarConsolidaciones } from '@/features/consolidacion/consolidacion-service';
 import {
@@ -73,17 +73,7 @@ export default function PalletizacionPage() {
   };
 
   if (!can('inventory:read')) {
-    return (
-      <p className="py-8 text-sm text-muted-foreground">{t('palletization.noPermission')}</p>
-    );
-  }
-
-  if (cargando) {
-    return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
-    );
+    return <p className="py-8 text-sm text-muted-foreground">{t('palletization.noPermission')}</p>;
   }
 
   const consolidacionesSinPlan = consolidaciones.filter(
@@ -128,11 +118,7 @@ export default function PalletizacionPage() {
                   </p>
                 </div>
                 {writable ? (
-                  <Button
-                    type="button"
-                    disabled={ocupado}
-                    onClick={() => void crearPlan(row.id)}
-                  >
+                  <Button type="button" disabled={ocupado} onClick={() => void crearPlan(row.id)}>
                     {t('palletization.createPlan')}
                   </Button>
                 ) : null}
@@ -142,7 +128,9 @@ export default function PalletizacionPage() {
         </section>
       ) : null}
 
-      {planes.length === 0 ? (
+      {cargando ? (
+        <SkeletonList filas={3} etiqueta={t('common.loading')} />
+      ) : planes.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('palletization.empty')}</p>
       ) : (
         planes.map((plan) => (
@@ -169,41 +157,45 @@ export default function PalletizacionPage() {
               ) : null}
             </div>
             <ul className="divide-y divide-border rounded border border-border">
-              {plan.slots.map((slot) => (
-                <li
-                  key={slot.id}
-                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">
-                      {slot.palletCodigo ?? `#${slot.sequence}`}
-                    </span>
-                    {slot.palletEstado ? (
-                      <Badge variant={ESTADO_VARIANTE[slot.palletEstado] ?? 'default'}>
-                        {t(`palletization.palletEstado.${slot.palletEstado}`)}
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm tabular-nums text-muted-foreground">
-                      {t('palletization.progress', {
-                        actual: slot.kitsActual,
-                        objetivo: slot.kitsObjetivo,
-                      })}
-                    </span>
-                    {slot.palletId && id ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(ROUTES.demandaPalletArmado(id, slot.palletId!))}
-                      >
-                        {t('palletization.openPallet')}
-                      </Button>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
+              {plan.slots.map((slot) => {
+                // Bound to a const so the narrowing survives into the onClick closure.
+                const palletId = slot.palletId;
+                return (
+                  <li
+                    key={slot.id}
+                    className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm">
+                        {slot.palletCodigo ?? `#${slot.sequence}`}
+                      </span>
+                      {slot.palletEstado ? (
+                        <Badge variant={ESTADO_VARIANTE[slot.palletEstado] ?? 'default'}>
+                          {t(`palletization.palletEstado.${slot.palletEstado}`)}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm tabular-nums text-muted-foreground">
+                        {t('palletization.progress', {
+                          actual: slot.kitsActual,
+                          objetivo: slot.kitsObjetivo,
+                        })}
+                      </span>
+                      {palletId && id ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(ROUTES.demandaPalletArmado(id, palletId))}
+                        >
+                          {t('palletization.openPallet')}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ))

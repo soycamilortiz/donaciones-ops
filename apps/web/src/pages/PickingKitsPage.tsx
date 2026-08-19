@@ -5,8 +5,9 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge, type BadgeVariant } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
-import { Spinner } from '@/components/atoms/Spinner';
+import { SkeletonList } from '@/components/atoms/Skeleton';
 import { FormField } from '@/components/molecules/FormField';
+import { useToast } from '@/components/molecules/Toast';
 import { useOrg } from '@/components/OrgGate';
 import {
   confirmarKitArmado,
@@ -30,6 +31,7 @@ export default function PickingKitsPage() {
   const request = useApi();
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
+  const { avisar } = useToast();
   const writable = can('inventory:write');
   const [kits, setKits] = useState<KitInstancia[]>([]);
   const [activo, setActivo] = useState<KitInstancia | null>(null);
@@ -38,10 +40,7 @@ export default function PickingKitsPage() {
   const [cargando, setCargando] = useState(true);
   const [ocupado, setOcupado] = useState(false);
 
-  const pendientes = useMemo(
-    () => kits.filter((kit) => kit.estado === 'PENDIENTE_PICK'),
-    [kits],
-  );
+  const pendientes = useMemo(() => kits.filter((kit) => kit.estado === 'PENDIENTE_PICK'), [kits]);
 
   const cargar = useCallback(async () => {
     if (!id) {
@@ -110,6 +109,9 @@ export default function PickingKitsPage() {
       });
       setActivo(actualizado);
       setKits((prev) => prev.map((row) => (row.id === actualizado.id ? actualizado : row)));
+      // Confirmar una línea solo le ponía una insignia: se pierde de vista al
+      // recorrer una lista larga con el móvil, y se vuelve a confirmar.
+      avisar(t('picking.lineOk'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('picking.saveError'));
     } finally {
@@ -138,21 +140,17 @@ export default function PickingKitsPage() {
     return <p className="py-8 text-sm text-muted-foreground">{t('picking.noPermission')}</p>;
   }
 
-  if (cargando) {
-    return (
-      <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Spinner /> {t('common.loading')}
-      </p>
-    );
-  }
-
   const lineasPendientes = activo?.items.filter((row) => !row.pickConfirmadoAt) ?? [];
   const listoParaArmar =
     activo?.estado === 'PENDIENTE_PICK' && activo.items.length > 0 && lineasPendientes.length === 0;
 
   return (
     <div className="space-y-6 py-2">
-      <button type="button" className="linkish" onClick={() => id && navigate(ROUTES.demandaDetalle(id))}>
+      <button
+        type="button"
+        className="linkish"
+        onClick={() => id && navigate(ROUTES.demandaDetalle(id))}
+      >
         {t('picking.back')}
       </button>
       <div className="space-y-1">
@@ -166,7 +164,9 @@ export default function PickingKitsPage() {
         </p>
       ) : null}
 
-      {pendientes.length === 0 ? (
+      {cargando ? (
+        <SkeletonList filas={3} etiqueta={t('common.loading')} />
+      ) : pendientes.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('picking.empty')}</p>
       ) : (
         <div className="flex flex-wrap gap-2">

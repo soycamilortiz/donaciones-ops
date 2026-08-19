@@ -25,6 +25,12 @@ void i18n
       es: { translation: es },
       en: { translation: en },
     },
+    // Locked to Spanish for now: the field team and volunteers in Chocó work in
+    // Spanish, and a device set to English must not flip the UI. `lng` overrides
+    // the detector (navigator/localStorage), so a stale "en" no longer wins. To
+    // re-enable detection / English, drop `lng` here and restore the
+    // LanguageSwitcher in AppShell.
+    lng: 'es',
     // Spanish is the product language: users are in Chocó, Colombia. English
     // exists for contributors and for anyone whose device is not in Spanish.
     fallbackLng: 'es',

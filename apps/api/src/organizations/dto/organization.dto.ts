@@ -1,7 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { OrganizationTipo } from '@prisma/client';
 import type { Member, Organization } from '@soschoco/shared';
-import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateOrganizationDto {
   @ApiProperty({ example: 'Fundación Río Atrato' })
@@ -120,6 +128,33 @@ export class OrganizationDto implements Organization {
   createdAt: Date;
 }
 
+export class CreateVolunteerDto {
+  @ApiProperty({ example: 'María Mosquera' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  nombre: string;
+
+  @ApiProperty({ example: 'maria.mosquera', description: 'Letras, números, punto o guion bajo' })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(32)
+  @Matches(/^[a-zA-Z0-9._]+$/, { message: 'Usuario inválido' })
+  usuario: string;
+
+  @ApiProperty({ example: 'maria@ejemplo.org' })
+  @IsEmail()
+  correo: string;
+
+  @ApiPropertyOptional({
+    example: 'voluntario',
+    description: 'Slug del rol. Default: voluntario',
+  })
+  @IsOptional()
+  @IsString()
+  roleSlug?: string;
+}
+
 export class MemberDto implements Member {
   @ApiProperty()
   membershipId: string;
@@ -147,4 +182,15 @@ export class MemberDto implements Member {
 
   @ApiProperty()
   roleNombre: string;
+}
+
+export class CreatedVolunteerDto {
+  @ApiProperty({ type: MemberDto })
+  member: MemberDto;
+
+  @ApiProperty({
+    example: 'Kp7mRxQ2ta',
+    description: 'Clave temporal en claro; se muestra una sola vez para entregarla.',
+  })
+  claveTemporal: string;
 }

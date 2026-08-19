@@ -10,59 +10,59 @@
 
 import type {
   AcopioFlujo as PrismaAcopioFlujo,
+  CargaEstado as PrismaCargaEstado,
+  CargaItemTipo as PrismaCargaItemTipo,
+  ConsolidacionEstado as PrismaConsolidacionEstado,
+  ControlLoteEstado as PrismaControlLoteEstado,
+  ControlModo as PrismaControlModo,
+  ControlResultado as PrismaControlResultado,
   DemandaEstado as PrismaDemandaEstado,
   DemandaItemTipo as PrismaDemandaItemTipo,
   DemandaPrioridad as PrismaDemandaPrioridad,
+  DespachoEstado as PrismaDespachoEstado,
   InventoryMovimientoTipo as PrismaInventoryMovimientoTipo,
+  KitInstanciaEstado as PrismaKitInstanciaEstado,
   OrganizationTipo as PrismaOrganizationTipo,
+  PalletDespachoEstado as PrismaPalletDespachoEstado,
+  PalletDespachoItemTipo as PrismaPalletDespachoItemTipo,
+  PlanPalletizacionEstado as PrismaPlanPalletizacionEstado,
   PutawayEstado as PrismaPutawayEstado,
   RecepcionEstado as PrismaRecepcionEstado,
   RecepcionPresentacion as PrismaRecepcionPresentacion,
   RecepcionTipo as PrismaRecepcionTipo,
   ReservaEstado as PrismaReservaEstado,
-  KitInstanciaEstado as PrismaKitInstanciaEstado,
-  ControlModo as PrismaControlModo,
-  ControlLoteEstado as PrismaControlLoteEstado,
-  ControlResultado as PrismaControlResultado,
-  ConsolidacionEstado as PrismaConsolidacionEstado,
-  PlanPalletizacionEstado as PrismaPlanPalletizacionEstado,
-  PalletDespachoEstado as PrismaPalletDespachoEstado,
-  DespachoEstado as PrismaDespachoEstado,
-  ViajeEstado as PrismaViajeEstado,
-  CargaEstado as PrismaCargaEstado,
-  CargaItemTipo as PrismaCargaItemTipo,
-  PalletDespachoItemTipo as PrismaPalletDespachoItemTipo,
   UbicacionEstado as PrismaUbicacionEstado,
   UbicacionFuncion as PrismaUbicacionFuncion,
   UbicacionTipo as PrismaUbicacionTipo,
+  ViajeEstado as PrismaViajeEstado,
 } from '@prisma/client';
 import type {
   AcopioFlujo,
+  CargaEstado,
+  CargaItemTipo,
+  ConsolidacionEstado,
+  ControlLoteEstado,
+  ControlModo,
+  ControlResultado,
   DemandaEstado,
   DemandaItemTipo,
   DemandaPrioridad,
+  DespachoEstado,
   InventoryMovimientoTipo,
+  KitInstanciaEstado,
   OrganizationTipo,
+  PalletDespachoEstado,
+  PalletDespachoItemTipo,
+  PlanPalletizacionEstado,
   PutawayEstado,
   RecepcionEstado,
   RecepcionPresentacion,
   RecepcionTipo,
   ReservaEstado,
-  KitInstanciaEstado,
-  ControlModo,
-  ControlLoteEstado,
-  ControlResultado,
-  ConsolidacionEstado,
-  PlanPalletizacionEstado,
-  PalletDespachoEstado,
-  DespachoEstado,
-  ViajeEstado,
-  CargaEstado,
-  CargaItemTipo,
-  PalletDespachoItemTipo,
   UbicacionEstado,
   UbicacionFuncion,
   UbicacionTipo,
+  ViajeEstado,
 } from '@soschoco/shared';
 
 type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
@@ -101,7 +101,8 @@ export const DEMANDA_ITEM_TIPO_EN_SYNC: Exact<DemandaItemTipo, PrismaDemandaItem
 
 export const RESERVA_ESTADO_EN_SYNC: Exact<ReservaEstado, PrismaReservaEstado> = true;
 
-export const KIT_INSTANCIA_ESTADO_EN_SYNC: Exact<KitInstanciaEstado, PrismaKitInstanciaEstado> = true;
+export const KIT_INSTANCIA_ESTADO_EN_SYNC: Exact<KitInstanciaEstado, PrismaKitInstanciaEstado> =
+  true;
 
 export const CONTROL_MODO_EN_SYNC: Exact<ControlModo, PrismaControlModo> = true;
 
@@ -109,10 +110,8 @@ export const CONTROL_LOTE_ESTADO_EN_SYNC: Exact<ControlLoteEstado, PrismaControl
 
 export const CONTROL_RESULTADO_EN_SYNC: Exact<ControlResultado, PrismaControlResultado> = true;
 
-export const CONSOLIDACION_ESTADO_EN_SYNC: Exact<
-  ConsolidacionEstado,
-  PrismaConsolidacionEstado
-> = true;
+export const CONSOLIDACION_ESTADO_EN_SYNC: Exact<ConsolidacionEstado, PrismaConsolidacionEstado> =
+  true;
 
 export const PLAN_PALLETIZACION_ESTADO_EN_SYNC: Exact<
   PlanPalletizacionEstado,

@@ -94,8 +94,7 @@ export default function DemandasPage() {
   const crear = async (event: FormEvent) => {
     event.preventDefault();
     const qty = Number(cantidad);
-    const lineaOk =
-      tipoLinea === DemandaItemTipo.Kit ? Boolean(kitId) : Boolean(productoId);
+    const lineaOk = tipoLinea === DemandaItemTipo.Kit ? Boolean(kitId) : Boolean(productoId);
     if (!writable || !acopioId || !destinoNombre.trim() || !lineaOk || !(qty > 0)) {
       return;
     }
@@ -262,9 +261,7 @@ export default function DemandasPage() {
               id="dem-tipo"
               className={selectClass}
               value={tipoLinea}
-              onChange={(event) =>
-                setTipoLinea(event.target.value as 'KIT' | 'PRODUCTO')
-              }
+              onChange={(event) => setTipoLinea(event.target.value as 'KIT' | 'PRODUCTO')}
             >
               <option value={DemandaItemTipo.Kit}>{t('demands.fields.lineTypeKit')}</option>
               <option value={DemandaItemTipo.Producto}>

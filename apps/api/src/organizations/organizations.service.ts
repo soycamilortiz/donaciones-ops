@@ -6,17 +6,22 @@ import {
 } from '@nestjs/common';
 import { RoleSlug } from '@soschoco/shared';
 import type { AuthUser } from '../auth/auth.types';
+import { PasswordService } from '../auth/password.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   AddMemberDto,
   CreateOrganizationDto,
+  CreateVolunteerDto,
   UpdateMemberDto,
   UpdateOrganizationDto,
 } from './dto/organization.dto';
 
 @Injectable()
 export class OrganizationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly passwords: PasswordService,
+  ) {}
 
   listForUser(user: AuthUser) {
     return this.prisma.organization.findMany({
@@ -136,6 +141,49 @@ export class OrganizationsService {
       },
       include: { user: true, role: true },
     });
+  }
+
+  async createVolunteer(orgId: string, dto: CreateVolunteerDto) {
+    await this.ensureOrg(orgId);
+    const usuario = dto.usuario.trim().toLowerCase();
+    const correo = dto.correo.trim().toLowerCase();
+
+    const taken = await this.prisma.user.findFirst({
+      where: { OR: [{ usuario }, { correo }] },
+    });
+    if (taken) {
+      throw new ConflictException('El usuario o el correo ya están registrados');
+    }
+
+    const role = await this.findRole(dto.roleSlug ?? RoleSlug.Voluntario);
+    const claveTemporal = this.passwords.generateTemporary();
+    const passwordHash = await this.passwords.hash(claveTemporal);
+
+    const membership = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          usuario,
+          correo,
+          nombre: dto.nombre.trim(),
+          passwordHash,
+          // Admin-created: no self-registration and no e-mail round trip, so the
+          // account is verified up front and the volunteer can sign in at once.
+          correoVerificadoAt: new Date(),
+        },
+      });
+      return tx.membership.create({
+        data: {
+          userId: user.id,
+          organizationId: orgId,
+          roleId: role.id,
+          isPrimary: false,
+          isActive: true,
+        },
+        include: { user: true, role: true },
+      });
+    });
+
+    return { membership, claveTemporal };
   }
 
   async updateMember(orgId: string, userId: string, dto: UpdateMemberDto) {
