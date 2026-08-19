@@ -42,7 +42,7 @@ export class DespachoController {
 
   @Post('consolidaciones/:consolidacionId/planes-palletizacion')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOperation({ summary: 'Crea plan de palletización y pallets PAL-DSP desde una consolidación' })
 
@@ -59,7 +59,7 @@ export class DespachoController {
 
   @Get('demandas/:demandaId/planes-palletizacion')
 
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.DespachoRead)
 
   @ApiOkResponse({ type: [PlanPalletizacionDto] })
   listPlanes(
@@ -72,7 +72,7 @@ export class DespachoController {
 
   @Get('planes-palletizacion/:id')
 
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.DespachoRead)
 
   @ApiOkResponse({ type: PlanPalletizacionDto })
   getPlan(@Param('orgId', ParseUUIDPipe) orgId: string, @Param('id', ParseUUIDPipe) id: string) {
@@ -81,7 +81,7 @@ export class DespachoController {
 
   @Get('planes-palletizacion/:planId/pallets')
 
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.DespachoRead)
 
   @ApiOkResponse({ type: [PalletDespachoDto] })
   listPalletsPlan(
@@ -94,7 +94,7 @@ export class DespachoController {
 
   @Get('pallets-despacho/:id')
 
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.DespachoRead)
 
   @ApiOkResponse({ type: PalletDespachoDto })
   getPallet(@Param('orgId', ParseUUIDPipe) orgId: string, @Param('id', ParseUUIDPipe) id: string) {
@@ -103,7 +103,7 @@ export class DespachoController {
 
   @Get('pallets-despacho/by-codigo/:codigo')
 
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.DespachoRead)
 
   @ApiOperation({ summary: 'Lookup por código o QR (PAL-DSP-…)' })
 
@@ -118,7 +118,7 @@ export class DespachoController {
 
   @Post('pallets-despacho/:id/iniciar')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOkResponse({ type: PalletDespachoDto })
   iniciarPallet(
@@ -131,7 +131,7 @@ export class DespachoController {
 
   @Post('pallets-despacho/:id/escaneos')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOperation({ summary: 'Escanea un kit KIN-… sobre el pallet' })
 
@@ -150,7 +150,7 @@ export class DespachoController {
 
   @Post('pallets-despacho/:id/retiros')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOkResponse({ type: PalletDespachoDto })
   retirarKit(
@@ -165,7 +165,7 @@ export class DespachoController {
 
   @Post('pallets-despacho/:id/finalizar')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOkResponse({ type: PalletDespachoDto })
   finalizarPallet(
@@ -180,7 +180,7 @@ export class DespachoController {
 
   @Post('pallets-despacho/:id/marcar-listo')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOkResponse({ type: PalletDespachoDto })
   marcarListo(
@@ -193,7 +193,7 @@ export class DespachoController {
 
   @Post('planes-palletizacion/:planId/despachos')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiCreatedResponse({ type: DespachoDto })
   crearDespacho(
@@ -210,7 +210,7 @@ export class DespachoController {
 
   @Get('despachos')
 
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.DespachoRead)
 
   @ApiOperation({ summary: 'Torre de control: despachos recientes de la organización' })
 
@@ -221,7 +221,7 @@ export class DespachoController {
 
   @Get('demandas/:demandaId/despachos')
 
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.DespachoRead)
 
   @ApiOkResponse({ type: [DespachoDto] })
   listDespachos(
@@ -234,7 +234,7 @@ export class DespachoController {
 
   @Get('despachos/:id')
 
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.DespachoRead)
 
   @ApiOkResponse({ type: DespachoDto })
   getDespacho(
@@ -247,7 +247,7 @@ export class DespachoController {
 
   @Post('despachos/:id/planificar')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOperation({ summary: 'Pasa de borrador a planificado' })
 
@@ -262,7 +262,7 @@ export class DespachoController {
 
   @Post('despachos/:id/viajes')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOperation({ summary: 'Asigna vehículo y crea viaje con carga' })
 
@@ -281,7 +281,7 @@ export class DespachoController {
 
   @Post('despachos/:id/iniciar-carga')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOkResponse({ type: DespachoDto })
 
@@ -298,7 +298,7 @@ export class DespachoController {
 
   @Post('despachos/:id/cargar-pallet')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOperation({ summary: 'Escanea un pallet PAL-DSP-… al vehículo' })
 
@@ -317,7 +317,7 @@ export class DespachoController {
 
   @Post('despachos/:id/verificar-carga')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOperation({ summary: 'Cierra la carga y genera manifiesto' })
 
@@ -338,7 +338,7 @@ export class DespachoController {
 
   @Post('despachos/:id/completar-carga')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOkResponse({ type: DespachoDto })
   completarCarga(
@@ -351,7 +351,7 @@ export class DespachoController {
 
   @Post('despachos/:id/checklist')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOperation({ summary: 'Control de salida antes de confirmar' })
 
@@ -368,7 +368,7 @@ export class DespachoController {
 
   @Post('despachos/:id/confirmar-salida')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOperation({ summary: 'Confirma salida del acopio y registra movimientos DESPACHO' })
 
@@ -391,7 +391,7 @@ export class DespachoController {
 
   @Post('despachos/:id/despachar')
 
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.DespachoWrite)
 
   @ApiOperation({ summary: 'Alias de confirmar-salida (permite parcial)' })
 

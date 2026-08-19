@@ -26,7 +26,7 @@ export class EntregaController {
   constructor(private readonly entrega: EntregaService) {}
 
   @Get('entregas/pendientes')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.EntregaRead)
   @ApiOperation({ summary: 'Viajes en tránsito pendientes de POD' })
   @ApiOkResponse({ type: [EntregaPendienteDto] })
   listPendientes(@Param('orgId', ParseUUIDPipe) orgId: string) {
@@ -34,7 +34,7 @@ export class EntregaController {
   }
 
   @Get('entregas/viajes/:viajeId')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.EntregaRead)
   @ApiOkResponse({ type: EntregaContextoDto })
   getContexto(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -44,7 +44,7 @@ export class EntregaController {
   }
 
   @Get('entregas/pallets/by-codigo/:codigo')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.EntregaRead)
   @ApiOperation({ summary: 'Lookup QR PAL-DSP en destino' })
   @ApiOkResponse({ type: EntregaPalletDto })
   getPalletByCodigo(
@@ -55,7 +55,7 @@ export class EntregaController {
   }
 
   @Post('entregas/viajes/:viajeId/confirmar')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.EntregaWrite)
   @ApiOperation({ summary: 'Confirma POD y cierra el viaje' })
   @ApiCreatedResponse({ type: ProofOfDeliveryDto })
   confirmar(

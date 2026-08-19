@@ -12,6 +12,8 @@ import type { Env } from '../config/env.schema';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateRoleDto, UpdatePermissionDto, UpdateRoleDto } from './dto/rbac.dto';
 
+const ALL_PERMISSIONS = PERMISSION_CATALOG.map((item) => item.slug);
+
 const roleInclude = {
   rolePermissions: { include: { permission: true } },
 } as const;
@@ -84,13 +86,7 @@ export class RbacService implements OnModuleInit {
 
     const admin = existingBySlug.get(RoleSlug.AdministradorAcopio);
     if (admin) {
-      for (const slug of [
-        PermissionSlug.RolesWrite,
-        PermissionSlug.InventoryRead,
-        PermissionSlug.InventoryWrite,
-        PermissionSlug.DonacionesRead,
-        PermissionSlug.DonacionesWrite,
-      ]) {
+      for (const slug of ALL_PERMISSIONS) {
         const permission = await this.prisma.permission.findUnique({
           where: { slug },
         });
@@ -116,9 +112,6 @@ export class RbacService implements OnModuleInit {
         continue;
       }
       for (const slug of role.permissions) {
-        if (!slug.startsWith('inventory:') && !slug.startsWith('donaciones:')) {
-          continue;
-        }
         const permission = await this.prisma.permission.findUnique({
           where: { slug },
         });
@@ -157,9 +150,19 @@ export class RbacService implements OnModuleInit {
   }
 
   listPermissions() {
-    return this.prisma.permission.findMany({
-      orderBy: { slug: 'asc' },
-    });
+    const order = new Map(PERMISSION_CATALOG.map((item, index) => [item.slug, index]));
+    return this.prisma.permission
+      .findMany()
+      .then((rows) =>
+        rows.sort((a, b) => {
+          const left = order.get(a.slug as PermissionSlug) ?? 1000;
+          const right = order.get(b.slug as PermissionSlug) ?? 1000;
+          if (left !== right) {
+            return left - right;
+          }
+          return a.slug.localeCompare(b.slug, 'es');
+        }),
+      );
   }
 
   async createRole(dto: CreateRoleDto) {

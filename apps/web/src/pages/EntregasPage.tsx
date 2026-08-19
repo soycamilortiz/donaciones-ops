@@ -34,7 +34,7 @@ export default function EntregasPage() {
     void cargar();
   }, [cargar]);
 
-  if (!can('inventory:read')) {
+  if (!can('entrega:read')) {
     return <p className="py-8 text-sm text-muted-foreground">{t('entregas.noPermission')}</p>;
   }
 

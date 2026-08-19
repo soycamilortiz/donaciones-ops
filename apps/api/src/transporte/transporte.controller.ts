@@ -36,14 +36,14 @@ export class TransporteController {
   constructor(private readonly transporte: TransporteService) {}
 
   @Get('transportistas')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.TransporteRead)
   @ApiOkResponse({ type: [TransportistaDto] })
   listTransportistas(@Param('orgId', ParseUUIDPipe) orgId: string) {
     return this.transporte.listTransportistas(orgId);
   }
 
   @Post('transportistas')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiCreatedResponse({ type: TransportistaDto })
   crearTransportista(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -53,14 +53,14 @@ export class TransporteController {
   }
 
   @Get('vehiculos')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.TransporteRead)
   @ApiOkResponse({ type: [VehiculoDto] })
   listVehiculos(@Param('orgId', ParseUUIDPipe) orgId: string) {
     return this.transporte.listVehiculos(orgId);
   }
 
   @Post('vehiculos')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiCreatedResponse({ type: VehiculoDto })
   crearVehiculo(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -70,14 +70,14 @@ export class TransporteController {
   }
 
   @Get('conductores')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.TransporteRead)
   @ApiOkResponse({ type: [ConductorDto] })
   listConductores(@Param('orgId', ParseUUIDPipe) orgId: string) {
     return this.transporte.listConductores(orgId);
   }
 
   @Post('conductores')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiCreatedResponse({ type: ConductorDto })
   crearConductor(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -87,14 +87,14 @@ export class TransporteController {
   }
 
   @Get('rutas')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.RutasRead)
   @ApiOkResponse({ type: [RutaDto] })
   listRutas(@Param('orgId', ParseUUIDPipe) orgId: string) {
     return this.transporte.listRutas(orgId);
   }
 
   @Post('rutas')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.RutasWrite)
   @ApiCreatedResponse({ type: RutaDto })
   crearRuta(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -105,7 +105,7 @@ export class TransporteController {
   }
 
   @Get('transporte/viajes')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.TransporteRead)
   @ApiOperation({ summary: 'Torre de control TMS' })
   @ApiOkResponse({ type: [ViajeResumenTransporteDto] })
   listViajes(@Param('orgId', ParseUUIDPipe) orgId: string) {
@@ -113,7 +113,7 @@ export class TransporteController {
   }
 
   @Get('transporte/viajes/:id')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.TransporteRead)
   @ApiOkResponse({ type: ViajeDetalleDto })
   getViaje(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -123,7 +123,7 @@ export class TransporteController {
   }
 
   @Post('transporte/viajes/:id/paradas')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiOperation({ summary: 'Define paradas del viaje (manual o desde ruta)' })
   @ApiOkResponse({ type: ViajeDetalleDto })
   crearParadas(
@@ -135,7 +135,7 @@ export class TransporteController {
   }
 
   @Post('transporte/viajes/:id/eventos')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiOperation({ summary: 'Registra evento de seguimiento (salida, parada, destino)' })
   @ApiOkResponse({ type: ViajeDetalleDto })
   registrarEvento(
@@ -148,7 +148,7 @@ export class TransporteController {
   }
 
   @Get('transporte/viajes/:id/carga-pallets')
-  @RequirePermission(PermissionSlug.InventoryRead)
+  @RequirePermission(PermissionSlug.TransporteRead)
   @ApiOperation({ summary: 'Pallets en el viaje y parada asignada' })
   @ApiOkResponse({ type: [CargaPalletDto] })
   listCargaPallets(
@@ -159,7 +159,7 @@ export class TransporteController {
   }
 
   @Post('transporte/viajes/:id/auto-asignar-pallets')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiOperation({ summary: 'Asigna pallets a paradas por destinoNombre' })
   @ApiOkResponse({ type: AutoAsignarResultDto })
   autoAsignarPallets(
@@ -170,7 +170,7 @@ export class TransporteController {
   }
 
   @Post('transporte/viajes/:id/paradas/:paradaId/asignar-pallet')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiOkResponse({ type: ViajeDetalleDto })
   asignarPalletParada(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -182,7 +182,7 @@ export class TransporteController {
   }
 
   @Delete('transporte/viajes/:id/pallets/:palletId/asignacion')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiOkResponse({ type: ViajeDetalleDto })
   desasignarPallet(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -193,7 +193,7 @@ export class TransporteController {
   }
 
   @Post('transporte/viajes/:id/paradas/:paradaId/llegada')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiOkResponse({ type: ViajeDetalleDto })
   registrarLlegadaParada(
     @Param('orgId', ParseUUIDPipe) orgId: string,
@@ -205,7 +205,7 @@ export class TransporteController {
   }
 
   @Post('transporte/viajes/:id/paradas/:paradaId/salida')
-  @RequirePermission(PermissionSlug.InventoryWrite)
+  @RequirePermission(PermissionSlug.TransporteWrite)
   @ApiOkResponse({ type: ViajeDetalleDto })
   registrarSalidaParada(
     @Param('orgId', ParseUUIDPipe) orgId: string,

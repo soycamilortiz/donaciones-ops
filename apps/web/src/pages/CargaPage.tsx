@@ -43,7 +43,7 @@ export default function CargaPage() {
   const { orgId, can } = useOrg();
   const { t } = useTranslation();
   const { avisar } = useToast();
-  const writable = can('inventory:write');
+  const writable = can('despacho:write');
   const [despachos, setDespachos] = useState<Despacho[]>([]);
   const [activo, setActivo] = useState<Despacho | null>(null);
   const [codigoPallet, setCodigoPallet] = useState('');
@@ -216,7 +216,7 @@ export default function CargaPage() {
     }
   };
 
-  if (!can('inventory:read')) {
+  if (!can('despacho:read')) {
     return <p className="py-8 text-sm text-muted-foreground">{t('cargo.noPermission')}</p>;
   }
 

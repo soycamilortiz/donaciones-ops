@@ -13,6 +13,14 @@ export const PermissionSlug = {
   InventoryWrite: 'inventory:write',
   DonacionesRead: 'donaciones:read',
   DonacionesWrite: 'donaciones:write',
+  DespachoRead: 'despacho:read',
+  DespachoWrite: 'despacho:write',
+  TransporteRead: 'transporte:read',
+  TransporteWrite: 'transporte:write',
+  RutasRead: 'rutas:read',
+  RutasWrite: 'rutas:write',
+  EntregaRead: 'entrega:read',
+  EntregaWrite: 'entrega:write',
 } as const;
 
 export type PermissionSlug = (typeof PermissionSlug)[keyof typeof PermissionSlug];
@@ -36,7 +44,7 @@ export const PERMISSION_CATALOG: Array<{
   {
     slug: PermissionSlug.OrgRead,
     nombre: 'Ver organización',
-    descripcion: 'Leer datos de la organización',
+    descripcion: 'Leer datos de la organización y acceder al resumen',
   },
   {
     slug: PermissionSlug.OrgUpdate,
@@ -86,12 +94,12 @@ export const PERMISSION_CATALOG: Array<{
   {
     slug: PermissionSlug.InventoryRead,
     nombre: 'Ver inventario',
-    descripcion: 'Consultar existencias por centro de acopio',
+    descripcion: 'Consultar existencias, kits y demandas',
   },
   {
     slug: PermissionSlug.InventoryWrite,
     nombre: 'Gestionar inventario',
-    descripcion: 'Cargar, editar y dar de baja productos en bodega',
+    descripcion: 'Ubicaciones, kits, demandas, movimientos y bodega',
   },
   {
     slug: PermissionSlug.DonacionesRead,
@@ -102,6 +110,46 @@ export const PERMISSION_CATALOG: Array<{
     slug: PermissionSlug.DonacionesWrite,
     nombre: 'Registrar recepciones',
     descripcion: 'Abrir una recepción, identificar productos con foto y validar el ingreso',
+  },
+  {
+    slug: PermissionSlug.DespachoRead,
+    nombre: 'Ver despachos',
+    descripcion: 'Consultar planes de palletización, carga y salida de bodega',
+  },
+  {
+    slug: PermissionSlug.DespachoWrite,
+    nombre: 'Gestionar despachos',
+    descripcion: 'Armar pallets, cargar camión y confirmar salida',
+  },
+  {
+    slug: PermissionSlug.TransporteRead,
+    nombre: 'Ver transporte',
+    descripcion: 'Torre de control TMS, viajes, flota y seguimiento',
+  },
+  {
+    slug: PermissionSlug.TransporteWrite,
+    nombre: 'Operar transporte',
+    descripcion: 'Paradas, eventos, asignación de pallets y maestros de flota',
+  },
+  {
+    slug: PermissionSlug.RutasRead,
+    nombre: 'Ver rutas',
+    descripcion: 'Consultar plantillas multiparada',
+  },
+  {
+    slug: PermissionSlug.RutasWrite,
+    nombre: 'Gestionar rutas',
+    descripcion: 'Crear y editar plantillas de ruta',
+  },
+  {
+    slug: PermissionSlug.EntregaRead,
+    nombre: 'Ver entregas',
+    descripcion: 'Consultar entregas pendientes y prueba de entrega',
+  },
+  {
+    slug: PermissionSlug.EntregaWrite,
+    nombre: 'Confirmar entregas',
+    descripcion: 'Registrar POD y cierre de entrega en destino',
   },
 ];
 
@@ -114,6 +162,21 @@ const LECTURA = [
   PermissionSlug.RolesRead,
   PermissionSlug.InventoryRead,
   PermissionSlug.DonacionesRead,
+  PermissionSlug.DespachoRead,
+  PermissionSlug.TransporteRead,
+  PermissionSlug.RutasRead,
+  PermissionSlug.EntregaRead,
+] as const;
+
+const LOGISTICA_OPERACION = [
+  PermissionSlug.DespachoRead,
+  PermissionSlug.DespachoWrite,
+  PermissionSlug.TransporteRead,
+  PermissionSlug.TransporteWrite,
+  PermissionSlug.RutasRead,
+  PermissionSlug.RutasWrite,
+  PermissionSlug.EntregaRead,
+  PermissionSlug.EntregaWrite,
 ] as const;
 
 export const ROLE_CATALOG: Array<{
@@ -146,6 +209,7 @@ export const ROLE_CATALOG: Array<{
       PermissionSlug.InventoryWrite,
       PermissionSlug.DonacionesRead,
       PermissionSlug.DonacionesWrite,
+      ...LOGISTICA_OPERACION,
     ],
   },
   {
@@ -162,6 +226,7 @@ export const ROLE_CATALOG: Array<{
       PermissionSlug.InventoryWrite,
       PermissionSlug.DonacionesRead,
       PermissionSlug.DonacionesWrite,
+      ...LOGISTICA_OPERACION,
     ],
   },
   {
@@ -173,12 +238,16 @@ export const ROLE_CATALOG: Array<{
   {
     slug: RoleSlug.Transportador,
     nombre: 'Transportador',
-    descripcion: 'Consulta acopios para retiro y despacho',
+    descripcion: 'Seguimiento de viajes y confirmación de entregas en campo',
     permissions: [
       PermissionSlug.OrgRead,
       PermissionSlug.AcopiosRead,
       PermissionSlug.InventoryRead,
       PermissionSlug.DonacionesRead,
+      PermissionSlug.TransporteRead,
+      PermissionSlug.TransporteWrite,
+      PermissionSlug.EntregaRead,
+      PermissionSlug.EntregaWrite,
     ],
   },
   {

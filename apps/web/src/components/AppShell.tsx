@@ -1,14 +1,13 @@
-import type { PermissionSlug } from '@soschoco/shared';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import logoMarkCream from '@/assets/logo-mark-cream.png';
 import { Avatar } from '@/components/atoms/Avatar';
 import { Button } from '@/components/atoms/Button';
-import type { IconName } from '@/components/atoms/Icon';
 import { Icon } from '@/components/atoms/Icon';
 import { NavItem } from '@/components/molecules/NavItem';
 import { useToast } from '@/components/molecules/Toast';
+import { APP_NAV_ITEMS, filterNavItems } from '@/lib/nav-items';
 import { useSession } from '../lib/AuthProvider';
 // LanguageSwitcher hidden while the UI is locked to Spanish (see i18n/index.ts).
 // import { LanguageSwitcher } from './molecules/LanguageSwitcher';
@@ -32,40 +31,12 @@ export default function AppShell() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [pathname]);
 
-  // Dashboard matches exactly (like NavLink `end`); the rest match their subtree.
-  // Icons mirror html-base's NAV table (html-base/assets/app.js).
-  // `perm` gates the item behind an RBAC permission: a volunteer carries only
-  // read + donaciones:write, so they get a clean field menu (Inicio · Acopios ·
-  // Inventario · Recepciones) instead of the full admin surface. The operational
-  // WMS modules (Ubicaciones/Kits/Demandas/Despachos) sit behind inventory:write,
-  // which volunteers and transporters lack. `perm` undefined = always visible.
-  const allNavItems: {
-    href: string;
-    label: string;
-    icon: IconName;
-    exact?: boolean;
-    perm?: PermissionSlug;
-  }[] = [
-    { href: '/app', label: t('nav.dashboard'), icon: 'grid', exact: true },
-    { href: '/app/usuarios', label: t('nav.users'), icon: 'users', perm: 'members:read' },
-    { href: '/app/roles', label: t('nav.roles'), icon: 'shield', perm: 'roles:read' },
-    { href: '/app/acopios', label: t('nav.acopios'), icon: 'home', perm: 'acopios:read' },
-    { href: '/app/ubicaciones', label: t('nav.locations'), icon: 'book', perm: 'inventory:write' },
-    { href: '/app/inventario', label: t('nav.inventory'), icon: 'package', perm: 'inventory:read' },
-    { href: '/app/kits', label: t('nav.kits'), icon: 'heart', perm: 'inventory:write' },
-    {
-      href: '/app/demandas',
-      label: t('nav.demands'),
-      icon: 'alert-circle',
-      perm: 'inventory:write',
-    },
-    { href: '/app/despachos', label: t('nav.despachos'), icon: 'swap', perm: 'inventory:write' },
-    { href: '/app/transporte', label: t('nav.transporte'), icon: 'swap', perm: 'inventory:read' },
-    { href: '/app/rutas', label: t('nav.rutas'), icon: 'book', perm: 'inventory:write' },
-    { href: '/app/entregas', label: t('nav.entregas'), icon: 'package', perm: 'inventory:read' },
-    { href: '/app/recepciones', label: t('nav.receptions'), icon: 'swap', perm: 'donaciones:read' },
-  ];
-  const navItems = allNavItems.filter((item) => !item.perm || can(item.perm));
+  const navItems = filterNavItems(APP_NAV_ITEMS, can).map((item) => ({
+    href: item.href,
+    label: t(item.labelKey),
+    icon: item.icon,
+    exact: item.exact,
+  }));
 
   const initials =
     (me.nombre || me.usuario)

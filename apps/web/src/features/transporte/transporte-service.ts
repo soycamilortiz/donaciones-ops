@@ -70,7 +70,7 @@ export type ViajeDetalle = ViajeResumenTransporte & {
 };
 
 function org(orgId: string) {
-  return `/organizations/${orgId}`;
+  return `/api/v1/organizations/${orgId}`;
 }
 
 export async function listarViajes(

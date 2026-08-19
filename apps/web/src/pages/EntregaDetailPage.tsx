@@ -79,7 +79,7 @@ export default function EntregaDetailPage() {
     }
   };
 
-  if (!can('inventory:read')) {
+  if (!can('entrega:read')) {
     return <p className="py-8 text-sm text-muted-foreground">{t('entregas.noPermission')}</p>;
   }
 
@@ -138,7 +138,7 @@ export default function EntregaDetailPage() {
         </div>
       ) : null}
 
-      {can('inventory:write') && !yaEntregado ? (
+      {can('entrega:write') && !yaEntregado ? (
         <form
           className="space-y-4"
           onSubmit={(e) => {

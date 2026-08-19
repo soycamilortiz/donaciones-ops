@@ -35,7 +35,7 @@ export default function TransportePage() {
     void cargar();
   }, [cargar]);
 
-  if (!can('inventory:read')) {
+  if (!can('transporte:read')) {
     return <p className="py-8 text-sm text-muted-foreground">{t('transporte.noPermission')}</p>;
   }
 

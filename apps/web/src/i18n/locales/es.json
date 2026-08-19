@@ -485,7 +485,12 @@
     "inventoryHint": "Existencias por centro de acopio: producto, lote y vencimiento.",
     "kitsHint": "Recetas (BOM) de kits alimentarios y de abrigo. La demanda pide kits, no cada producto.",
     "demandsHint": "Reservar inventario para un destino: se compromete stock, todavía no se saca de la bodega.",
-    "receptionsHint": "Abrir el evento de llegada, identificar productos y validar el ingreso."
+    "receptionsHint": "Abrir el evento de llegada, identificar productos y validar el ingreso.",
+    "despachosHint": "Planificar pallets, cargar el camión y confirmar salida de bodega.",
+    "transporteHint": "Torre de control TMS: viajes, paradas y seguimiento en ruta.",
+    "rutasHint": "Plantillas multiparada para aplicar a viajes de transporte.",
+    "entregasHint": "Entregas pendientes y prueba de entrega (POD) en destino.",
+    "noModules": "Tu rol no tiene módulos asignados. Pedí acceso a un administrador."
   },
   "inventoryCategories": {
     "ALIMENTOS_NO_PERECEDEROS": "Alimentos no perecederos",

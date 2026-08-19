@@ -171,7 +171,7 @@ export default function TransporteDetailPage() {
     }
   };
 
-  if (!can('inventory:read')) {
+  if (!can('transporte:read')) {
     return <p className="py-8 text-sm text-muted-foreground">{t('transporte.noPermission')}</p>;
   }
 
@@ -187,7 +187,7 @@ export default function TransporteDetailPage() {
     return <p className="py-8 text-sm text-error">{error ?? t('transporte.loadError')}</p>;
   }
 
-  const puedePlanificar = can('inventory:write') && ESTADOS_PLANIFICAR.has(viaje.estado);
+  const puedePlanificar = can('transporte:write') && ESTADOS_PLANIFICAR.has(viaje.estado);
   const enTransito = viaje.estado === 'EN_TRANSITO' || (viaje.estado as string) === 'LLEGO_DESTINO';
   const sinParadas = viaje.paradas.length === 0;
 
@@ -276,7 +276,7 @@ export default function TransporteDetailPage() {
                 {p.palletCodigos.length > 0 ? (
                   <p className="mt-2 font-mono text-xs">{p.palletCodigos.join(', ')}</p>
                 ) : null}
-                {enTransito && can('inventory:write') ? (
+                {enTransito && can('transporte:write') ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {p.estado !== 'LLEGADA' && p.estado !== 'COMPLETADA' ? (
                       <Button
@@ -361,7 +361,7 @@ export default function TransporteDetailPage() {
         </section>
       ) : null}
 
-      {enTransito && can('inventory:write') ? (
+      {enTransito && can('transporte:write') ? (
         <div className="flex flex-wrap gap-2">
           {viaje.estado === 'EN_TRANSITO' ? (
             <Button disabled={guardando} onClick={() => void marcarLlegada()}>

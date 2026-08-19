@@ -485,7 +485,12 @@
     "inventoryHint": "Stock per collection centre: product, batch and expiry.",
     "kitsHint": "Bills of materials for food and shelter kits. A demand asks for kits, not each product.",
     "demandsHint": "Reserve inventory for a destination: stock is committed, not yet picked from the warehouse.",
-    "receptionsHint": "Open the arrival event, identify products and validate the inbound."
+    "receptionsHint": "Open the arrival event, identify products and validate the inbound.",
+    "despachosHint": "Plan pallets, load the truck and confirm warehouse dispatch.",
+    "transporteHint": "TMS control tower: trips, stops and in-transit tracking.",
+    "rutasHint": "Multi-stop route templates to apply to transport trips.",
+    "entregasHint": "Pending deliveries and proof of delivery (POD) at destination.",
+    "noModules": "Your role has no assigned modules. Ask an administrator for access."
   },
   "inventoryCategories": {
     "ALIMENTOS_NO_PERECEDEROS": "Non-perishable food",

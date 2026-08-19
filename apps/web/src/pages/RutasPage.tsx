@@ -77,7 +77,7 @@ export default function RutasPage() {
     }
   };
 
-  if (!can('inventory:read')) {
+  if (!can('rutas:read')) {
     return <p className="py-8 text-sm text-muted-foreground">{t('rutas.noPermission')}</p>;
   }
 
@@ -96,7 +96,7 @@ export default function RutasPage() {
           <h1 className="text-2xl font-semibold text-foreground">{t('rutas.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('rutas.subtitle')}</p>
         </div>
-        {can('inventory:write') ? (
+        {can('rutas:write') ? (
           <Button variant="secondary" onClick={() => setMostrarForm((v) => !v)}>
             {mostrarForm ? t('common.cancel') : t('rutas.new')}
           </Button>
