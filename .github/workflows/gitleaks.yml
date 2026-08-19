@@ -1,0 +1,22 @@
+name: gitleaks
+
+# Escanea secretos en cada PR y push a main. En repos publicos gitleaks-action
+# no requiere licencia. Complementar con GitHub secret scanning + push protection.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
