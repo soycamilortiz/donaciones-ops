@@ -91,6 +91,13 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     dashboardHintKey: 'dashboard.receptionsHint',
   },
   {
+    href: '/app/inventario',
+    labelKey: 'nav.inventory',
+    icon: 'package',
+    perm: 'inventory:read',
+    dashboardHintKey: 'dashboard.inventoryHint',
+  },
+  {
     href: '/app/demandas',
     labelKey: 'nav.demands',
     icon: 'alert-circle',
@@ -124,17 +131,6 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     icon: 'package',
     perm: 'entrega:read',
     dashboardHintKey: 'dashboard.entregasHint',
-  },
-];
-
-/** Inventario no está en el menú principal; acceso desde acopios u otras rutas. */
-export const APP_NAV_SECONDARY: AppNavItem[] = [
-  {
-    href: '/app/inventario',
-    labelKey: 'nav.inventory',
-    icon: 'package',
-    perm: 'inventory:read',
-    dashboardHintKey: 'dashboard.inventoryHint',
   },
 ];
 

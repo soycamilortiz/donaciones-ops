@@ -4,7 +4,6 @@ import { Icon } from '@/components/atoms/Icon';
 import { useOrg } from '@/components/OrgGate';
 import {
   APP_NAV_ITEMS,
-  APP_NAV_SECONDARY,
   filterNavItems,
 } from '@/lib/nav-items';
 
@@ -13,7 +12,7 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const org = membership.organization;
 
-  const modules = filterNavItems([...APP_NAV_ITEMS, ...APP_NAV_SECONDARY], can)
+  const modules = filterNavItems(APP_NAV_ITEMS, can)
     .filter((item) => item.href !== '/app' && item.dashboardHintKey)
     .map((item) => ({
       to: item.href,
