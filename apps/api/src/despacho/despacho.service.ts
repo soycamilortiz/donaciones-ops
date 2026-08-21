@@ -9,12 +9,15 @@ import {
   PalletDespachoItemTipo,
   PlanPalletizacionEstado,
   Prisma,
+  TransportEventTipo,
   ViajeEstado,
+  ViajeParadaEstado,
 } from '@prisma/client';
 import { blankToNull } from '../common/soft-delete';
 import { proponerPallets } from '../consolidacion/packing';
 import { OrgCountersService } from '../org-counters/org-counters.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { TransporteService } from '../transporte/transporte.service';
 import type {
   ActualizarChecklistDto,
   CargarPalletDto,
@@ -108,6 +111,7 @@ export class DespachoService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly counters: OrgCountersService,
+    private readonly transporte: TransporteService,
   ) {}
 
   async crearPlanDesdeConsolidacion(
@@ -569,6 +573,11 @@ export class DespachoService {
         })
       : null;
     const codigoViaje = await this.counters.codigoViaje(orgId);
+    const acopio = await this.prisma.acopio.findUnique({
+      where: { id: despacho.acopioId },
+      select: { nombre: true },
+    });
+    const kitsViaje = await this.kitsEnPalletsPendientes(orgId, despacho.planId, palletsAsignar);
     await this.prisma.$transaction(async (tx) => {
       const viaje = await tx.viaje.create({
         data: {
@@ -583,8 +592,12 @@ export class DespachoService {
           transportistaNombre: transportista?.nombre ?? blankToNull(dto.transportista ?? ''),
           conductorNombre: conductor?.nombre ?? blankToNull(dto.conductorNombre ?? ''),
           conductorDocumento: conductor?.documento ?? blankToNull(dto.conductorDocumento ?? ''),
-          estado: ViajeEstado.PLANIFICADO,
+          origenNombre: acopio?.nombre ?? 'Centro de acopio',
+          destinoNombre: despacho.destinoNombre,
+          estado: vehiculo ? ViajeEstado.ASIGNADO : ViajeEstado.PLANIFICADO,
           palletsEsperados: palletsAsignar,
+          kitsEsperados: kitsViaje,
+          salidaProgramada: despacho.salidaProgramada,
           createdById: usuarioId,
           isActive: true,
         },
@@ -672,15 +685,15 @@ export class DespachoService {
         codigo: { equals: dto.codigoPallet.trim(), mode: 'insensitive' },
         isActive: true,
       },
+      include: {
+        items: { where: { isActive: true, retiradoAt: null } },
+      },
     });
     if (!pallet) {
       throw new BadRequestException('Pallet no encontrado');
     }
     if (pallet.planId !== despacho.planId) {
       throw new BadRequestException('Este pallet no pertenece al plan del despacho');
-    }
-    if (pallet.destinoNombre !== despacho.destinoNombre) {
-      throw new BadRequestException('Este pallet tiene un destino distinto al despacho');
     }
     if (pallet.estado !== PalletDespachoEstado.LISTO_PARA_DESPACHO) {
       throw new BadRequestException('El pallet no está listo para despacho');
@@ -731,6 +744,7 @@ export class DespachoService {
         where: { id: viaje.id },
         data: {
           palletsCargados: { increment: 1 },
+          kitsCargados: { increment: pallet.items.length },
           pesoCargadoKg: { increment: pesoNuevo },
         },
       });
@@ -871,6 +885,20 @@ export class DespachoService {
       },
     });
     const kitsDespachados = pallets.reduce((sum, p) => sum + p.items.length, 0);
+    const viajesSalida = await this.prisma.viaje.findMany({
+      where: { despachoId, isActive: true, estado: ViajeEstado.CARGADO },
+      include: {
+        carga: {
+          include: {
+            items: {
+              where: { isActive: true },
+              include: { palletDespacho: true },
+            },
+          },
+        },
+      },
+    });
+    const salidaAt = new Date();
     // Se aplana antes de abrir la transacción: decidir qué líneas mueven stock
     // es filtrado puro sobre lo que ya se leyó, y saber cuántas son es lo que
     // permite reservar los códigos de movimiento de una sola vez.
@@ -942,13 +970,42 @@ export class DespachoService {
           esParcial,
           palletsDespachados: despacho.palletsCargados,
           kitsDespachados,
-          salidaReal: new Date(),
+          salidaReal: salidaAt,
         },
       });
       await tx.viaje.updateMany({
         where: { despachoId, estado: ViajeEstado.CARGADO },
-        data: { estado: ViajeEstado.EN_TRANSITO, salidaReal: new Date() },
+        data: { estado: ViajeEstado.EN_TRANSITO, salidaReal: salidaAt },
       });
+      for (const viaje of viajesSalida) {
+        const paradasCount = await tx.viajeParada.count({
+          where: { viajeId: viaje.id, isActive: true },
+        });
+        if (paradasCount === 0) {
+          await tx.viajeParada.create({
+            data: {
+              viajeId: viaje.id,
+              sequence: 1,
+              nombre: viaje.destinoNombre ?? despacho.destinoNombre,
+              destinoNombre: viaje.destinoNombre ?? despacho.destinoNombre,
+              estado: ViajeParadaEstado.EN_RUTA,
+              isActive: true,
+            },
+          });
+        }
+        await this.transporte.autoAsignarPalletsEnTransaccion(tx, viaje.id);
+        await tx.transportEvent.create({
+          data: {
+            viajeId: viaje.id,
+            tipo: TransportEventTipo.SALIDA,
+            fechaHora: salidaAt,
+            ubicacionNombre: viaje.origenNombre,
+            observaciones: `Salida ${despacho.codigo}`,
+            createdById: usuarioId,
+            isActive: true,
+          },
+        });
+      }
       await tx.despachoChecklist.update({
         where: { despachoId },
         data: { confirmadoAt: new Date(), confirmadoPorId: usuarioId },
@@ -1036,6 +1093,20 @@ export class DespachoService {
       take: limit,
     });
     return rows.reduce((sum, row) => sum + Number(row.pesoBrutoKg ?? 0), 0);
+  }
+
+  private async kitsEnPalletsPendientes(orgId: string, planId: string, limit: number) {
+    const rows = await this.prisma.palletDespacho.findMany({
+      where: {
+        organizationId: orgId,
+        planId,
+        isActive: true,
+        estado: PalletDespachoEstado.LISTO_PARA_DESPACHO,
+      },
+      select: { kitsObjetivo: true },
+      take: limit,
+    });
+    return rows.reduce((sum, row) => sum + row.kitsObjetivo, 0);
   }
 
   private async resolveVehiculo(orgId: string, dto: CrearViajeDto) {

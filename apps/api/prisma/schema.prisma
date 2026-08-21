@@ -44,6 +44,8 @@ model User {
   viajesCreados              Viaje[]
   palletItemsEscaneados      PalletDespachoItem[] @relation("PalletItemEscaneadoPor")
   cargaItemsEscaneados       CargaItem[]          @relation("CargaItemEscaneadoPor")
+  transportEventsCreados     TransportEvent[]
+  rutasCreadas               Ruta[]
 
   @@map("users")
 }
@@ -109,6 +111,7 @@ model Organization {
   transportistas       Transportista[]
   vehiculos            Vehiculo[]
   conductores          Conductor[]
+  rutas                Ruta[]
 
   @@map("organizations")
 }
@@ -614,6 +617,8 @@ enum InventoryMovimientoTipo {
   PICKING
   AJUSTE
   DESPACHO
+  ENTREGA
+  DEVOLUCION
 }
 
 enum PutawayEstado {
@@ -697,6 +702,7 @@ model InventoryMovimiento {
   putawayId          String?                  @map("putaway_id") @db.Uuid
   kitInstanciaItemId String?                  @map("kit_instancia_item_id") @db.Uuid
   despachoId         String?                  @map("despacho_id") @db.Uuid
+  viajeId            String?                  @map("viaje_id") @db.Uuid
   usuarioId          String                   @map("usuario_id") @db.Uuid
   observaciones      String?
   isActive           Boolean                  @default(true) @map("is_active")
@@ -710,12 +716,14 @@ model InventoryMovimiento {
   putaway          Putaway?          @relation(fields: [putawayId], references: [id], onDelete: SetNull)
   kitInstanciaItem KitInstanciaItem? @relation(fields: [kitInstanciaItemId], references: [id], onDelete: SetNull)
   despacho         Despacho?         @relation(fields: [despachoId], references: [id], onDelete: SetNull)
+  viaje            Viaje?            @relation(fields: [viajeId], references: [id], onDelete: SetNull)
   usuario          User              @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
 
   @@unique([organizationId, codigo])
   @@index([inventoryItemId, createdAt])
   @@index([acopioId, createdAt])
   @@index([despachoId])
+  @@index([viajeId])
   @@map("inventory_movimientos")
 }
 
@@ -977,6 +985,7 @@ enum KitInstanciaEstado {
   CONSOLIDADO
   PALLETIZADO
   DESPACHADO
+  ENTREGADO
 }
 
 enum ControlModo {
@@ -1177,12 +1186,58 @@ enum DespachoEstado {
 
 enum ViajeEstado {
   PLANIFICADO
+  ASIGNADO
   CARGANDO
   CARGADO
+  LISTO
   DESPACHADO
   EN_TRANSITO
+  LLEGO_DESTINO
   ENTREGADO
   CANCELADO
+  RETORNADO
+}
+
+enum TransportistaTipo {
+  EMPRESA
+  ONG
+  PUBLICO
+  VOLUNTARIO
+  INDEPENDIENTE
+  PROPIO
+}
+
+enum VehiculoEstado {
+  DISPONIBLE
+  EN_USO
+  MANTENIMIENTO
+  INACTIVO
+}
+
+enum TransportEventTipo {
+  SALIDA
+  LLEGADA_PARADA
+  SALIDA_PARADA
+  LLEGADA_DESTINO
+  INCIDENCIA
+  RETORNO
+  OTRO
+}
+
+enum ViajeParadaEstado {
+  PENDIENTE
+  EN_RUTA
+  LLEGADA
+  DESCARGA
+  COMPLETADA
+}
+
+enum EntregaEstado {
+  PENDIENTE
+  PARCIAL
+  COMPLETA
+  CON_DIFERENCIAS
+  RECHAZADA
 }
 
 enum CargaEstado {
@@ -1289,7 +1344,8 @@ model PalletDespacho {
   plan          PlanPalletizacion    @relation(fields: [planId], references: [id], onDelete: Restrict)
   slot          PlanPalletSlot       @relation(fields: [slotId], references: [id], onDelete: Restrict)
   despacho      Despacho?            @relation(fields: [despachoId], references: [id], onDelete: SetNull)
-  cargaItem     CargaItem?
+  cargaItem       CargaItem?
+  viajeParadaLink ViajeParadaPallet?
   createdBy     User                 @relation(fields: [createdById], references: [id], onDelete: Restrict)
   items         PalletDespachoItem[]
 
@@ -1365,7 +1421,7 @@ model Despacho {
   movimientos  InventoryMovimiento[]
   manifiesto   DespachoManifiesto?
   checklist    DespachoChecklist?
-  pod          ProofOfDelivery?
+  pods         ProofOfDelivery[]
 
   @@unique([organizationId, codigo])
   @@index([demandaId, estado])
@@ -1374,57 +1430,114 @@ model Despacho {
 }
 
 model Transportista {
-  id             String   @id @default(uuid()) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
+  id             String             @id @default(uuid()) @db.Uuid
+  organizationId String             @map("organization_id") @db.Uuid
   nombre         String
+  tipo           TransportistaTipo  @default(EMPRESA)
   documento      String?
+  nit            String?
+  contacto       String?
   telefono       String?
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  email          String?
+  isActive       Boolean            @default(true) @map("is_active")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   viajes       Viaje[]
+  vehiculos    Vehiculo[]
+  conductores  Conductor[]
 
   @@index([organizationId, isActive])
   @@map("transportistas")
 }
 
 model Vehiculo {
-  id             String   @id @default(uuid()) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
-  placa          String
-  tipo           String?
-  capacidadKg    Decimal? @map("capacidad_kg") @db.Decimal(14, 3)
-  capacidadM3    Decimal? @map("capacidad_m3") @db.Decimal(14, 3)
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id              String          @id @default(uuid()) @db.Uuid
+  organizationId  String          @map("organization_id") @db.Uuid
+  transportistaId String?         @map("transportista_id") @db.Uuid
+  placa           String
+  tipo            String?
+  marca           String?
+  modelo          String?
+  capacidadKg     Decimal?        @map("capacidad_kg") @db.Decimal(14, 3)
+  capacidadM3     Decimal?        @map("capacidad_m3") @db.Decimal(14, 3)
+  numEjes         Int?            @map("num_ejes")
+  estado          VehiculoEstado  @default(DISPONIBLE)
+  isActive        Boolean         @default(true) @map("is_active")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  viajes       Viaje[]
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  transportista Transportista? @relation(fields: [transportistaId], references: [id], onDelete: SetNull)
+  viajes        Viaje[]
 
   @@unique([organizationId, placa])
   @@index([organizationId, isActive])
+  @@index([transportistaId])
   @@map("vehiculos")
 }
 
 model Conductor {
+  id              String   @id @default(uuid()) @db.Uuid
+  organizationId  String   @map("organization_id") @db.Uuid
+  transportistaId String?  @map("transportista_id") @db.Uuid
+  nombre          String
+  documento       String
+  telefono        String?
+  licencia        String?
+  tipoLicencia    String?  @map("tipo_licencia")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  transportista Transportista? @relation(fields: [transportistaId], references: [id], onDelete: SetNull)
+  viajes        Viaje[]
+
+  @@unique([organizationId, documento])
+  @@index([organizationId, isActive])
+  @@index([transportistaId])
+  @@map("conductores")
+}
+
+model Ruta {
   id             String   @id @default(uuid()) @db.Uuid
   organizationId String   @map("organization_id") @db.Uuid
+  codigo         String
   nombre         String
-  documento      String
-  telefono       String?
+  descripcion    String?
+  createdById    String   @map("created_by_id") @db.Uuid
   isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  paradas      RutaParada[]
   viajes       Viaje[]
 
-  @@unique([organizationId, documento])
+  @@unique([organizationId, codigo])
   @@index([organizationId, isActive])
-  @@map("conductores")
+  @@map("rutas")
+}
+
+model RutaParada {
+  id             String   @id @default(uuid()) @db.Uuid
+  rutaId         String   @map("ruta_id") @db.Uuid
+  sequence       Int
+  nombre         String
+  destinoNombre  String?  @map("destino_nombre")
+  lat            Float?
+  lng            Float?
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  ruta Ruta @relation(fields: [rutaId], references: [id], onDelete: Restrict)
+
+  @@unique([rutaId, sequence])
+  @@index([rutaId, isActive])
+  @@map("ruta_paradas")
 }
 
 /// Movimiento físico con vehículo (puede haber varios por despacho).
@@ -1434,6 +1547,7 @@ model Viaje {
   organizationId      String      @map("organization_id") @db.Uuid
   acopioId            String      @map("acopio_id") @db.Uuid
   despachoId          String      @map("despacho_id") @db.Uuid
+  rutaId              String?     @map("ruta_id") @db.Uuid
   vehiculoId          String?     @map("vehiculo_id") @db.Uuid
   transportistaId     String?     @map("transportista_id") @db.Uuid
   conductorId         String?     @map("conductor_id") @db.Uuid
@@ -1441,29 +1555,95 @@ model Viaje {
   transportistaNombre String?     @map("transportista_nombre")
   conductorNombre     String?     @map("conductor_nombre")
   conductorDocumento  String?     @map("conductor_documento")
+  origenNombre        String?     @map("origen_nombre")
+  destinoNombre       String?     @map("destino_nombre")
   estado              ViajeEstado @default(PLANIFICADO)
   palletsEsperados    Int         @map("pallets_esperados")
   palletsCargados     Int         @default(0) @map("pallets_cargados")
+  kitsEsperados       Int         @default(0) @map("kits_esperados")
+  kitsCargados        Int         @default(0) @map("kits_cargados")
   pesoCargadoKg       Decimal     @default(0) @map("peso_cargado_kg") @db.Decimal(14, 3)
+  volumenM3           Decimal?    @map("volumen_m3") @db.Decimal(14, 3)
   salidaProgramada    DateTime?   @map("salida_programada")
   salidaReal          DateTime?   @map("salida_real")
+  llegadaEstimada     DateTime?   @map("llegada_estimada")
+  llegadaReal         DateTime?   @map("llegada_real")
+  observaciones       String?
   createdById         String      @map("created_by_id") @db.Uuid
   isActive            Boolean     @default(true) @map("is_active")
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 
-  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  acopio        Acopio         @relation(fields: [acopioId], references: [id], onDelete: Restrict)
-  despacho      Despacho       @relation(fields: [despachoId], references: [id], onDelete: Restrict)
-  vehiculo      Vehiculo?      @relation(fields: [vehiculoId], references: [id], onDelete: SetNull)
-  transportista Transportista? @relation(fields: [transportistaId], references: [id], onDelete: SetNull)
-  conductor     Conductor?     @relation(fields: [conductorId], references: [id], onDelete: SetNull)
-  createdBy     User           @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  acopio        Acopio            @relation(fields: [acopioId], references: [id], onDelete: Restrict)
+  despacho      Despacho          @relation(fields: [despachoId], references: [id], onDelete: Restrict)
+  ruta          Ruta?             @relation(fields: [rutaId], references: [id], onDelete: SetNull)
+  vehiculo      Vehiculo?         @relation(fields: [vehiculoId], references: [id], onDelete: SetNull)
+  transportista Transportista?    @relation(fields: [transportistaId], references: [id], onDelete: SetNull)
+  conductor     Conductor?        @relation(fields: [conductorId], references: [id], onDelete: SetNull)
+  createdBy     User              @relation(fields: [createdById], references: [id], onDelete: Restrict)
   carga         Carga?
+  paradas       ViajeParada[]
+  eventos       TransportEvent[]
+  pod           ProofOfDelivery?
+  movimientos   InventoryMovimiento[]
 
   @@unique([organizationId, codigo])
   @@index([despachoId, estado])
+  @@index([organizationId, estado])
   @@map("viajes")
+}
+
+model ViajeParada {
+  id            String            @id @default(uuid()) @db.Uuid
+  viajeId       String            @map("viaje_id") @db.Uuid
+  sequence      Int
+  nombre        String
+  destinoNombre String?           @map("destino_nombre")
+  estado        ViajeParadaEstado @default(PENDIENTE)
+  llegadaAt     DateTime?         @map("llegada_at")
+  salidaAt      DateTime?         @map("salida_at")
+  isActive      Boolean           @default(true) @map("is_active")
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  viaje   Viaje               @relation(fields: [viajeId], references: [id], onDelete: Restrict)
+  pallets ViajeParadaPallet[]
+
+  @@unique([viajeId, sequence])
+  @@index([viajeId, isActive])
+  @@map("viaje_paradas")
+}
+
+model ViajeParadaPallet {
+  id               String   @id @default(uuid()) @db.Uuid
+  viajeParadaId    String   @map("viaje_parada_id") @db.Uuid
+  palletDespachoId String   @unique @map("pallet_despacho_id") @db.Uuid
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  viajeParada    ViajeParada    @relation(fields: [viajeParadaId], references: [id], onDelete: Restrict)
+  palletDespacho PalletDespacho @relation(fields: [palletDespachoId], references: [id], onDelete: Restrict)
+
+  @@index([viajeParadaId, isActive])
+  @@map("viaje_parada_pallets")
+}
+
+model TransportEvent {
+  id              String             @id @default(uuid()) @db.Uuid
+  viajeId         String             @map("viaje_id") @db.Uuid
+  tipo            TransportEventTipo
+  fechaHora       DateTime           @map("fecha_hora")
+  ubicacionNombre String?            @map("ubicacion_nombre")
+  observaciones   String?
+  createdById     String             @map("created_by_id") @db.Uuid
+  isActive        Boolean            @default(true) @map("is_active")
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  viaje     Viaje @relation(fields: [viajeId], references: [id], onDelete: Restrict)
+  createdBy User  @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([viajeId, fechaHora])
+  @@map("transport_events")
 }
 
 /// Contenido físico que va en un viaje (pallets, cajas, etc.).
@@ -1542,23 +1722,29 @@ model DespachoChecklist {
 }
 
 model ProofOfDelivery {
-  id                 String    @id @default(uuid()) @db.Uuid
-  despachoId         String    @unique @map("despacho_id") @db.Uuid
-  receivedBy         String?   @map("received_by")
-  receiverDocument   String?   @map("receiver_document")
-  cantidadRecibida   Int?      @map("cantidad_recibida")
-  cantidadDanada     Int       @default(0) @map("cantidad_danada")
-  cantidadFaltante   Int       @default(0) @map("cantidad_faltante")
+  id                 String         @id @default(uuid()) @db.Uuid
+  viajeId            String?        @unique @map("viaje_id") @db.Uuid
+  despachoId         String?        @map("despacho_id") @db.Uuid
+  estado             EntregaEstado  @default(PENDIENTE)
+  receivedBy         String?        @map("received_by")
+  receiverDocument   String?        @map("receiver_document")
+  cantidadEsperada   Int?           @map("cantidad_esperada")
+  cantidadRecibida   Int?           @map("cantidad_recibida")
+  cantidadDanada     Int            @default(0) @map("cantidad_danada")
+  cantidadFaltante   Int            @default(0) @map("cantidad_faltante")
+  cantidadDevuelta   Int            @default(0) @map("cantidad_devuelta")
   observaciones      String?
-  firmaUrl           String?   @map("firma_url")
-  fotoUrl            String?   @map("foto_url")
+  firmaUrl           String?        @map("firma_url")
+  fotoUrl            String?        @map("foto_url")
   lat                Float?
   lng                Float?
-  entregadoAt        DateTime? @map("entregado_at")
-  createdAt          DateTime  @default(now()) @map("created_at")
+  entregadoAt        DateTime?      @map("entregado_at")
+  createdAt          DateTime       @default(now()) @map("created_at")
 
-  despacho Despacho @relation(fields: [despachoId], references: [id], onDelete: Restrict)
+  viaje    Viaje?    @relation(fields: [viajeId], references: [id], onDelete: Restrict)
+  despacho Despacho? @relation(fields: [despachoId], references: [id], onDelete: SetNull)
 
+  @@index([despachoId])
   @@map("proof_of_delivery")
 }
 

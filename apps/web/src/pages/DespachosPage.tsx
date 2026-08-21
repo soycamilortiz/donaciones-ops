@@ -33,7 +33,7 @@ export default function DespachosPage() {
     void cargar();
   }, [cargar]);
 
-  if (!can('inventory:read')) {
+  if (!can('despacho:read')) {
     return <p className="py-8 text-sm text-muted-foreground">{t('despachos.noPermission')}</p>;
   }
 

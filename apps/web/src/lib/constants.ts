@@ -30,6 +30,11 @@ export const ROUTES = {
   demandaCarga: (demandaId: string, planId?: string) =>
     planId ? `/app/demandas/${demandaId}/carga?plan=${planId}` : `/app/demandas/${demandaId}/carga`,
   despachos: '/app/despachos',
+  transporte: '/app/transporte',
+  transporteDetalle: (viajeId: string) => `/app/transporte/${viajeId}`,
+  rutas: '/app/rutas',
+  entregas: '/app/entregas',
+  entregaDetalle: (viajeId: string) => `/app/entregas/${viajeId}`,
   signIn: '/sign-in',
   signUp: '/sign-up',
   verificarCorreo: '/verificar-correo',

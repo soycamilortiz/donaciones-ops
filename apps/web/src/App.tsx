@@ -8,6 +8,11 @@ import { ROUTES } from './lib/constants';
 import AcopiosPage from './pages/AcopiosPage';
 import CargaPage from './pages/CargaPage';
 import CompleteGoogleProfilePage from './pages/CompleteGoogleProfilePage';
+import EntregaDetailPage from './pages/EntregaDetailPage';
+import EntregasPage from './pages/EntregasPage';
+import RutasPage from './pages/RutasPage';
+import TransporteDetailPage from './pages/TransporteDetailPage';
+import TransportePage from './pages/TransportePage';
 import ConsolidacionPage from './pages/ConsolidacionPage';
 import ControlKitsPage from './pages/ControlKitsPage';
 import Dashboard from './pages/Dashboard';
@@ -77,6 +82,11 @@ export default function App() {
             />
             <Route path="/app/demandas/:id/palletizacion" element={<PalletizacionPage />} />
             <Route path="/app/despachos" element={<DespachosPage />} />
+            <Route path="/app/transporte" element={<TransportePage />} />
+            <Route path="/app/transporte/:viajeId" element={<TransporteDetailPage />} />
+            <Route path="/app/rutas" element={<RutasPage />} />
+            <Route path="/app/entregas" element={<EntregasPage />} />
+            <Route path="/app/entregas/:viajeId" element={<EntregaDetailPage />} />
             <Route path="/app/demandas/:id/carga" element={<CargaPage />} />
             <Route path="/app/demandas/:id" element={<DemandaDetailPage />} />
             <Route path="/app/recepciones" element={<RecepcionesPage />} />

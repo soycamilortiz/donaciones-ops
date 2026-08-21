@@ -7,6 +7,7 @@ import { validateEnv } from './config/env.schema';
 import { ConsolidacionModule } from './consolidacion/consolidacion.module';
 import { DespachoModule } from './despacho/despacho.module';
 import { DonacionesModule } from './donaciones/donaciones.module';
+import { EntregaModule } from './entrega/entrega.module';
 import { HealthModule } from './health/health.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { OrganizationsModule } from './organizations/organizations.module';
@@ -15,6 +16,7 @@ import { RbacModule } from './rbac/rbac.module';
 import { RecepcionesModule } from './recepciones/recepciones.module';
 import { ReservasModule } from './reservas/reservas.module';
 import { StorageModule } from './storage/storage.module';
+import { TransporteModule } from './transporte/transporte.module';
 import { UbicacionesModule } from './ubicaciones/ubicaciones.module';
 
 @Module({
@@ -38,6 +40,8 @@ import { UbicacionesModule } from './ubicaciones/ubicaciones.module';
     ReservasModule,
     ConsolidacionModule,
     DespachoModule,
+    TransporteModule,
+    EntregaModule,
   ],
   controllers: [AppController],
 })
